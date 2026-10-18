@@ -12,11 +12,13 @@ in the future cannot sidestep dedupe or the caps):
   (reason `daily_cap`).
 - Critical flood guard: a `critical` with the same key as a shown critical with
   `ts - 10min < prior_ts <= ts` is suppressed (reason `critical_flood`); exactly 10 min later passes.
-  Hard ceiling: at most 20 shown criticals with `ts - 24h < prior_ts <= ts` (reason `critical_ceiling`).
+  Ceiling: after 20 shown criticals with `ts - 24h < prior_ts <= ts`, further criticals are still SHOWN
+  (returned, listed) but non-interrupting (reason `critical_ceiling`): a flood never hides a new scam.
 - `always=True` (/v1/check) is never suppressed, and its alerts (reason `user_check`) are ignored by
   dedupe, the cap and the critical guards: a user's own check never hides a later organic alert.
 Suppressed alerts are still persisted by the caller (audit) with `shown_at` null. Alert hooks (push,
-family) only run for shown alerts, so the guards throttle them too.
+family) only run for shown alerts and receive the Decision; notifiers must act only on
+`decision.interrupt`.
 """
 
 from __future__ import annotations
@@ -109,8 +111,8 @@ def decide(db: Session, user, cand: AlertCandidate, *, always: bool = False,
             return Decision(False, False, "critical_flood")
         n = db.scalar(_shown(user.id, func.count(Alert.id)).where(
             Assessment.tier == "critical", *window(CAP_WINDOW))) or 0
-        if n >= CRITICAL_DAILY_CEILING:
-            return Decision(False, False, "critical_ceiling")
+        if n >= CRITICAL_DAILY_CEILING:  # fail safe: still shown in the feed, just no more interrupts
+            return Decision(True, False, "critical_ceiling")
         return Decision(True, True, "shown")
     prev = db.execute(_shown(user.id, Assessment.tier).where(
         Alert.dedupe_key == cand.dedupe_key, *window(DEDUPE_WINDOW))).scalars().all()

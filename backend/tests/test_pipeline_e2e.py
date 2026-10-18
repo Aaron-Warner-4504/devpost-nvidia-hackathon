@@ -320,6 +320,28 @@ def test_critical_flood_guard(client, auth_headers, rules_mode, hook_calls, db):
     assert len(hook_calls) == 3
 
 
+def test_critical_ceiling_degrades_to_non_interrupting(client, auth_headers, rules_mode, hook_calls, db):
+    text = "CBI officer here. Share the OTP immediately. Do not tell anyone."
+    for i in range(21):
+        r = post(client, auth_headers, sms(i, f"+9198111{i:05d}", text, D1 + timedelta(minutes=i)))
+        assert r["alert"]["tier"] == "critical"  # every one is returned
+    assert [c[2].interrupt for c in hook_calls] == [True] * 20 + [False]
+    assert hook_calls[-1][2].reason == "critical_ceiling"
+    last = db.scalar(select(Alert).join(Assessment).where(Assessment.event_id == r["event_id"]))
+    assert last.shown_at is not None and last.interrupt is False and last.reason == "critical_ceiling"
+    listed = client.get("/v1/alerts", headers=auth_headers).json()
+    assert len(listed) == 21 and listed[0]["id"] == r["alert"]["id"]
+
+
+def test_hooks_called_with_decision_keyword(client, auth_headers, rules_mode):
+    seen = []
+    deps = offline_deps()
+    deps.hooks = [lambda db, user, alert, **kw: seen.append(kw["decision"].interrupt)]
+    app.dependency_overrides[get_pipeline_deps] = lambda: deps
+    post(client, auth_headers, WHATSAPP)
+    assert seen == [True]
+
+
 def test_check_does_not_suppress_later_organic_alert(client, auth_headers, rules_mode, hook_calls):
     text = "Pay Rs 500 fine immediately to avoid penalty."
     r = post(client, auth_headers, sms(1, "+919811100010", text, D1), "/v1/check")

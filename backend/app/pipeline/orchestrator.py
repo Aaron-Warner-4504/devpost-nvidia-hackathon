@@ -50,9 +50,11 @@ AGENT_RELATED_MAX = 20
 MAX_DOMAIN_LOOKUPS = 3
 ESCALATE_TRIAGE = 0.5
 
-AlertHook = Callable[[Session, Any, AlertOut, policy.Decision], None]
-# Called after an alert is SHOWN and committed: hook(db, user, alert, decision). Exceptions are logged
-# and swallowed. Tasks 11/17 register family / push notifiers here.
+AlertHook = Callable[..., None]
+# Called after an alert is SHOWN and committed as hook(db, user, alert, decision=Decision). Shown alerts
+# include non-interrupting ones (caution, /v1/check results, criticals beyond the daily ceiling):
+# push / family notifiers (Tasks 11/17) MUST only notify when `decision.interrupt` is True.
+# Exceptions are logged and swallowed.
 alert_hooks: list[AlertHook] = []
 
 
@@ -369,7 +371,7 @@ def _run_hooks(db: Session, user, alert: AlertOut, decision: policy.Decision, de
     hooks = deps.hooks if deps.hooks is not None else alert_hooks
     for hook in list(hooks):
         try:
-            hook(db, user, alert, decision)
+            hook(db, user, alert, decision=decision)
         except Exception:
             log.exception("alert hook %r failed", getattr(hook, "__name__", hook))
             try:

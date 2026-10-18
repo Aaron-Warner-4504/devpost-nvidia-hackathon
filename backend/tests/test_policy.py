@@ -120,7 +120,7 @@ def test_critical_daily_ceiling(db, user):
     for i in range(policy.CRITICAL_DAILY_CEILING):
         prior(db, user, "critical", f"k{i}", T0 - timedelta(hours=23, minutes=59) + timedelta(minutes=i))
     d = decide(db, user, cand("critical", key="new"), always=False)
-    assert (d.show, d.reason) == (False, "critical_ceiling")
+    assert (d.show, d.interrupt, d.reason) == (True, False, "critical_ceiling")  # shown, never dropped
     # once the oldest one is 24h old the window has room again
     assert decide(db, user, cand("critical", key="new", ts=T0 + timedelta(minutes=1)), always=False).show
 

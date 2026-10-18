@@ -81,7 +81,9 @@ Response 200 (`EventResult`):
     returned again within 6 h of an earlier shown one (a tier increase is returned);
   - at most 5 interrupting alerts per rolling 24 h: further `high` alerts are not returned;
   - `critical`: the same critical scam (same entities) is not returned again within 10 min of the last
-    shown one, and at most 20 criticals are returned per rolling 24 h; otherwise critical always passes.
+    shown one; otherwise critical is always returned. After 20 criticals in a rolling 24 h, further
+    criticals are still returned and listed but the server no longer sends interrupting notifications
+    (push / family) for them. The response has no interrupt flag; clients interrupt on `high`/`critical`.
   - Results of `/v1/check` never count toward any of these.
 - Duplicate delivery (a `device_event_id` already seen for this device's user) returns
   `{"event_id": "<the original event_id>", "duplicate": true, "alert": null}` and is not re-processed. Retrying
