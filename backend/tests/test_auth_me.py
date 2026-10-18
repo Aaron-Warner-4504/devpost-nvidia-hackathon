@@ -6,20 +6,39 @@ from app.db import Base
 from app.models import Consent, Device, Event, User
 
 
-def counts(db, user_id):
-    out = {}
+def user_columns():
+    """Every (table, column) that references users.id (user_id, protected_user_id, guardian_user_id...)."""
+    cols = []
     for t in Base.metadata.sorted_tables:
-        if "user_id" in t.c:
-            out[t.name] = db.execute(
-                select(func.count()).select_from(t).where(t.c.user_id == user_id)
-            ).scalar_one()
+        for c in t.c:
+            if any(fk.column.table.name == "users" for fk in c.foreign_keys):
+                cols.append((t, c))
+    return cols
+
+
+def counts(db, user_id):
+    """Rows per table that belong to this user through ANY users.id foreign key. Keyed by table name
+    for plain `user_id` columns (as before) and `table.column` for other user references."""
+    out = {}
+    for t, c in user_columns():
+        key = t.name if c.name == "user_id" else f"{t.name}.{c.name}"
+        out[key] = db.execute(select(func.count()).select_from(t).where(c == user_id)).scalar_one()
     return out
+
+
+def test_every_table_is_owned_by_a_user():
+    """A new table must reference users (so DELETE /v1/me cascades to it) or be listed here."""
+    owned = {t.name for t, _ in user_columns()}
+    for t in Base.metadata.sorted_tables:
+        assert t.name == "users" or t.name in owned, t.name
+    for t, c in user_columns():
+        assert all(fk.ondelete == "CASCADE" for fk in c.foreign_keys), (t.name, c.name)
 
 
 def seed(db, user_id):
     """Insert one row into every user-owned table."""
-    from app.models import (Alert, Assessment, Edge, Embedding, Entity, EventEntity, Override,
-                            TrustedContact)
+    from app.models import (Alert, Assessment, Edge, Embedding, Entity, EventEntity, FamilyAcceptFailure,
+                            FamilyInvite, FamilyPing, Override, TrustedContact, User)
     from datetime import datetime, timezone
     from app.config import settings
 
@@ -36,13 +55,26 @@ def seed(db, user_id):
              valid_from=datetime.now(timezone.utc), evidence_event_ids=[ev.id]),
         Embedding(user_id=user_id, event_id=ev.id, vector=[0.1] * settings.embed_dim),
         EventEntity(user_id=user_id, event_id=ev.id, entity_id=e1.id),
-        TrustedContact(user_id=user_id, name="Mom", phone="+2"),
+        FamilyInvite(user_id=user_id, code_hash=f"h-{user_id}",
+                     expires_at=datetime.now(timezone.utc)),
+        FamilyAcceptFailure(user_id=user_id),
+        FamilyPing(user_id=user_id),
         Override(user_id=user_id, kind="safe", type="domain", canonical="ok.com"),
         Consent(user_id=user_id, source="sms", granted_at=datetime.now(timezone.utc)),
         a,
     ])
     db.flush()
     db.add(Alert(user_id=user_id, assessment_id=a.id))
+    # this user in BOTH family roles: protecting someone and protected by someone
+    other_a, other_b = User(), User()
+    db.add_all([other_a, other_b])
+    db.flush()
+    db.add_all([
+        TrustedContact(protected_user_id=user_id, guardian_user_id=other_a.id, name="Mom", fcm_token="t1",
+                       consent_at=datetime.now(timezone.utc)),
+        TrustedContact(protected_user_id=other_b.id, guardian_user_id=user_id, name="Son", fcm_token="t2",
+                       consent_at=datetime.now(timezone.utc)),
+    ])
     db.commit()
 
 
@@ -89,7 +121,9 @@ def test_delete_me_cascades_and_isolates_other_user(client, register, db):
     db.expire_all()
     c1 = counts(db, u1)
     assert set(c1) >= {"devices", "consents", "events", "entities", "edges", "assessments",
-                       "alerts", "trusted_contacts", "embeddings", "overrides", "event_entities"}
+                       "alerts", "embeddings", "overrides", "event_entities", "family_invites",
+                       "family_accept_failures", "family_pings", "trusted_contacts.protected_user_id",
+                       "trusted_contacts.guardian_user_id"}
     assert all(v == 0 for v in c1.values()), c1
     assert db.get(User, u1) is None
     assert counts(db, u2) == before2

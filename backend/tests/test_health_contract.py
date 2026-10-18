@@ -6,6 +6,9 @@ PATHS = [
     "/v1/alerts",
     "/v1/alerts/{id}/feedback",
     "/v1/family/contacts",
+    "/v1/family/contacts/{id}",
+    "/v1/family/invites",
+    "/v1/family/accept",
     "/v1/me",
     "/health",
 ]
@@ -85,3 +88,23 @@ def test_oversized_text_rejected(client, auth_headers):
     assert r.status_code == 422
     r = client.post("/v1/events", json={**EVENT, "sender": "x" * 201}, headers=auth_headers)
     assert r.status_code == 422
+
+
+def test_openapi_family_and_feedback_shapes(client):
+    """Request bodies documented in docs/api-contract.md."""
+    spec = client.get("/openapi.json").json()
+    paths, schemas = spec["paths"], spec["components"]["schemas"]
+
+    def body_schema(path, method="post"):
+        ref = paths[path][method]["requestBody"]["content"]["application/json"]["schema"]["$ref"]
+        return schemas[ref.rsplit("/", 1)[1]]
+
+    for p in ("/v1/family/accept", "/v1/family/contacts"):
+        s = body_schema(p)
+        assert set(s["properties"]) == {"code", "name", "fcm_token"} and set(s["required"]) == set(s["properties"])
+    inv = body_schema("/v1/family/invites")
+    assert set(inv["properties"]) == {"consent"} and inv["required"] == ["consent"]
+    fb = body_schema("/v1/alerts/{id}/feedback")
+    assert set(fb["properties"]) == {"label"}
+    assert set(paths["/v1/family/contacts"]) == {"get", "post"}
+    assert set(paths["/v1/family/contacts/{id}"]) == {"delete"}

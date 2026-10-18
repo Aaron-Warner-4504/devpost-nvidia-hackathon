@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     inspector_secret: str = ""
     agent_mode: str = "hybrid"
     embed_dim: int = 1024
+    # Family push (Task 11): path to a Firebase service-account JSON; unset -> notifications are no-ops.
+    firebase_credentials_file: str = ""
+    # Server-side secret mixed into stored pairing-code hashes (set in production; see app/family.py).
+    family_code_pepper: str = ""
 
 
 settings = Settings()

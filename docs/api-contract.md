@@ -103,22 +103,80 @@ alert from `/v1/events` for the same message.
 Response 200: list of `AlertOut` (shape as above) that were shown to this user (returned by `/v1/events` or
 `/v1/check`), newest first, at most 100. With `since`, only alerts shown after that instant. `info` results
 of `/v1/check` are not listed (they are a direct answer, not alert history).
-
-## Errors
-- `401` missing/invalid token, `422` invalid body (FastAPI validation detail).
-- `500 {"detail": "internal error"}` on an unexpected server failure (e.g. database unavailable); no
-  internals are returned. AI/LLM failures never cause a 500.
 ```json
 [{"id": "alr_123", "event_id": "evt_123", "tier": "high", "headline": "Likely bank-impersonation scam", "why": [], "next_step": "Call your bank.", "signals": ["credential_or_otp_ask"], "created_at": "2026-10-17T10:00:00Z"}]
 ```
 
 ## POST /v1/alerts/{id}/feedback
-Request: `{"label": "scam"}` (or `"safe"`). Response 200: `{"ok": true}`
+The user's verdict on one of their alerts. Request: `{"label": "scam"}` or `{"label": "safe"}`.
+Response 200: `{"ok": true}`. `404 {"detail": "alert not found"}` if the alert is not the caller's (or does
+not exist). Idempotent; sending the other label flips it. Effects (per user only, never other users):
+- `safe`: the alert's **sender** (SMS/WhatsApp sender phone, or the caller's number for a call) is
+  remembered as safe, so its later messages score lower (e.g. a repeated `caution` message becomes `info`
+  and is no longer returned). Risky links found by the link inspector are never discounted. Numbers, links or UPI ids that only appear *in the message body* are
+  never made safe, and email senders are not (the From: address can be forged).
+- `scam`: the message's phone numbers, link domains and UPI ids are pinned as known bad: the next event that
+  contains any of them is rated `critical` (at least `high` if it also comes from a sender marked safe). Well-known brand / bank domains (e.g. `hdfcbank.com`,
+  `google.com`), link shorteners and shared hosting domains are never pinned.
 
-## POST /v1/family/contacts
-Request: `{"name": "Asha", "phone": "+919876543210"}`. Response 200: `{"ok": true, "id": "fam_123"}`
+## Family (guardian) alerts
+Two app installs, each registered as its own user via `/v1/devices/register`: the **protected user** (the
+person Sentinel watches) and the **guardian** (family member). Pairing:
+1. The protected user's app shows an explicit consent toggle and calls `POST /v1/family/invites`
+   `{"consent": true}`; it displays the returned code.
+2. The guardian types the code into their app, which calls `POST /v1/family/accept` with its own FCM token.
+
+When the protected user gets a `critical` alert that interrupts (see `/v1/events`), each guardian receives
+one FCM push: `notification.title` = `"Sentinel alert"`, `notification.body` = the alert headline only
+(numbers, links and ids masked, at most 140 chars), `data` = `{"kind": "family_critical",
+"alert_tier": "critical"}`. Never the message text, sender, or the protected user's name. No push for
+`caution`/`high`/`info`, for `/v1/check` results, or for alerts the server did not interrupt for. At most
+10 family pushes per guardian per rolling hour (further ones are dropped). If FCM reports the token
+unregistered, pushes to that guardian stop until they pair again (re-accepting a new code with a fresh token
+updates the existing link).
+
+### POST /v1/family/invites  (protected user)
+Request: `{"consent": true}` (anything else, or missing, is `422`). Response 200:
+```json
+{"code": "K7M2QX", "expires_at": "2026-10-17T10:10:00Z"}
+```
+The code is 6 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no 0/O/1/I/L), valid for 10 minutes, single
+use. Creating a new invite cancels the user's earlier unused codes. `429` after 5 invites in an hour.
+
+### POST /v1/family/accept  (guardian)
+Request (the guardian's own bearer token; `name` is the guardian's display name shown to the protected user,
+1-80 chars; `fcm_token` is the guardian app's FCM registration token):
+```json
+{"code": "K7M2QX", "name": "Ravi", "fcm_token": "<guardian FCM registration token>"}
+```
+Response 200: `{"id": "fam_123", "protected_name": null}` (`id` is the link id; nothing else about the
+protected user is returned). Codes are case-insensitive. Errors:
+- `404 {"detail": "invalid or expired code"}` for a wrong, expired, already used, or your own code (all
+  identical).
+- `429 {"detail": "too many attempts, try again later"}` after 10 failed attempts by this user in an hour.
+
+`POST /v1/family/contacts` is the same operation (same request, response and errors).
+
+### GET /v1/family/contacts
+The caller's links in both roles. Response 200:
+```json
+{
+  "guardians": [{"id": "fam_123", "name": "Ravi", "linked_at": "2026-10-17T10:05:00Z"}],
+  "protecting": [{"id": "fam_456", "linked_at": "2026-10-17T11:00:00Z"}]
+}
+```
+`guardians`: people who get my critical alerts. `protecting`: people whose critical alerts I get.
+
+### DELETE /v1/family/contacts/{id}
+Either the protected user or the guardian removes the link; pushes stop immediately. Response 204.
+`404 {"detail": "not found"}` if the caller is not part of that link (or it does not exist).
 
 ## DELETE /v1/me
-Deletes the device and all its data. Response 204, no body.
+Deletes the device and all its data, including family links in both roles and pending invites. Response 204,
+no body.
 
-_Note: `/v1/events`, `/v1/check` and `/v1/alerts` are live. `/v1/alerts/{id}/feedback` and `/v1/family/contacts` are still stubs returning fixed payloads (real behaviour lands in a later task with the same shapes)._
+## Errors
+- `401` missing/invalid token, `422` invalid body (FastAPI validation detail), `404`/`429` as listed per
+  endpoint.
+- `500 {"detail": "internal error"}` on an unexpected server failure (e.g. database unavailable); no
+  internals are returned. AI/LLM failures never cause a 500.

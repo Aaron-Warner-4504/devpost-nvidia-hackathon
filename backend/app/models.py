@@ -117,12 +117,53 @@ class Alert(Base):
     created_at: Mapped[datetime] = _now()
 
 
+def _user_fk():
+    return mapped_column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+
+
 class TrustedContact(Base):
+    """Family link: a guardian (their own app install / user) watching a protected user. Exists only after
+    the protected user created an invite with explicit consent; unlinking (either side) deletes the row."""
     __tablename__ = "trusted_contacts"
+    __table_args__ = (
+        UniqueConstraint("protected_user_id", "guardian_user_id", name="uq_trusted_contacts_pair"),
+        CheckConstraint("protected_user_id <> guardian_user_id", name="ck_trusted_contacts_not_self"),
+    )
     id: Mapped[str] = _pk("fam")
+    protected_user_id: Mapped[str] = _user_fk()
+    guardian_user_id: Mapped[str] = _user_fk()
+    name: Mapped[str] = mapped_column(String)  # guardian's display name, shown to the protected user
+    fcm_token: Mapped[str] = mapped_column(String)  # the GUARDIAN's push token; never returned by the API
+    consent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # when the invite was consented
+    created_at: Mapped[datetime] = _now()
+    fcm_invalid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class FamilyInvite(Base):
+    """Pairing code created by the protected user. Only a peppered hash of the code is stored."""
+    __tablename__ = "family_invites"
+    id: Mapped[str] = _pk("inv")
+    user_id: Mapped[str] = _uid()  # the protected user
+    code_hash: Mapped[str] = mapped_column(String, unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = _now()
+
+
+class FamilyAcceptFailure(Base):
+    """One row per failed accept attempt by a (guardian) user: brute-force rate limit."""
+    __tablename__ = "family_accept_failures"
+    id: Mapped[str] = _pk("faf")
     user_id: Mapped[str] = _uid()
-    name: Mapped[str] = mapped_column(String)
-    phone: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = _now()
+
+
+class FamilyPing(Base):
+    """One row per family notification sent to a guardian (user_id = guardian): per-guardian throttle."""
+    __tablename__ = "family_pings"
+    id: Mapped[str] = _pk("fpg")
+    user_id: Mapped[str] = _uid()
+    created_at: Mapped[datetime] = _now()
 
 
 class Embedding(Base):
@@ -134,7 +175,7 @@ class Embedding(Base):
 
 
 class Override(Base):
-    """Per-user safe / known-bad entity overrides (used from Task 11)."""
+    """Per-user safe / known-bad entity overrides, written by alert feedback (Task 11)."""
     __tablename__ = "overrides"
     __table_args__ = (
         UniqueConstraint("user_id", "kind", "type", "canonical"),
@@ -145,6 +186,7 @@ class Override(Base):
     kind: Mapped[str] = mapped_column(String)
     type: Mapped[str] = mapped_column(String)
     canonical: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = _now()
 
 
 class EventEntity(Base):

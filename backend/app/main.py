@@ -1,16 +1,31 @@
 import logging
+from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app.auth import current_user
+from app import family
+from app.pipeline import orchestrator
 from app.routes import alerts, events, me
-from app.schemas import FamilyContact, Feedback
+from app.routes import family as family_routes
 
-app = FastAPI(title="Sentinel API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # alert hooks are registered at startup (not import time) so tests can inject their own
+    orchestrator.register_alert_hook(family.family_alert_hook)
+    try:
+        yield
+    finally:
+        if family.family_alert_hook in orchestrator.alert_hooks:
+            orchestrator.alert_hooks.remove(family.family_alert_hook)
+
+
+app = FastAPI(title="Sentinel API", version="0.1.0", lifespan=lifespan)
 app.include_router(me.router)
 app.include_router(events.router)
 app.include_router(alerts.router)
+app.include_router(family_routes.router)
 log = logging.getLogger("app")
 
 
@@ -25,14 +40,3 @@ async def internal_error(request: Request, exc: Exception):
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
-
-# Stubs until Task 11 (feedback overrides, family pairing): fixed payloads, same shapes as the contract.
-@app.post("/v1/alerts/{id}/feedback")
-def alert_feedback(id: str, body: Feedback, _: str = Depends(current_user)):
-    return {"ok": True}
-
-
-@app.post("/v1/family/contacts")
-def add_family_contact(body: FamilyContact, _: str = Depends(current_user)):
-    return {"ok": True, "id": "fam_123"}

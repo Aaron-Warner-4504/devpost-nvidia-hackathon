@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 Source = Literal["sms", "whatsapp", "email", "call", "share", "notification"]
 Tier = Literal["info", "caution", "high", "critical"]
@@ -57,6 +57,38 @@ class DeviceRegistered(BaseModel):
     token: str
 
 
-class FamilyContact(BaseModel):
+class FamilyInviteIn(BaseModel):
+    # the protected user's explicit consent toggle; anything but `true` is a 422
+    consent: Literal[True]
+
+
+class FamilyInviteOut(BaseModel):
+    code: str
+    expires_at: datetime
+
+
+class FamilyAccept(BaseModel):
+    code: str = Field(max_length=32)
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
+    fcm_token: str = Field(min_length=1, max_length=4096)
+
+
+class FamilyLinkOut(BaseModel):
+    id: str
+    protected_name: None = None  # nothing about the protected user is revealed to the guardian
+
+
+class GuardianOut(BaseModel):
+    id: str
     name: str
-    phone: str
+    linked_at: datetime
+
+
+class ProtectingOut(BaseModel):
+    id: str
+    linked_at: datetime
+
+
+class FamilyContactsOut(BaseModel):
+    guardians: list[GuardianOut]  # people notified about MY critical alerts
+    protecting: list[ProtectingOut]  # people whose critical alerts I receive
