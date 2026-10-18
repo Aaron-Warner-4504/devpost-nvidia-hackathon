@@ -4,7 +4,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    database_url: str = "postgresql+psycopg://sentinel:sentinel@localhost:5440/sentinel"
+    # Required: set DATABASE_URL in the environment or .env (see .env.example).
+    database_url: str
     llm_model: str = ""
     embed_model: str = ""
     vision_model: str = ""

@@ -1,0 +1,63 @@
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+from sqlalchemy import delete, select
+from sqlalchemy.orm import Session
+
+from app.auth import current_user, hash_token, new_token
+from app.db import get_session
+from app.models import Consent, Device, User
+from app.schemas import DeviceRegistered, Source
+
+router = APIRouter()
+
+
+class ConsentIn(BaseModel):
+    source: Source
+    granted: bool
+
+
+def _consents(session: Session, user_id: str) -> dict[str, bool]:
+    rows = session.scalars(select(Consent).where(Consent.user_id == user_id)).all()
+    return {c.source: c.revoked_at is None for c in rows}
+
+
+@router.post("/v1/devices/register", response_model=DeviceRegistered)
+def register_device(session: Session = Depends(get_session)):
+    token = new_token()
+    user = User()
+    session.add(user)
+    session.flush()
+    device = Device(user_id=user.id, token_hash=hash_token(token))
+    session.add(device)
+    session.commit()
+    return DeviceRegistered(device_id=device.id, token=token)
+
+
+@router.get("/v1/me")
+def get_me(user: User = Depends(current_user), session: Session = Depends(get_session)):
+    return {"id": user.id, "consents": _consents(session, user.id)}
+
+
+@router.post("/v1/me/consents")
+def set_consent(body: ConsentIn, user: User = Depends(current_user),
+                session: Session = Depends(get_session)):
+    now = datetime.now(timezone.utc)
+    c = session.scalar(select(Consent).where(Consent.user_id == user.id, Consent.source == body.source))
+    if c is None:
+        c = Consent(user_id=user.id, source=body.source, granted_at=now)
+        session.add(c)
+    if body.granted:
+        c.granted_at, c.revoked_at = now, None
+    else:
+        c.revoked_at = now
+    session.commit()
+    return {"source": body.source, "granted": body.granted}
+
+
+@router.delete("/v1/me", status_code=204)
+def delete_me(user: User = Depends(current_user), session: Session = Depends(get_session)):
+    # DB-level ON DELETE CASCADE removes every user-owned row.
+    session.execute(delete(User).where(User.id == user.id))
+    session.commit()

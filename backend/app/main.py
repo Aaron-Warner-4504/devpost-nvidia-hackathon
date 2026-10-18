@@ -1,10 +1,11 @@
 from datetime import datetime, timezone
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI
 
+from app.auth import current_user
+from app.routes import me
 from app.schemas import (
     AlertOut,
-    DeviceRegistered,
     EventIn,
     EventResult,
     FamilyContact,
@@ -13,15 +14,7 @@ from app.schemas import (
 )
 
 app = FastAPI(title="Sentinel API", version="0.1.0")
-
-
-def require_token(authorization: str | None = Header(default=None)) -> str:
-    # Stub: any non-empty bearer token is accepted. Real auth lands in Task 3.
-    if authorization:
-        scheme, _, token = authorization.partition(" ")
-        if scheme.lower() == "bearer" and token.strip():
-            return token.strip()
-    raise HTTPException(status_code=401, detail="missing or invalid bearer token")
+app.include_router(me.router)
 
 
 _TS = datetime(2026, 10, 17, 10, 0, tzinfo=timezone.utc)
@@ -52,36 +45,26 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/v1/devices/register", response_model=DeviceRegistered)
-def register_device():
-    return DeviceRegistered(device_id="dev_123", token="example-token")
-
-
 @app.post("/v1/events", response_model=EventResult)
-def post_event(event: EventIn, _: str = Depends(require_token)):
+def post_event(event: EventIn, _: str = Depends(current_user)):
     return example_result()
 
 
 @app.post("/v1/check", response_model=EventResult)
-def check(event: EventIn, _: str = Depends(require_token)):
+def check(event: EventIn, _: str = Depends(current_user)):
     return example_result()
 
 
 @app.get("/v1/alerts", response_model=list[AlertOut])
-def list_alerts(since: datetime | None = None, _: str = Depends(require_token)):
+def list_alerts(since: datetime | None = None, _: str = Depends(current_user)):
     return [example_alert()]
 
 
 @app.post("/v1/alerts/{id}/feedback")
-def alert_feedback(id: str, body: Feedback, _: str = Depends(require_token)):
+def alert_feedback(id: str, body: Feedback, _: str = Depends(current_user)):
     return {"ok": True}
 
 
 @app.post("/v1/family/contacts")
-def add_family_contact(body: FamilyContact, _: str = Depends(require_token)):
+def add_family_contact(body: FamilyContact, _: str = Depends(current_user)):
     return {"ok": True, "id": "fam_123"}
-
-
-@app.delete("/v1/me", status_code=204)
-def delete_me(_: str = Depends(require_token)):
-    return None
