@@ -112,13 +112,21 @@ _PAYMENT = _rx(
     r"\b(?:collect\s+request|payment\s+request|pay\s*(?:₹|rs\.?|inr|rupees)"
     r"|pay\s+\d|pay\s+(?:the\s+|a\s+)?(?:fee|fine|amount|charges?|penalty|duty|deposit)|pay\s+now"
     r"|transfer|send\s+(?:me\s+)?(?:money|₹|rs\.?)|approve\s+(?:the\s+)?(?:request|collect)"
-    r"|scan\s+(?:the\s+)?qr|paise\s+bhej\w*|paisa\s+bhej\w*|pay\s+kar\w*|deposit\b"
+    r"|scan\s+(?:the\s+)?qr|paise\s+bhej\w*|paisa\s+bhej\w*|pay\s+kar\w*"
+    r"|jama\s+(?:kar(?:o|ein|en|iye|na)\b|kar\s+(?:do|dein|den|dijiye|de)\b)"
     r"|pay\s+\[(?:otp|acct)\]"
-    r"|(?:send|deposit|bhej\w*)\b[^.!?\n]{0,30}\[(?:acct|card)\]"
+    r"|(?:send|bhej\w*)\b[^.!?\n]{0,30}\[(?:acct|card)\]"
     r"|(?:₹|rs\.?|inr|rupe\w*)\s*\d[\d,]*\s*(?:bhej\w*|भेज[ऀ-ॿ]*)"
     r"|\d[\d,]*\s*(?:rs|rupe\w*|रुपये?|रुपए)\s+(?:bhej\w*|भेज[ऀ-ॿ]*))"
     r"|(?:भेज|जमा)[ऀ-ॿ]*\s*(?:₹|रु\.?)?\s*\d[\d,]*\s*(?:रुपये?|रुपए)|खाता[^.!?\n]{0,20}\[acct\]|(?:भेज|जमा)[ऀ-ॿ]*[^.!?\n]{0,30}\[acct\]"
     r"|भुगतान|ट्रांसफर|पैसे\s*भेज" + _DEV + r"|रुपये?\s*भेज|जमा\s+कर" + _DEV)
+# "deposit" only as an ask: at clause start or after please/kindly/now/must/..., and never in the
+# notification forms ("Cash deposit of", "Deposit received:", "fixed deposit will mature").
+_DEPOSIT_ASK = _rx(
+    r"(?:^|[.!?\n,;:]\s*|\b(?:please|pls|plz|kindly|now|immediately|must|should|need\s+to|have\s+to"
+    r"|has\s+to|and|then)\s+)deposit\b"
+    r"(?!\s*(?::|-|of\b|received|credited|matured|maturity|amount\b|is\b|has\b|was\b|will\b|rate|"
+    r"interest|scheme|receipt|slip|details|account\s+(?:no|number|opened|statement)))")
 _CRED_EN = _rx(
     r"\b(?:share|send|enter|tell|give|provide|submit|confirm|read\s+out|reply\s+with|forward|update)\b"
     r"[^.!?\n]{0,40}?\b(?:otp|pin|password|passcode|cvv|card(?:\s+(?:number|details|no))?"
@@ -193,6 +201,31 @@ def _secrecy_spans(text: str, spans: list[tuple[int, int]]) -> list[tuple[int, i
             if _SECRECY_TOKEN.search(text[a:b]) and _CLAUSE_END.match(text, b)]
 
 
+# A bank OTP SMS often ends with a bare "Do not tell anyone." / "Kisi ko na batayein." /
+# "इसे किसी को न बताएं।". Such a sentence is a warning only when it is the WHOLE sentence (no
+# "about this call", "ki ...", "aur ...") and the message has an OTP and no other risk content.
+_PURE_SECRECY = re.compile(
+    r"(?:please\s+)?(?:do\s*n[o']?t|don'?t|dont|never)\s+(?:tell|disclose\s+(?:it|this)\s+to)\s+"
+    r"(?:(?:it|this)\s+to\s+)?(?:anyone|anybody|any\s*one|others)"
+    r"|(?:ise|isey|isse)?\s*kisi\s+(?:ko|se)\s+(?:bhi\s+)?(?:na|mat|nahi|nahin)\s+bata(?:yein|yen|ein|en|na|o|iye|ye)?"
+    r"|(?:इसे\s*)?किसी\s*(?:को|से)\s*(?:भी\s*)?(?:न|मत|नहीं)\s*बता(?:एं|एँ|ये|यें|ना|ओ|इए|इये)",
+    _I)
+_SIG_TAIL = re.compile(r"[\s।.!?]*(?:[-–—~]\s*[\w &]{1,30})?[\s।.!?]*$")
+# "share it with me" in an OTP message is an ask even though it names no credential
+_SHARE_BACK = _rx(r"\b(?:share|send|tell|give|forward|read)\s+(?:it|this|that)\s+(?:out\s+)?(?:with|to)\s+(?:me|us)\b"
+                  r"|\b(?:mujhe|hume|hamein)\s+(?:bata|bhej|share)\w*")
+_SECRECY_BLOCKERS = {"urgency", "authority_impersonation", "payment_request", "credential_or_otp_ask",
+                     "remote_access_ask", "injection_attempt"}
+
+
+def _pure_otp_warning(text: str, m: re.Match) -> bool:
+    start = max((x.end() for x in _SENT_END.finditer(text, 0, m.start())), default=0)
+    end = next((x.start() for x in _SENT_END.finditer(text, m.end())), len(text))
+    sent = text[start:end].strip()
+    p = _PURE_SECRECY.match(sent)
+    return bool(p and _SIG_TAIL.fullmatch(sent, p.end()))
+
+
 _REMOTE = _rx(
     r"\b(?:any\s*desk|team\s*viewer|quick\s*support|rust\s*desk|screen\s*shar\w*|\.apk|apk|install)\b"
     r"|एनीडेस्क|टीमव्यूअर|स्क्रीन\s*शेयर|इंस्टॉल")
@@ -206,17 +239,30 @@ _SECRECY = _rx(
 _AI_NOUN = r"(?:assistant|ai|bot|chatbot|llm|language\s+model|model|system)"
 _ROLE_WORD = (r"(?:manager|director|executive|professor|teacher|coach|officer|head|lead|supervisor|"
               r"trainer|engineer|developer|consultant|analyst|designer|trainee|intern)")
-_DOC_NOUN = r"(?:instructions?|prompts?|rules?|messages?|context|text|conversation|directions?|commands?)"
-_NOT_PREV = (r"(?!\s+(?:[\w']+\s+){0,2}?(?:owner|tenant|number|noise|year|bill|balance|address|email|one|"
-             r"time|times|message|messages)\b)")
-_NOT_PRIZE = (r"(?!(?:lucky|winner|eligible|selected|entitled|valued|verified|member|customer|premium|"
-              r"proud|part|subscriber|registered|beneficiary)\b)")
+# Instruction nouns: "ignore/disregard/forget/override ... <noun>" within ~4 words always fires.
+_INSTR_NOUN = (r"(?:instructions?|prompts?|rules|context|commands?|guidelines|directives?|system\s+prompt)"
+               r"\b|निर्देश")
+_IGNORE_NOUN = (r"\b(?:ignore|disregard|forget|override)\b(?:[\s,]+(?!(?:and|but)\b)[\w'-]+){0,4}?[\s,]+"
+                + _INSTR_NOUN)
+# Classification steering words; when one follows within ~6 words, ordinary-notice exclusions
+# ("ignore the previous message") no longer apply.
+_STEER = (r"(?:" + _INSTR_NOUN + r"|\b(?:classify|mark|safe|benign|tier|label|treat|say|respond|reply|"
+          r"legit\w*|not\s+(?:a\s+)?scam)\b)")
+# Ordinary "ignore the previous <thing>" notices. Only IMMEDIATELY after previous/prior/earlier/
+# above (no word skipping), and never when a steering word follows.
+_NOT_PREV = (r"(?!\s+(?:owner|tenant|number|noise|year|bill|balance|address|e-?mails?|mail|one|times?|"
+             r"messages?|reminders?|notices?|sms|alerts?|plans?|otps?|invoices?|statements?|notifications?|"
+             r"texts?|calls?|payments?)\b(?!(?:\W+[\w']+){0,6}?\W*" + _STEER + r"))")
+_PERSONA = (r"(?:jailbroken|unrestricted|uncensored|unfiltered|dan|developer\s+mode|god\s+mode|"
+            r"evil\s+(?:twin|mode)|" + _AI_NOUN + r")")
 _INJECTION = _rx(
-    r"\b(?:ignore|disregard|forget)\s+(?:(?:all|any|the|your|my|of|everything|everyone)\s+)*"
+    _IGNORE_NOUN +
+    r"|\b(?:ignore|disregard|forget|override)\s+(?:(?:all|any|the|your|my|of|everything|everyone)\s+)*"
     r"(?:previous|prior|above|earlier)\b" + _NOT_PREV +
     r"|\byou\s+are\s+(?:now\s+)?(?:a|an|the)\s+(?:[\w-]+\s+){0,3}?" + _AI_NOUN + r"\b(?!\s+" + _ROLE_WORD + r")"
-    r"|\byou\s+are\s+now\s+(?:(?:a|an|the)\s+" + _NOT_PRIZE + r"|free\b|unrestricted|jailbroken|dan\b"
-    r"|no\s+longer|my\b|acting|in\s+\w+(?:\s+\w+)?\s+mode)"
+    r"|\byou\s+are\s+now\s+(?:(?:a|an|the)\s+(?:[\w-]+\s+){0,2}?" + _PERSONA + r"\b"
+    r"|free\b|unrestricted|jailbroken|dan\b|no\s+longer|acting|in\s+\w+(?:\s+\w+)?\s+mode"
+    r"|my\s+(?:[\w-]+\s+)?(?:assistant|slave|servant|bot|ai|agent)\b)"
     r"|\bfrom\s+now\s+on,?\s+you\b|\bpretend\s+(?:this|it|that|you|to\s+be)\b"
     r"|\b(?:respond|answer|reply|output)\s+(?:with\s+)?(?:\{\s*)?\"?(?:tier|risk|label)\"?\s*[:=]?\s*\"?\w+"
     r"|\b(?:respond|answer|reply|output)\s+(?:with\s+)?\"?(?:safe|benign|info|low)\"?\s+(?:tier|risk|label|classification)\b"
@@ -308,7 +354,7 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
     elif m := _AUTHORITY.search(text):
         add("authority_impersonation", _ev(m))
 
-    payment = _PAYMENT.search(text)
+    payment = _PAYMENT.search(text) or _DEPOSIT_ASK.search(text)
     if payment:
         add("payment_request", _ev(payment))
 
@@ -328,6 +374,12 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
         add("remote_access_ask", _ev(remote))
 
     secrecy = _unwarned(_SECRECY, text, _secrecy_spans(text, spans))
+    if (secrecy and _OTP_WORD.search(text) and not {s.name for s in out} & _SECRECY_BLOCKERS
+            and not _SHARE_BACK.search(text) and not _LINK_WORD.search(text)
+            and not any(e.type in ("phone", "domain", "claim", "upi_id")
+                        for e in extract_entities(text, None, None))
+            and all(_pure_otp_warning(text, m) for m in _SECRECY.finditer(text))):
+        secrecy = None  # bare bank-OTP warning sentence, not a demand
     if secrecy:
         add("secrecy_demand", _ev(secrecy))
 
