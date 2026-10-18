@@ -8,7 +8,7 @@ cd backend
 docker compose up -d db
 export DATABASE_URL=postgresql+psycopg://sentinel:sentinel@localhost:5440/sentinel   # as in .env.example
 uv run python eval/generate_scenarios.py            # regenerate eval/scenarios (byte-identical, seeded)
-uv run python eval/run_eval.py                      # 120 scenarios x 3 modes, writes report.json/report.md
+uv run python eval/run_eval.py                      # 123 scenarios x 3 modes, writes report.json/report.md
 uv run python eval/run_eval.py --split tune --no-fail --out-dir /tmp/x   # tuning loop: tune split only
 uv run python eval/run_eval.py --holdout-only       # held-out split only
 uv run python eval/run_eval.py --llm live           # real Token Factory model (skips if no key)
@@ -50,21 +50,25 @@ user-week, on the holdout split AND overall), `2` invalid scenarios. `--no-fail`
 
 ## Scenarios: what they are and are not
 
-- 120 scenarios in `eval/scenarios/`: 40 scam timelines in nine categories (digital arrest,
+- 123 scenarios in `eval/scenarios/`: 43 scam timelines in ten categories (digital arrest,
   courier/customs, KYC/bank, UPI collect, job/task, electricity bill, remote access, sextortion,
-  investment group), single-message and multi-step slow-burn shapes; 80 benign user-weeks (bank OTPs
+  investment group, plus 3 `contact_name_spoof` scams added for R34 whose WhatsApp name looks like
+  a contact: "Mom", "Papa", "Bank Manager", without `is_contact`), single-message and multi-step slow-burn shapes; 80 benign user-weeks (bank OTPs
   and alerts, UPI confirmations, deliveries with links, family chat incl. money asks from contacts,
   salary/EMI, app OTPs, appointments, telecom, tax/EPFO, 2FA, legit KYC reminders, "you are now
   eligible" marketing, adversarial-benign messages full of scary words). English, Hindi (Devanagari)
   and Hinglish.
 - `triage_score` comes from a small label-blind keyword/link heuristic (`device_triage`), standing in
   for the app's on-device triage; it never sees the label.
-- Split: stratified by label and category, seeded, 27 + 55 `tune` / 13 + 25 `holdout`. Rules tuning
+- Saved-contact messages carry `is_contact: true` (the client-checked `EventIn` flag); a display
+  name alone never makes a sender a contact.
+- Split: stratified by label and category, seeded, 29 + 55 `tune` / 14 + 25 `holdout` (the 3 R34
+  scams use their own RNG and split stream, so no earlier scenario changed split). Rules tuning
   looked at tune-split results only (`--split tune`); holdout was run once after tuning.
 
 ### Honesty statement
 
-- **All 120 scenarios are synthetic** (`source: "synthetic"`), produced by a seeded template generator
+- **All 123 scenarios are synthetic** (`source: "synthetic"`), produced by a seeded template generator
   because no LLM key was available. They were written by the same team / agent that tuned the rules,
   with knowledge of how the rules work. **Reported numbers are therefore optimistic** and say little
   about real-world recall or false-alarm rates. Real traffic is messier: more variety in phrasing,
