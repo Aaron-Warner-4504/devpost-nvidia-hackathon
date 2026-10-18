@@ -177,8 +177,11 @@ def extract_entities(text: str | None, sender: str | None, call: CallMeta | None
     for m in _DOMAIN.finditer(scan):
         if m.group(2).lower() not in _TLDS:
             continue
-        # bare (scheme-less) domains need a lowercase TLD, to avoid "done.Click"
-        if not m.group(2).islower() and scan[max(0, m.start(1) - 3):m.start(1)] != "://":
+        # bare (scheme-less) domains skip Title/mixed-case TLDs (not lower/UPPER) unless followed by /path, to avoid "done.Click"
+        tld = m.group(2)
+        if (not tld.islower() and not tld.isupper()
+                and scan[max(0, m.start(1) - 3):m.start(1)] != "://"
+                and scan[m.end(1):m.end(1) + 1] != "/"):
             continue
         host = m.group(1).lower()
         if host.startswith("www."):

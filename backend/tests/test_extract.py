@@ -119,3 +119,13 @@ def test_bare_domain_needs_lowercase_tld():
     ents = extract_entities("done.Click http://x.com", None, None)
     assert types(ents, "domain") == ["x.com"]
     assert types(extract_entities("https://Bit.ly/AbC", None, None), "domain") == ["bit.ly"]
+
+
+def test_uppercase_domains_not_bypassed():
+    assert types(extract_entities("SBI-KYC.COM", None, None), "domain") == ["sbi-kyc.com"]
+    ents = extract_entities("BIT.LY/abc", None, None)
+    assert types(ents, "domain") == ["bit.ly"] and types(ents, "claim") == ["shortener_link"]
+    assert types(extract_entities("Visit HDFC-KYC.IN now", None, None), "domain") == ["hdfc-kyc.in"]
+    assert types(extract_entities("done.Click", None, None), "domain") == []
+    assert types(extract_entities("Bit.ly/x", None, None), "domain") == ["bit.ly"]
+    assert types(extract_entities("Bit.Ly/x", None, None), "domain") == ["bit.ly"]
