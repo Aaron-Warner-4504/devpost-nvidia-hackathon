@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from email.utils import getaddresses
 from decimal import Decimal, InvalidOperation
 
 from app.pipeline.extract import Entity, extract_entities
@@ -80,6 +81,8 @@ class HistoryCtx:
     related: dict[Entity, list[Entity]] = field(default_factory=dict)
     sender_seen_before: bool = False
     domain_info: dict[str, DomainInfo] | None = None
+    # True only if the caller verified the email sender (SPF/DKIM/DMARC); From: is spoofable
+    sender_authenticated: bool = False
 
     @classmethod
     def empty(cls, now: datetime) -> "HistoryCtx":
@@ -109,12 +112,19 @@ _PAYMENT = _rx(
     r"\b(?:collect\s+request|payment\s+request|pay\s*(?:₹|rs\.?|inr|rupees)"
     r"|pay\s+\d|pay\s+(?:the\s+|a\s+)?(?:fee|fine|amount|charges?|penalty|duty|deposit)|pay\s+now"
     r"|transfer|send\s+(?:me\s+)?(?:money|₹|rs\.?)|approve\s+(?:the\s+)?(?:request|collect)"
-    r"|scan\s+(?:the\s+)?qr|paise\s+bhej\w*|paisa\s+bhej\w*|pay\s+kar\w*)"
+    r"|scan\s+(?:the\s+)?qr|paise\s+bhej\w*|paisa\s+bhej\w*|pay\s+kar\w*|deposit\b"
+    r"|pay\s+\[(?:otp|acct)\]"
+    r"|(?:send|deposit|bhej\w*)\b[^.!?\n]{0,30}\[(?:acct|card)\]"
+    r"|(?:₹|rs\.?|inr|rupe\w*)\s*\d[\d,]*\s*(?:bhej\w*|भेज[ऀ-ॿ]*)"
+    r"|\d[\d,]*\s*(?:rs|rupe\w*|रुपये?|रुपए)\s+(?:bhej\w*|भेज[ऀ-ॿ]*))"
+    r"|(?:भेज|जमा)[ऀ-ॿ]*\s*(?:₹|रु\.?)?\s*\d[\d,]*\s*(?:रुपये?|रुपए)|खाता[^.!?\n]{0,20}\[acct\]|(?:भेज|जमा)[ऀ-ॿ]*[^.!?\n]{0,30}\[acct\]"
     r"|भुगतान|ट्रांसफर|पैसे\s*भेज" + _DEV + r"|रुपये?\s*भेज|जमा\s+कर" + _DEV)
 _CRED_EN = _rx(
     r"\b(?:share|send|enter|tell|give|provide|submit|confirm|read\s+out|reply\s+with|forward|update)\b"
     r"[^.!?\n]{0,40}?\b(?:otp|pin|password|passcode|cvv|card(?:\s+(?:number|details|no))?"
     r"|aadhaar|aadhar|pan|mpin)\b"
+    r"|\b(?:share|send|enter|tell|give|provide|submit|confirm|read\s+out|reply\s+with|forward|update)\b"
+    r"[^.!?\n]{0,40}?(?:\[(?:otp|card|aadhaar|pan)\]|\bcode\s*(?:\d{4,8}|\[otp\]))"
     r"|\b(?:otp|pin|password|cvv|aadhaar|aadhar|pan)\b[^.!?\n]{0,20}\b(?:required|needed|share|send)\b")
 _CRED_HI = re.compile(
     r"(?:ओटीपी|पिन|पासवर्ड|सीवीवी|आधार|पैन|कार्ड|एटीएम)[^।.!?\n]{0,30}"
@@ -143,8 +153,26 @@ _WARN = re.compile(
     _I)
 
 
+_COND_BEFORE = re.compile(
+    r"\b(?:if|agar|warna|varna|otherwise|in\s+case|nahi\s+to|nahin\s+to|yadi)\b|अगर|यदि|वरना|नहीं\s+तो", _I)
+_THREAT_AFTER = re.compile(
+    r"\b(?:then|toh|else|otherwise|block(?:ed)?|band|suspend\w*|freez\w*|frozen|arrest\w*|deactivat\w*)\b"
+    r"|तो|वरना|बंद|ब्लॉक|फ्रीज|गिरफ्तार", _I)
+_SENT_END = re.compile(r"[.!?\n।]")
+
+
+def _coercive(text: str, a: int, b: int) -> bool:
+    """A warning inside a conditional/threat ("if you don't share OTP your account is blocked")
+    is a demand, not a bank warning."""
+    start = max((m.end() for m in _SENT_END.finditer(text, 0, a)), default=0)
+    end = next((m.start() for m in _SENT_END.finditer(text, b)), len(text))
+    after = " ".join(text[b:end].split()[:6])
+    return bool(_COND_BEFORE.search(text[start:a]) or _THREAT_AFTER.search(after))
+
+
 def _unwarned(rx: re.Pattern, text: str, spans: list[tuple[int, int]]) -> re.Match | None:
-    """First match of `rx` not lying entirely inside a warning span."""
+    """First match of `rx` not lying entirely inside a (non-coercive) warning span."""
+    spans = [(a, b) for a, b in spans if not _coercive(text, a, b)]
     pos = 0
     while (m := rx.search(text, pos)):
         if not any(a <= m.start() and m.end() <= b for a, b in spans):
@@ -187,6 +215,23 @@ _OTP_WORD = _rx(r"\botp\b|one[\s-]?time\s+pass|ओटीपी")
 _BANK_HEADER = re.compile(
     r"^(?:[A-Z]{2}-)?(?:HDFCBK|HDFCBN|SBIINB|SBIPSG|SBICRD|SBIBNK|ICICIB|ICICIT|AXISBK|KOTAKB|"
     r"PNBSMS|BOBSMS|CANBNK|IDFCFB|YESBNK|INDBNK)(?:-[A-Z])?$")
+
+
+_DOMAIN_OK = re.compile(r"^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$")
+
+
+def _email_domain(sender: str | None) -> str | None:
+    """Domain of a single well-formed addr-spec, else None."""
+    if not sender:
+        return None
+    addrs = getaddresses([sender])
+    if len(addrs) != 1:
+        return None
+    addr = addrs[0][1].strip()
+    if addr.count("@") != 1 or any(c in addr for c in " ,;<>\"()"):
+        return None
+    dom = addr.split("@", 1)[1].lower()
+    return dom if _DOMAIN_OK.match(dom) else None
 
 
 def _ev(m: re.Match | str) -> str:
@@ -283,8 +328,10 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
     # only entities identifying the actual originator may earn safe discounts; entities merely
     # named in the body must not (an attacker could name a user-safe number).
     origin = set(extract_entities(None, event.sender, event.call))
-    if event.source == "email" and event.sender and "@" in event.sender:
-        origin.add(Entity("domain", event.sender.rsplit("@", 1)[1].strip().lower().rstrip(">")))
+    if event.source == "email" and history_ctx.sender_authenticated:
+        dom = _email_domain(event.sender)
+        if dom:
+            origin.add(Entity("domain", dom))
     safe_sender = sorted((e for e in origin if e in safe and e.type in ("phone", "domain")),
                          key=lambda x: (x.type, x.canonical))
     if event.call is not None:

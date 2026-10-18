@@ -297,11 +297,12 @@ def test_safe_override_ignores_entities_named_in_body():
     sigs, _ = run(ev(None, source="call", call=call), overrides=ov)
     assert "user_marked_safe" in names(sigs)
     dom = Entity("domain", "good.com")
-    sigs, _ = run(ev("hello", source="email", sender="a@good.com"),
-                  overrides=Overrides(safe=frozenset({dom})))
+    auth = HistoryCtx(now=NOW, sender_authenticated=True)
+    sigs, _ = run(ev("hello", source="email", sender="a@good.com"), auth,
+                  Overrides(safe=frozenset({dom})))
     assert "user_marked_safe" in names(sigs)
-    sigs, _ = run(ev("visit good.com", source="email", sender="a@evil.xyz"),
-                  overrides=Overrides(safe=frozenset({dom})))
+    sigs, _ = run(ev("visit good.com", source="email", sender="a@evil.xyz"), auth,
+                  Overrides(safe=frozenset({dom})))
     assert "user_marked_safe" not in names(sigs)
     bad = Overrides(known_bad=frozenset({phone}))  # known_bad may match body entities
     assert "known_bad_entity" in names(run(ev(f"call {SCAMMER}", sender="+919000000001"),
@@ -394,3 +395,88 @@ def test_evidence_placeholders_balanced():
     for t in probes:
         for s in run(ev(t, sender="+919811122233"))[0]:
             assert s.evidence.count("[") == s.evidence.count("]"), s
+
+
+# ---------------------------------------------------------------- fix round 3
+import app.pipeline.signals as _sig  # noqa: E402
+
+
+def test_email_domain_not_originator_unless_authenticated():
+    dom = Entity("domain", "good.com")
+    ov = Overrides(safe=frozenset({dom}))
+    e = ev("hello", source="email", sender='"Bank" <x@good.com>')
+    sigs, _ = run(e, overrides=ov)
+    assert "user_marked_safe" not in names(sigs)
+    ctx = HistoryCtx(now=NOW, sender_authenticated=True)
+    sigs, _ = run(e, ctx, ov)
+    assert "user_marked_safe" in names(sigs)
+    for bad in ("x@good.com, y@evil.com", "a@b@good.com", "<x@good.com> <y@evil.xyz>"):
+        sigs, _ = run(ev("hello", source="email", sender=bad), ctx, ov)
+        assert "user_marked_safe" not in names(sigs), bad
+    # phones remain originators regardless
+    phone = Entity("phone", SCAMMER)
+    sigs, _ = run(ev("hi", sender=SCAMMER), overrides=Overrides(safe=frozenset({phone})))
+    assert "user_marked_safe" in names(sigs)
+
+
+@pytest.mark.parametrize("text,fires", [
+    ("If you don't share OTP your account will be blocked", True),
+    ("Agar OTP share nahi kiya toh account band ho jayega", True),
+    ("Do not share OTP otherwise your account is blocked", True),
+    ("Do not share OTP with anyone", False),
+    ("Your OTP is 123456. Do not share it with anyone. -SBI", False),
+    ("ओटीपी किसी के साथ साझा न करें", False),
+    ("otp kisi se share na karein", False),
+    ("ओटीपी किसी को न बताएं वरना खाता बंद", True),
+])
+def test_conditional_warning_is_coercive(text, fires):
+    sigs, _ = run(ev(text, sender="x"))
+    assert ("credential_or_otp_ask" in names(sigs) or "secrecy_demand" in names(sigs)) is fires
+
+
+def test_conditional_secrecy_fires():
+    sigs, _ = run(ev("OTP kisi ko na batayein warna arrest ho jayega", sender="x"))
+    assert "secrecy_demand" in names(sigs)
+
+
+@pytest.mark.parametrize("text", [
+    "transfer 5000 to a/c 123456789012", "pay 482913 rupees now",
+    "send your aadhaar 1234 5678 9012 and PAN ABCDE1234F",
+    "deposit in account 123456789012345678 immediately", "pin 4321 bhejo",
+    "अपना आधार 1234 5678 9012 और पैन ABCDE1234F भेजें", "आधार नंबर 1234 5678 9012 बताएं",
+    "enter your card 4111 1111 1111 1111 and cvv 123", "tell me the code 482913",
+    "send otp 482913 to verify immediately", "ट्रांसफर करें खाता 123456789012 में तुरंत",
+    "account 123456789012 mein paise bhejo", "share OTP 482913 and pin 4321",
+    "Rs 5000 bhejo abhi", "भेजो 5000 रुपये", "send money to 9876543210 UPI collect request",
+    "CBI officer: pay Rs 50,000 fine, don't tell anyone",
+    "Share your OTP 123456 or account blocked immediately",
+])
+def test_raw_vs_redacted_signal_names_equal(text, monkeypatch):
+    e = ev(text, sender="+919811122233")
+    ents = extract_entities(text, e.sender, None)
+    ctx = HistoryCtx.empty(NOW)
+    with_redact = names(detect_signals(e, ents, ctx))
+    monkeypatch.setattr(_sig, "redact", lambda x: x)
+    raw = names(detect_signals(e, ents, ctx))
+    assert raw == with_redact, (raw ^ with_redact)
+    assert with_redact - {"unknown_sender"}
+
+
+@pytest.mark.parametrize("text,sig", [
+    ("deposit in account 123456789012345678 immediately", "payment_request"),
+    ("transfer 5000 to a/c 123456789012", "payment_request"),
+    ("account 123456789012 mein paise bhejo", "payment_request"),
+    ("Rs 5000 bhejo abhi", "payment_request"),
+    ("send your aadhaar 1234 5678 9012 and PAN ABCDE1234F", "credential_or_otp_ask"),
+    ("pin 4321 bhejo", "credential_or_otp_ask"),
+    ("tell me the code 482913", "credential_or_otp_ask"),
+    ("enter your card 4111 1111 1111 1111", "credential_or_otp_ask"),
+    ("आधार नंबर 1234 5678 9012 बताएं", "credential_or_otp_ask"),
+])
+def test_redacted_detection_fires(text, sig):
+    assert sig in names(run(ev(text, sender="+919811122233"))[0])
+
+
+def test_deposited_credit_alert_not_payment_request():
+    assert "payment_request" not in names(
+        run(ev("Rs 5000 deposited in your account", sender="VM-HDFCBK"))[0])
