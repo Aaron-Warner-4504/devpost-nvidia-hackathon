@@ -1,11 +1,13 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from app import ratelimit
 from app.auth import current_user, hash_token, new_token
+from app.config import settings
 from app.db import get_session
 from app.models import Consent, Device, User
 from app.schemas import DeviceRegistered, Source
@@ -24,7 +26,11 @@ def _consents(session: Session, user_id: str) -> dict[str, bool]:
 
 
 @router.post("/v1/devices/register", response_model=DeviceRegistered)
-def register_device(session: Session = Depends(get_session)):
+def register_device(request: Request, session: Session = Depends(get_session)):
+    """Unauthenticated: limited to REGISTER_PER_IP_PER_HOUR per client IP (429), which also bounds how many
+    accounts one source can create to spread pairing-code guesses."""
+    ratelimit.hit(session, "register", ratelimit.client_ip(request), limit=settings.register_per_ip_per_hour,
+                  window=timedelta(hours=1))
     token = new_token()
     user = User()
     session.add(user)

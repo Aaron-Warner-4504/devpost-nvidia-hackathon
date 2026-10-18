@@ -34,6 +34,8 @@ Request: empty body. Response 200:
 ```json
 {"device_id": "dev_123", "token": "example-token"}
 ```
+At most 20 registrations per client IP per rolling hour; beyond that `429 {"detail": "too many requests, try
+again later"}`. Register once per install and keep the token.
 
 ## POST /v1/events
 Ingest a device event; the server triages and may return an alert. `duplicate: true` if `device_event_id` was already seen.
@@ -153,7 +155,11 @@ Response 200: `{"id": "fam_123", "protected_name": null}` (`id` is the link id; 
 protected user is returned). Codes are case-insensitive. Errors:
 - `404 {"detail": "invalid or expired code"}` for a wrong, expired, already used, or your own code (all
   identical).
-- `429 {"detail": "too many attempts, try again later"}` after 10 failed attempts by this user in an hour.
+- `429 {"detail": "too many attempts, try again later"}` after 10 failed attempts by this user in an hour,
+  or while the server is seeing too many failed attempts overall (pairing pauses for everyone; retry later,
+  the code is not used up).
+- `409 {"detail": "guardian limit reached"}` when the protected user already has 5 guardians. The code is
+  not used up: once a guardian is removed, the same code can be redeemed while it is still valid.
 
 `POST /v1/family/contacts` is the same operation (same request, response and errors).
 

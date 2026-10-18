@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app import family
 from app.auth import current_user
+from app.config import settings
 from app.db import get_session
 from app.models import FamilyAcceptFailure, FamilyInvite, TrustedContact, User, _id
 from app.schemas import (FamilyAccept, FamilyContactsOut, FamilyInviteIn, FamilyInviteOut, FamilyLinkOut,
@@ -57,9 +58,16 @@ def _accept(body: FamilyAccept, user: User, db: Session) -> FamilyLinkOut:
     family.lock(db, f"family-accept:{user.id}")
     db.execute(delete(FamilyAcceptFailure).where(FamilyAcceptFailure.user_id == user.id,
                                                  FamilyAcceptFailure.created_at <= now - family.RATE_WINDOW))
+    # NOTE: a successful accept deliberately does NOT clear this guardian's failure rows: an attacker could
+    # otherwise reset their counter by redeeming invites they create themselves between guesses.
     fails = db.scalar(select(func.count()).select_from(FamilyAcceptFailure).where(
         FamilyAcceptFailure.user_id == user.id)) or 0
-    if fails >= family.MAX_ACCEPT_FAILURES:
+    # Global cap (all users): bounds guessing spread over many accounts. Deliberate DoS-vs-brute-force
+    # trade-off: while the cap is hit, legitimate pairing pauses too (codes are not consumed; retry later).
+    # Registration is rate-limited per IP, which limits how cheaply an attacker can trip it.
+    global_fails = db.scalar(select(func.count()).select_from(FamilyAcceptFailure).where(
+        FamilyAcceptFailure.created_at > now - family.RATE_WINDOW)) or 0
+    if fails >= family.MAX_ACCEPT_FAILURES or global_fails >= settings.family_global_accept_failures_per_hour:
         db.commit()
         raise HTTPException(status_code=429, detail="too many attempts, try again later")
     code = family.normalize_code(body.code)
@@ -80,6 +88,14 @@ def _accept(body: FamilyAccept, user: User, db: Session) -> FamilyLinkOut:
         db.add(FamilyAcceptFailure(user_id=user.id, created_at=now))
         db.commit()
         raise HTTPException(status_code=404, detail=INVALID_CODE)
+    # guardian cap: checked after the claim (only now is the protected user known) under a per-protected-
+    # user lock; on refusal the claim is rolled back so the invite stays valid (and it is not a failure)
+    family.lock(db, f"family-links:{row.user_id}")
+    others = db.scalar(select(func.count()).select_from(TrustedContact).where(
+        TrustedContact.protected_user_id == row.user_id, TrustedContact.guardian_user_id != user.id)) or 0
+    if others >= family.MAX_GUARDIANS:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="guardian limit reached")
     link_id = db.scalar(
         insert(TrustedContact)
         .values(id=_new_link_id(), protected_user_id=row.user_id, guardian_user_id=user.id, name=body.name,
@@ -94,7 +110,8 @@ def _accept(body: FamilyAccept, user: User, db: Session) -> FamilyLinkOut:
 
 _ACCEPT_DOC = """Guardian (authenticated as THEIR OWN app user): redeem a pairing code. Wrong, expired, used
 or own codes all give the same `404 {"detail": "invalid or expired code"}`; after 10 failures in an hour
-the caller gets 429. Returns only the link id."""
+by the caller, or too many failures server-wide, 429. 409 when the protected user already has 5
+guardians (the code stays valid). Returns only the link id."""
 
 
 @router.post("/v1/family/accept", response_model=FamilyLinkOut, description=_ACCEPT_DOC)

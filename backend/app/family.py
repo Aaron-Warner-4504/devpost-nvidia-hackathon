@@ -169,6 +169,11 @@ CODE_LEN = 6
 INVITE_TTL = timedelta(minutes=10)
 MAX_INVITES_PER_HOUR = 5
 MAX_ACCEPT_FAILURES = 10  # per guardian user per rolling hour, then 429
+# Global cap: settings.family_global_accept_failures_per_hour failures across ALL users per rolling hour,
+# then every accept gets 429 (bounds sybil guessing; see routes/family.py).
+MAX_GUARDIANS = 5  # per protected user
+MIN_PEPPER_LEN = 16
+DEV_ENVIRONMENTS = frozenset({"dev", "test"})
 RATE_WINDOW = timedelta(hours=1)
 _DEV_PEPPER = "sentinel-dev-family-pepper"  # used only when FAMILY_CODE_PEPPER is unset
 _pepper_warned = False
@@ -191,10 +196,21 @@ def code_hash(code: str) -> str:
     pepper = settings.family_code_pepper
     if not pepper:
         if not _pepper_warned:
-            log.warning("FAMILY_CODE_PEPPER unset: using the development pepper")
+            if settings.environment in DEV_ENVIRONMENTS:
+                log.warning("FAMILY_CODE_PEPPER unset: using the development pepper")
+            else:
+                log.error("FAMILY_CODE_PEPPER unset in environment %r: using the development pepper; "
+                          "pairing-code hashes are not protected", settings.environment)
             _pepper_warned = True
         pepper = _DEV_PEPPER
     return hmac.new(pepper.encode(), code.encode(), hashlib.sha256).hexdigest()
+
+
+def check_pepper() -> None:
+    """Startup check: in prod a missing or short FAMILY_CODE_PEPPER is fatal (a leaked invites table
+    could otherwise be brute-forced offline into live pairing codes)."""
+    if settings.environment == "prod" and len(settings.family_code_pepper or "") < MIN_PEPPER_LEN:
+        raise RuntimeError(f"FAMILY_CODE_PEPPER must be set (>= {MIN_PEPPER_LEN} chars) when ENVIRONMENT=prod")
 
 
 def lock(db: Session, key: str) -> None:

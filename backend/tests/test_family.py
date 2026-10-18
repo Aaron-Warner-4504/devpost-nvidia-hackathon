@@ -513,3 +513,76 @@ def test_delete_me_removes_links_for_either_role(client, users, db, who):
     survivor = g if who == "protected" else p
     assert client.get("/v1/family/contacts", headers=survivor).json() == {"guardians": [], "protecting": []}
     assert db.scalar(select(func.count()).select_from(FamilyAcceptFailure)) == (1 if who == "protected" else 0)
+
+
+# ---------------------------------------------------------------- fix round 1: global cap, guardian cap, pepper
+def test_global_failed_accept_cap_across_accounts(client, users, db, monkeypatch):
+    """Failures spread over many accounts (each far below the per-guardian limit) trip the global cap."""
+    monkeypatch.setattr(settings, "family_global_accept_failures_per_hour", 6)
+    _, p = users()
+    for _ in range(3):
+        _, g = users()
+        for _ in range(2):
+            assert accept(client, g, "ABCDEF").status_code == 404
+    code = invite(client, p)["code"]
+    _, fresh = users()
+    r = accept(client, fresh, code)  # never failed itself, valid code: still paused
+    assert r.status_code == 429 and r.json() == {"detail": "too many attempts, try again later"}
+    assert db.scalar(select(FamilyInvite.used_at)) is None  # not consumed
+    later = datetime.now(timezone.utc) + timedelta(hours=1, minutes=1)
+    monkeypatch.setattr(family, "utcnow", lambda: later)
+    assert accept(client, fresh, "ABCDEF").status_code == 404  # window rolled over
+
+
+def test_global_cap_default_is_300():
+    from app.config import Settings
+    assert Settings(database_url="postgresql://x/y").family_global_accept_failures_per_hour == 300
+
+
+def test_guardian_cap_five_per_protected_user(client, users, db, monkeypatch):
+    _, p = users()
+    guardians = [users()[1] for _ in range(family.MAX_GUARDIANS)]
+    for i, g in enumerate(guardians):
+        pair(client, p, g, token=f"tok-{i}")
+    later = datetime.now(timezone.utc) + timedelta(hours=1, minutes=1)  # past the 5 invites/hour limit
+    monkeypatch.setattr(family, "utcnow", lambda: later)
+    _, sixth = users()
+    code = invite(client, p)["code"]
+    r = accept(client, sixth, code)
+    assert r.status_code == 409 and r.json() == {"detail": "guardian limit reached"}
+    db.expire_all()
+    assert db.scalar(select(func.count()).select_from(TrustedContact)) == family.MAX_GUARDIANS
+    assert db.scalar(select(func.count()).select_from(FamilyAcceptFailure)) == 0  # not a failed guess
+    # after one guardian unlinks, the SAME code still works: the refused accept did not consume it
+    link = client.get("/v1/family/contacts", headers=p).json()["guardians"][1]["id"]
+    assert client.delete(f"/v1/family/contacts/{link}", headers=p).status_code == 204
+    assert accept(client, sixth, code).status_code == 200
+    # an existing guardian re-pairing at the cap is not blocked
+    assert pair(client, p, guardians[0], token="tok-new")
+    assert db.scalar(select(func.count()).select_from(TrustedContact)) == family.MAX_GUARDIANS
+
+
+@pytest.mark.parametrize("pepper", ["", "short-pepper"])
+def test_prod_without_strong_pepper_fails_at_startup(monkeypatch, pepper):
+    monkeypatch.setattr(settings, "environment", "prod")
+    monkeypatch.setattr(settings, "family_code_pepper", pepper)
+    with pytest.raises(RuntimeError, match="FAMILY_CODE_PEPPER"):
+        with TestClient(app):
+            pass
+    assert family.family_alert_hook not in orchestrator.alert_hooks
+
+
+def test_prod_with_pepper_starts(monkeypatch):
+    monkeypatch.setattr(settings, "environment", "prod")
+    monkeypatch.setattr(settings, "family_code_pepper", "p" * 32)
+    with TestClient(app) as c:
+        assert c.get("/health").status_code == 200
+
+
+def test_missing_pepper_outside_dev_logs_error(monkeypatch, caplog):
+    monkeypatch.setattr(settings, "environment", "staging")
+    monkeypatch.setattr(settings, "family_code_pepper", "")
+    monkeypatch.setattr(family, "_pepper_warned", False)
+    with caplog.at_level("ERROR", logger="app.family"):
+        family.code_hash("ABCDEF")
+    assert any(r.levelname == "ERROR" and "FAMILY_CODE_PEPPER" in r.getMessage() for r in caplog.records)

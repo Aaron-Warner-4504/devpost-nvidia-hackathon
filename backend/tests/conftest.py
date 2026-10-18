@@ -9,6 +9,7 @@ import os
 os.environ.setdefault(
     "DATABASE_URL", "postgresql+psycopg://sentinel:sentinel@127.0.0.1:5440/sentinel"
 )
+os.environ["ENVIRONMENT"] = "test"
 
 import pytest  # noqa: E402
 from alembic import command  # noqa: E402
@@ -100,7 +101,12 @@ def client(test_engine):
     # tests never reach Token Factory, RDAP or the web: override per test for scripted behaviour
     app.dependency_overrides[get_llm] = DownLLM
     app.dependency_overrides[get_pipeline_deps] = offline_deps
+    # tests register many users from the single TestClient address; tests of the limit set it explicitly
+    from app.config import settings
+    saved = settings.register_per_ip_per_hour
+    settings.register_per_ip_per_hour = 100_000
     yield TestClient(app)
+    settings.register_per_ip_per_hour = saved
     app.dependency_overrides.clear()
 
 

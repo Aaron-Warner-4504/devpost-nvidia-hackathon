@@ -12,6 +12,7 @@ from app.routes import family as family_routes
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    family.check_pepper()  # fail fast in prod without a pairing-code pepper
     # alert hooks are registered at startup (not import time) so tests can inject their own
     orchestrator.register_alert_hook(family.family_alert_hook)
     try:

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import (Boolean, CheckConstraint, DateTime, Float, ForeignKey,
+from sqlalchemy import (Boolean, CheckConstraint, DateTime, Float, ForeignKey, Index,
                         String, Text, UniqueConstraint, func)
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -155,7 +155,7 @@ class FamilyAcceptFailure(Base):
     __tablename__ = "family_accept_failures"
     id: Mapped[str] = _pk("faf")
     user_id: Mapped[str] = _uid()
-    created_at: Mapped[datetime] = _now()
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
 
 class FamilyPing(Base):
@@ -197,3 +197,14 @@ class EventEntity(Base):
         String, ForeignKey("events.id", ondelete="CASCADE"), primary_key=True)
     entity_id: Mapped[str] = mapped_column(
         String, ForeignKey("entities.id", ondelete="CASCADE"), primary_key=True, index=True)
+
+
+class RateLimitEvent(Base):
+    """Pre-auth rate-limit counter rows (e.g. device registration per client IP). Holds no user data:
+    `key` is a hash of the client IP; rows older than 24 h are purged on the write path."""
+    __tablename__ = "rate_limit_events"
+    __table_args__ = (Index("ix_rate_limit_events_kind_key_created", "kind", "key", "created_at"),)
+    id: Mapped[str] = _pk("rle")
+    kind: Mapped[str] = mapped_column(String)
+    key: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

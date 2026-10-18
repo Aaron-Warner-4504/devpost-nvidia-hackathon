@@ -26,11 +26,20 @@ def counts(db, user_id):
     return out
 
 
+# Tables that hold no user data and need no cascade. Each entry must justify itself.
+NOT_USER_OWNED = {
+    "rate_limit_events",  # pre-auth counters keyed by a sha256 of the client IP; purged after 24 h
+}
+
+
 def test_every_table_is_owned_by_a_user():
-    """A new table must reference users (so DELETE /v1/me cascades to it) or be listed here."""
+    """A new table must reference users (so DELETE /v1/me cascades to it) or be listed above."""
     owned = {t.name for t, _ in user_columns()}
     for t in Base.metadata.sorted_tables:
-        assert t.name == "users" or t.name in owned, t.name
+        assert t.name == "users" or t.name in owned or t.name in NOT_USER_OWNED, t.name
+    for name in NOT_USER_OWNED:  # exempt tables must really have no user-identifying columns
+        cols = {c.name for c in Base.metadata.tables[name].c}
+        assert not cols & {"user_id", "device_id", "phone", "ip", "token"}, (name, cols)
     for t, c in user_columns():
         assert all(fk.ondelete == "CASCADE" for fk in c.foreign_keys), (t.name, c.name)
 
@@ -143,3 +152,57 @@ def test_events_unique_per_user(db, register, client):
                      ts=datetime.now(timezone.utc), redacted_text="x", hash="h"))
     with pytest.raises(IntegrityError):
         db.commit()
+
+
+# ---------------------------------------------------------------- registration rate limit (per client IP)
+def _client_from(ip):
+    from fastapi.testclient import TestClient
+    from app.main import app
+    return TestClient(app, client=(ip, 5000))
+
+
+def test_register_rate_limited_per_ip(client, monkeypatch, db):
+    from app.config import settings
+    from app.models import RateLimitEvent
+    monkeypatch.setattr(settings, "register_per_ip_per_hour", 20)
+    a = _client_from("203.0.113.7")
+    for _ in range(20):
+        assert a.post("/v1/devices/register").status_code == 200
+    r = a.post("/v1/devices/register")
+    assert r.status_code == 429 and r.json() == {"detail": "too many requests, try again later"}
+    assert _client_from("203.0.113.8").post("/v1/devices/register").status_code == 200  # other IP fine
+    # the raw IP is never stored
+    keys = db.scalars(select(RateLimitEvent.key)).all()
+    assert keys and not any("203.0.113" in k for k in keys)
+
+
+def test_register_ignores_forwarded_for_unless_trusted(client, monkeypatch):
+    from app.config import settings
+    monkeypatch.setattr(settings, "register_per_ip_per_hour", 2)
+    a = _client_from("10.0.0.1")
+    for i in range(2):
+        assert a.post("/v1/devices/register", headers={"X-Forwarded-For": f"198.51.100.{i}"}).status_code == 200
+    # spoofed XFF does not help when proxy headers are not trusted
+    assert a.post("/v1/devices/register", headers={"X-Forwarded-For": "198.51.100.99"}).status_code == 429
+    monkeypatch.setattr(settings, "trust_proxy_headers", True)
+    assert a.post("/v1/devices/register", headers={"X-Forwarded-For": "198.51.100.99, 10.0.0.1"}).status_code == 200
+
+
+def test_register_window_and_cleanup(client, monkeypatch, db):
+    from datetime import datetime, timedelta, timezone
+    from app import ratelimit
+    from app.config import settings
+    from app.models import RateLimitEvent
+    monkeypatch.setattr(settings, "register_per_ip_per_hour", 1)
+    a = _client_from("203.0.113.9")
+    t0 = datetime.now(timezone.utc)
+    monkeypatch.setattr(ratelimit, "utcnow", lambda: t0)
+    assert a.post("/v1/devices/register").status_code == 200
+    assert a.post("/v1/devices/register").status_code == 429
+    monkeypatch.setattr(ratelimit, "utcnow", lambda: t0 + timedelta(hours=1, seconds=1))
+    assert a.post("/v1/devices/register").status_code == 200
+    monkeypatch.setattr(ratelimit, "utcnow", lambda: t0 + timedelta(hours=25))
+    assert a.post("/v1/devices/register").status_code == 200
+    db.expire_all()
+    ts = db.scalars(select(RateLimitEvent.created_at)).all()
+    assert all(t > t0 + timedelta(hours=1) for t in ts), ts  # rows older than 24h were purged
