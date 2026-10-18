@@ -1,0 +1,101 @@
+{
+  "id": "benign-bank-txn-alerts-02",
+  "label": "benign",
+  "category": "bank_txn_alerts",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_bank_txn",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-bank-txn-alerts-02-e00",
+      "source": "sms",
+      "ts": "2026-04-17T12:20:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "आपके एचडीएफसी बैंक खाते XX2024 से ₹1,222 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹81,974। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-02-e01",
+      "source": "sms",
+      "ts": "2026-04-17T14:47:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "आपके खाते XX0315 में ₹10,153 जमा कर दिए गए हैं। UPI संदर्भ 251247405370। - एचडीएफसी बैंक",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-02-e02",
+      "source": "sms",
+      "ts": "2026-04-19T07:37:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "आपके एचडीएफसी बैंक खाते XX1456 से ₹3,868 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹61,923। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-02-e03",
+      "source": "sms",
+      "ts": "2026-04-19T22:15:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "आपके खाते XX1896 में ₹13,296 जमा कर दिए गए हैं। UPI संदर्भ 853518673548। - एचडीएफसी बैंक",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-02-e04",
+      "source": "sms",
+      "ts": "2026-04-20T16:40:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "आपके खाते XX1981 में ₹5,457 जमा कर दिए गए हैं। UPI संदर्भ 874693055358। - एचडीएफसी बैंक",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-02-e05",
+      "source": "sms",
+      "ts": "2026-04-22T12:15:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "आपके एचडीएफसी बैंक खाते XX5965 से ₹2,304 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹79,499। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-02-e06",
+      "source": "sms",
+      "ts": "2026-04-22T22:15:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "आपके खाते XX4710 में ₹14,332 जमा कर दिए गए हैं। UPI संदर्भ 128322997801। - एचडीएफसी बैंक",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-02-e07",
+      "source": "sms",
+      "ts": "2026-04-23T07:25:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "आपके एचडीएफसी बैंक खाते XX7113 से ₹1,100 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹12,137। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

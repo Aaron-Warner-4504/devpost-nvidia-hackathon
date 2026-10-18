@@ -1,0 +1,91 @@
+{
+  "id": "benign-adversarial-benign-02",
+  "label": "benign",
+  "category": "adversarial_benign",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_adversarial",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-adversarial-benign-02-e00",
+      "source": "sms",
+      "ts": "2026-06-21T14:14:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "आपके कोटक बैंक खाते XX7580 से ₹3,898 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹22,752। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-02-e01",
+      "source": "sms",
+      "ts": "2026-06-22T09:40:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "सावधान! बैंक कभी भी फ़ोन पर ओटीपी या पिन नहीं मांगता। ओटीपी किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-02-e02",
+      "source": "sms",
+      "ts": "2026-06-22T12:50:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "आपके कोटक बैंक खाते XX3874 से ₹4,267 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹44,283। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-02-e03",
+      "source": "sms",
+      "ts": "2026-06-23T22:49:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "KYC update reminder: please update your KYC at the nearest Axis Bank branch before 31-Mar-26. Ignore if already done. -Axis",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-02-e04",
+      "source": "sms",
+      "ts": "2026-06-24T12:50:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "Beware of fraud! Axis Bank never asks for OTP, PIN or password over phone, SMS or email. Do not share OTP with anyone. Report fraud at 1930. -Axis",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-02-e05",
+      "source": "sms",
+      "ts": "2026-06-24T19:05:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "KYC update reminder: please update your KYC at the nearest Axis Bank branch before 31-Mar-26. Ignore if already done. -Axis",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-02-e06",
+      "source": "sms",
+      "ts": "2026-06-25T14:00:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "KYC update reminder: please update your KYC at the nearest Axis Bank branch before 31-Mar-26. Ignore if already done. -Axis",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

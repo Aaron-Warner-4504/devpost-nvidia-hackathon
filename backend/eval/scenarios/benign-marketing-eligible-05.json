@@ -1,0 +1,81 @@
+{
+  "id": "benign-marketing-eligible-05",
+  "label": "benign",
+  "category": "marketing_eligible",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_marketing",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-marketing-eligible-05-e00",
+      "source": "whatsapp",
+      "ts": "2026-06-17T16:51:00+05:30",
+      "sender": "Papa",
+      "text": "Khana kha liya?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-05-e01",
+      "source": "sms",
+      "ts": "2026-06-18T13:00:00+05:30",
+      "sender": "VM-CREDCL",
+      "text": "Your CRED rewards are waiting! Pay your credit card bill on CRED and win cashback up to ₹1,000.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-05-e02",
+      "source": "sms",
+      "ts": "2026-06-19T07:18:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "682975 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-05-e03",
+      "source": "sms",
+      "ts": "2026-06-19T09:48:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "खुशखबरी! आप एचडीएफसी बैंक से ₹2,00,000 तक के प्री-अप्रूव्ड पर्सनल लोन के लिए पात्र हैं। ऐप पर आवेदन करें। नियम व शर्तें लागू।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-05-e04",
+      "source": "sms",
+      "ts": "2026-06-21T08:09:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "खुशखबरी! आप एचडीएफसी बैंक से ₹2,00,000 तक के प्री-अप्रूव्ड पर्सनल लोन के लिए पात्र हैं। ऐप पर आवेदन करें। नियम व शर्तें लागू।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-05-e05",
+      "source": "whatsapp",
+      "ts": "2026-06-23T17:17:00+05:30",
+      "sender": "Rohan (cousin)",
+      "text": "Kal milte hain",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

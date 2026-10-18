@@ -1,0 +1,71 @@
+{
+  "id": "benign-legit-kyc-reminder-04",
+  "label": "benign",
+  "category": "legit_kyc_reminder",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_legit_kyc",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-legit-kyc-reminder-04-e00",
+      "source": "sms",
+      "ts": "2026-06-12T11:00:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "Dear Customer, as per RBI guidelines your KYC is due for periodic update. Please visit your nearest SBI branch or update it via NetBanking. SBI never asks for your OTP or password. -SBI",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-04-e01",
+      "source": "sms",
+      "ts": "2026-06-15T07:39:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "Rs.5,833.00 debited from A/c XX5542 on 02-03-26 to VPA irctc@hdfcbank. UPI Ref 654502828800. Not you? Call 18002586161 -HDFC",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-04-e02",
+      "source": "sms",
+      "ts": "2026-06-16T11:00:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "Dear Customer, as per RBI guidelines your KYC is due for periodic update. Please visit your nearest SBI branch or update it via NetBanking. SBI never asks for your OTP or password. -SBI",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-04-e03",
+      "source": "whatsapp",
+      "ts": "2026-06-17T15:06:00+05:30",
+      "sender": "Papa",
+      "text": "Kal milte hain",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-04-e04",
+      "source": "sms",
+      "ts": "2026-06-18T15:03:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "223836 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

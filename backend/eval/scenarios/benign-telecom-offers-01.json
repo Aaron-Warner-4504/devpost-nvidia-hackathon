@@ -1,0 +1,107 @@
+{
+  "id": "benign-telecom-offers-01",
+  "label": "benign",
+  "category": "telecom_offers",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_telecom",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-telecom-offers-01-e00",
+      "source": "whatsapp",
+      "ts": "2026-05-29T16:46:00+05:30",
+      "sender": "Didi",
+      "text": "Khana kha liya?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-01-e01",
+      "source": "sms",
+      "ts": "2026-05-29T21:08:00+05:30",
+      "sender": "AD-AIRTEL",
+      "text": "You have used 90% of your daily data quota. -Airtel",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-01-e02",
+      "source": "sms",
+      "ts": "2026-05-31T10:15:00+05:30",
+      "sender": "AD-AIRTEL",
+      "text": "Your Airtel plan expires in 2 days. Recharge now with ₹299 for 2GB/day and unlimited calls: https://www.airtel.in/recharge",
+      "call": null,
+      "triage_score": 0.7,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-01-e03",
+      "source": "sms",
+      "ts": "2026-05-31T15:19:00+05:30",
+      "sender": "AD-AIRTEL",
+      "text": "Get 30 days of JioHotstar free on recharge of ₹449. Offer valid till Sunday. https://www.airtel.in/recharge",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-01-e04",
+      "source": "sms",
+      "ts": "2026-06-01T09:27:00+05:30",
+      "sender": "AD-AIRTEL",
+      "text": "Get 30 days of JioHotstar free on recharge of ₹449. Offer valid till Sunday. https://www.airtel.in/recharge",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-01-e05",
+      "source": "sms",
+      "ts": "2026-06-01T20:33:00+05:30",
+      "sender": "AD-AIRTEL",
+      "text": "You have used 90% of your daily data quota. -Airtel",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-01-e06",
+      "source": "sms",
+      "ts": "2026-06-02T20:33:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "560149 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "airtel.in": {
+        "age_days": 7495
+      }
+    },
+    "link_reports": {
+      "https://www.airtel.in/recharge": {
+        "final_url": "https://www.airtel.in/recharge",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Airtel recharge",
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

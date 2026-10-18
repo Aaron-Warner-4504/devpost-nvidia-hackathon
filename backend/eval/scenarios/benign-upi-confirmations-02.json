@@ -1,0 +1,71 @@
+{
+  "id": "benign-upi-confirmations-02",
+  "label": "benign",
+  "category": "upi_confirmations",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_upi",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-upi-confirmations-02-e00",
+      "source": "notification",
+      "ts": "2026-04-22T21:22:00+05:30",
+      "sender": "PhonePe",
+      "text": "आपने Ramesh Vegetables को ₹1,934 का भुगतान सफलतापूर्वक किया।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-02-e01",
+      "source": "notification",
+      "ts": "2026-04-23T21:38:00+05:30",
+      "sender": "PhonePe",
+      "text": "आपने Balaji Fuels को ₹1,712 का भुगतान सफलतापूर्वक किया।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-02-e02",
+      "source": "notification",
+      "ts": "2026-04-25T10:17:00+05:30",
+      "sender": "PhonePe",
+      "text": "आपने Annapurna Dairy को ₹2,161 का भुगतान सफलतापूर्वक किया।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-02-e03",
+      "source": "notification",
+      "ts": "2026-04-28T11:32:00+05:30",
+      "sender": "PhonePe",
+      "text": "आपने Balaji Fuels को ₹498 का भुगतान सफलतापूर्वक किया।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-02-e04",
+      "source": "notification",
+      "ts": "2026-04-28T16:00:00+05:30",
+      "sender": "PhonePe",
+      "text": "आपने Metro Chemist को ₹1,592 का भुगतान सफलतापूर्वक किया।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

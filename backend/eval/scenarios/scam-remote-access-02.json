@@ -1,0 +1,46 @@
+{
+  "id": "scam-remote-access-02",
+  "label": "scam",
+  "category": "remote_access",
+  "lang": "hi",
+  "shape": "slow_burn",
+  "template": "ra_hi_bank",
+  "harm_index": 1,
+  "events": [
+    {
+      "device_event_id": "scam-remote-access-02-e00",
+      "source": "call",
+      "ts": "2026-03-31T16:30:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+918485202261",
+        "duration_s": 300,
+        "is_contact": false,
+        "direction": "in"
+      },
+      "triage_score": 0.3,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-remote-access-02-e01",
+      "source": "whatsapp",
+      "ts": "2026-03-31T16:37:00+05:30",
+      "sender": "+918485202261",
+      "text": "मैं एक्सिस बैंक कस्टमर केयर से बोल रहा हूँ। आपका नेट बैंकिंग ब्लॉक होने से बचाने के लिए प्ले स्टोर से 'TeamViewer QuickSupport' इंस्टॉल करें और जो आईडी दिखे वह मुझे भेजें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 1,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

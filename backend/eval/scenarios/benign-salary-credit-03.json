@@ -1,0 +1,71 @@
+{
+  "id": "benign-salary-credit-03",
+  "label": "benign",
+  "category": "salary_credit",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_salary",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-salary-credit-03-e00",
+      "source": "sms",
+      "ts": "2026-05-12T10:00:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "Your A/c XX7761 has been credited with INR 28,512.00 on 01-03-26 towards SALARY from ACME SOFTWARE PVT LTD. Avl Bal INR 59,266.00 -ICICI",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-salary-credit-03-e01",
+      "source": "sms",
+      "ts": "2026-05-13T09:00:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "EMI of Rs 18,207 for loan XX8900 has been debited. -ICICI",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-salary-credit-03-e02",
+      "source": "sms",
+      "ts": "2026-05-14T11:00:00+05:30",
+      "sender": "AD-SIPMFD",
+      "text": "Your SIP of Rs 3,500 in Parag Parikh Flexi Cap is processed.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-salary-credit-03-e03",
+      "source": "sms",
+      "ts": "2026-05-15T21:47:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "Your A/c XX8439 is debited for INR 4,847.00 on account of ATM withdrawal. Available balance INR 29,487.00 -HDFC",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-salary-credit-03-e04",
+      "source": "sms",
+      "ts": "2026-05-15T22:10:00+05:30",
+      "sender": "VM-ZOMATO",
+      "text": "324356 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

@@ -1,0 +1,126 @@
+{
+  "id": "benign-family-chat-06",
+  "label": "benign",
+  "category": "family_chat",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_family",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-family-chat-06-e00",
+      "source": "whatsapp",
+      "ts": "2026-05-07T10:17:00+05:30",
+      "sender": "Papa",
+      "text": "Beta paise bhej do ₹800, kal wapas kar dungi",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-06-e01",
+      "source": "whatsapp",
+      "ts": "2026-05-07T12:59:00+05:30",
+      "sender": "Papa",
+      "text": "Aaj dinner pe kya banau?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-06-e02",
+      "source": "whatsapp",
+      "ts": "2026-05-07T13:54:00+05:30",
+      "sender": "Papa",
+      "text": "Bijli ka bill bhar diya kya?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-06-e03",
+      "source": "whatsapp",
+      "ts": "2026-05-07T18:30:00+05:30",
+      "sender": "Rohan (cousin)",
+      "text": "Bijli ka bill bhar diya kya?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-06-e04",
+      "source": "call",
+      "ts": "2026-05-07T20:00:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+91 72120 36901",
+        "duration_s": 706,
+        "is_contact": true,
+        "direction": "in"
+      },
+      "triage_score": 0.1,
+      "lang": null
+    },
+    {
+      "device_event_id": "benign-family-chat-06-e05",
+      "source": "whatsapp",
+      "ts": "2026-05-08T17:23:00+05:30",
+      "sender": "Papa",
+      "text": "Bijli ka bill bhar diya kya?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-06-e06",
+      "source": "whatsapp",
+      "ts": "2026-05-09T13:34:00+05:30",
+      "sender": "Papa",
+      "text": "Bijli ka bill bhar diya kya?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-06-e07",
+      "source": "whatsapp",
+      "ts": "2026-05-10T14:35:00+05:30",
+      "sender": "Papa",
+      "text": "Aaj dinner pe kya banau?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-06-e08",
+      "source": "whatsapp",
+      "ts": "2026-05-13T11:07:00+05:30",
+      "sender": "Papa",
+      "text": "Haan theek hai, kal milte hain",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-06-e09",
+      "source": "whatsapp",
+      "ts": "2026-05-13T20:16:00+05:30",
+      "sender": "Papa",
+      "text": "Beta paise bhej do ₹800, kal wapas kar dungi",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

@@ -1,0 +1,81 @@
+{
+  "id": "benign-adversarial-benign-07",
+  "label": "benign",
+  "category": "adversarial_benign",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_adversarial",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-adversarial-benign-07-e00",
+      "source": "sms",
+      "ts": "2026-06-24T16:56:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "379774 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-07-e01",
+      "source": "sms",
+      "ts": "2026-06-25T18:43:00+05:30",
+      "sender": "AD-CYBDOT",
+      "text": "Cyber Crime Awareness: never share OTP or install screen sharing apps like AnyDesk on a stranger's request. Report cyber fraud at cybercrime.gov.in or dial 1930.",
+      "call": null,
+      "triage_score": 0.7,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-07-e02",
+      "source": "sms",
+      "ts": "2026-06-26T17:00:00+05:30",
+      "sender": "VM-TRAIOR",
+      "text": "TRAI never calls to disconnect your number. Beware of fraud calls claiming to be from TRAI. Report suspicious calls on Sanchar Saathi.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-07-e03",
+      "source": "sms",
+      "ts": "2026-06-27T19:48:00+05:30",
+      "sender": "VM-TRAIOR",
+      "text": "TRAI never calls to disconnect your number. Beware of fraud calls claiming to be from TRAI. Report suspicious calls on Sanchar Saathi.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-07-e04",
+      "source": "sms",
+      "ts": "2026-06-29T13:19:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "968944 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-07-e05",
+      "source": "sms",
+      "ts": "2026-06-30T15:35:00+05:30",
+      "sender": "VM-RBISAY",
+      "text": "RBI Kehta Hai: be aware of fake calls claiming digital arrest. No government agency arrests anyone over video call. Report at 1930.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

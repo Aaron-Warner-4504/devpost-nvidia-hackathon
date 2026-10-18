@@ -1,0 +1,91 @@
+{
+  "id": "benign-upi-confirmations-01",
+  "label": "benign",
+  "category": "upi_confirmations",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_upi",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-upi-confirmations-01-e00",
+      "source": "notification",
+      "ts": "2026-04-21T07:29:00+05:30",
+      "sender": "Paytm",
+      "text": "Payment of ₹50 to Balaji Fuels was successful.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-01-e01",
+      "source": "notification",
+      "ts": "2026-04-22T13:31:00+05:30",
+      "sender": "Paytm",
+      "text": "₹2,496 received from Ravi via UPI.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-01-e02",
+      "source": "notification",
+      "ts": "2026-04-25T16:29:00+05:30",
+      "sender": "Paytm",
+      "text": "Payment of ₹1,233 to Shree Medical was successful.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-01-e03",
+      "source": "notification",
+      "ts": "2026-04-26T18:55:00+05:30",
+      "sender": "Paytm",
+      "text": "₹918 received from Suresh via UPI.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-01-e04",
+      "source": "notification",
+      "ts": "2026-04-27T09:21:00+05:30",
+      "sender": "Paytm",
+      "text": "₹225 received from Vikram via UPI.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-01-e05",
+      "source": "notification",
+      "ts": "2026-04-27T16:10:00+05:30",
+      "sender": "Paytm",
+      "text": "You paid ₹286 to Sharma Kirana Store. UPI transaction ID 588720305831.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-01-e06",
+      "source": "notification",
+      "ts": "2026-04-27T17:47:00+05:30",
+      "sender": "Paytm",
+      "text": "Payment of ₹1,485 to Balaji Fuels was successful.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

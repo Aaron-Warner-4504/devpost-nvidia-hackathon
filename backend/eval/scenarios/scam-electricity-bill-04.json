@@ -1,0 +1,56 @@
+{
+  "id": "scam-electricity-bill-04",
+  "label": "scam",
+  "category": "electricity_bill",
+  "lang": "hinglish",
+  "shape": "slow_burn",
+  "template": "elec_hinglish_slow",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-electricity-bill-04-e00",
+      "source": "sms",
+      "ts": "2026-03-29T10:40:00+05:30",
+      "sender": "+919134126671",
+      "text": "Priy upbhokta aaj raat aapki bijli kaat di jayegi kyunki pichla bill update nahi hua. Turant +91 76059 99665 pe sampark karein.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-electricity-bill-04-e01",
+      "source": "call",
+      "ts": "2026-03-29T11:42:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+917605999665",
+        "duration_s": 420,
+        "is_contact": false,
+        "direction": "in"
+      },
+      "triage_score": 0.3,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-electricity-bill-04-e02",
+      "source": "whatsapp",
+      "ts": "2026-03-29T11:52:00+05:30",
+      "sender": "+917605999665",
+      "text": "Sir bill update ke liye 11 rupees ka payment karo aur screen share on karke AnyDesk app install kar lo, main yahin se update kar dunga.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

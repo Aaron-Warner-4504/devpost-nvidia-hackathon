@@ -1,0 +1,140 @@
+{
+  "id": "benign-delivery-updates-02",
+  "label": "benign",
+  "category": "delivery_updates",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_delivery",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-delivery-updates-02-e00",
+      "source": "sms",
+      "ts": "2026-04-28T15:22:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Delivered: your Amazon package with Bedsheet double was delivered. Rate your experience: https://amazon.in/d/197621",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-02-e01",
+      "source": "sms",
+      "ts": "2026-04-28T20:57:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Arriving today: Bournvita 1kg. Share OTP 3930 with the delivery agent only at the time of delivery. Track: https://amzn.in/t/977559",
+      "call": null,
+      "triage_score": 0.7,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-02-e02",
+      "source": "sms",
+      "ts": "2026-04-30T12:25:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "Your Swiggy order of Chole Bhature is out for delivery. Track live: https://www.swiggy.com/t/510133",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-02-e03",
+      "source": "sms",
+      "ts": "2026-05-03T07:00:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Delivered: your Amazon package with Bedsheet double was delivered. Rate your experience: https://amazon.in/track/771582",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-02-e04",
+      "source": "sms",
+      "ts": "2026-05-03T18:26:00+05:30",
+      "sender": "VK-FLPKRT",
+      "text": "Your Flipkart order for USB-C charger has been shipped and will be delivered by Monday. Track: https://flipkart.com/track/437737",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "amazon.in": {
+        "age_days": 8802
+      },
+      "amzn.in": {
+        "age_days": 5073
+      },
+      "swiggy.com": {
+        "age_days": 3294
+      },
+      "flipkart.com": {
+        "age_days": 4355
+      }
+    },
+    "link_reports": {
+      "https://amazon.in/d/197621": {
+        "final_url": "https://amazon.in/d/197621",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://amzn.in/t/977559": {
+        "final_url": "https://amzn.in/t/977559",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://www.swiggy.com/t/510133": {
+        "final_url": "https://www.swiggy.com/t/510133",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://amazon.in/track/771582": {
+        "final_url": "https://amazon.in/track/771582",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://flipkart.com/track/437737": {
+        "final_url": "https://flipkart.com/track/437737",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      }
+    }
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

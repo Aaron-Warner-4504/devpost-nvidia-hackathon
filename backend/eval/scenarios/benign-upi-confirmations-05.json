@@ -1,0 +1,71 @@
+{
+  "id": "benign-upi-confirmations-05",
+  "label": "benign",
+  "category": "upi_confirmations",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_upi",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-upi-confirmations-05-e00",
+      "source": "notification",
+      "ts": "2026-04-26T16:06:00+05:30",
+      "sender": "Google Pay",
+      "text": "आपने Metro Chemist को ₹2,052 का भुगतान सफलतापूर्वक किया।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-05-e01",
+      "source": "notification",
+      "ts": "2026-04-27T10:59:00+05:30",
+      "sender": "Google Pay",
+      "text": "आपने Annapurna Dairy को ₹84 का भुगतान सफलतापूर्वक किया।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-05-e02",
+      "source": "notification",
+      "ts": "2026-04-29T21:06:00+05:30",
+      "sender": "Google Pay",
+      "text": "आपने Shree Medical को ₹327 का भुगतान सफलतापूर्वक किया।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-05-e03",
+      "source": "notification",
+      "ts": "2026-05-01T11:33:00+05:30",
+      "sender": "Google Pay",
+      "text": "आपने Ramesh Vegetables को ₹1,522 का भुगतान सफलतापूर्वक किया।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-05-e04",
+      "source": "notification",
+      "ts": "2026-05-01T20:31:00+05:30",
+      "sender": "Google Pay",
+      "text": "आपने Annapurna Dairy को ₹1,769 का भुगतान सफलतापूर्वक किया।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

@@ -1,0 +1,71 @@
+{
+  "id": "benign-upi-confirmations-03",
+  "label": "benign",
+  "category": "upi_confirmations",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_upi",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-upi-confirmations-03-e00",
+      "source": "notification",
+      "ts": "2026-04-24T18:24:00+05:30",
+      "sender": "Google Pay",
+      "text": "₹1,404 Balaji Fuels ko pay ho gaya. UPI Ref 405461003123",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-03-e01",
+      "source": "notification",
+      "ts": "2026-04-25T13:27:00+05:30",
+      "sender": "Google Pay",
+      "text": "₹1,408 City Bakery ko pay ho gaya. UPI Ref 267031983956",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-03-e02",
+      "source": "notification",
+      "ts": "2026-04-25T21:08:00+05:30",
+      "sender": "Google Pay",
+      "text": "₹423 City Bakery ko pay ho gaya. UPI Ref 756741190587",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-03-e03",
+      "source": "notification",
+      "ts": "2026-04-28T18:46:00+05:30",
+      "sender": "Google Pay",
+      "text": "₹1,110 Balaji Fuels ko pay ho gaya. UPI Ref 363159653015",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-03-e04",
+      "source": "notification",
+      "ts": "2026-04-28T21:11:00+05:30",
+      "sender": "Google Pay",
+      "text": "₹761 Gupta General Store ko pay ho gaya. UPI Ref 886357979649",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

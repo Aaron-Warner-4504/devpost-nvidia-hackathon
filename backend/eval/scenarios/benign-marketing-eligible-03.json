@@ -1,0 +1,91 @@
+{
+  "id": "benign-marketing-eligible-03",
+  "label": "benign",
+  "category": "marketing_eligible",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_marketing",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-marketing-eligible-03-e00",
+      "source": "sms",
+      "ts": "2026-06-15T18:51:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "Good news! You are now eligible for a pre-approved personal loan of up to Rs 9,00,000 at attractive rates. Apply on the ICICI mobile app. T&C apply.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-03-e01",
+      "source": "whatsapp",
+      "ts": "2026-06-15T20:56:00+05:30",
+      "sender": "Didi",
+      "text": "घर कब आ रहे हो?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-03-e02",
+      "source": "sms",
+      "ts": "2026-06-15T22:06:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "664024 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-03-e03",
+      "source": "sms",
+      "ts": "2026-06-16T18:56:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "You are now eligible for an instant top-up loan. Get funds in your account in minutes. Apply via ICICI Bank NetBanking. T&C apply.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-03-e04",
+      "source": "sms",
+      "ts": "2026-06-17T12:33:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "Good news! You are now eligible for a pre-approved personal loan of up to Rs 9,00,000 at attractive rates. Apply on the ICICI mobile app. T&C apply.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-03-e05",
+      "source": "sms",
+      "ts": "2026-06-20T12:45:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "153647 is your OTP for login to HDFC Bank NetBanking. Valid for 5 mins. Do not share it with anyone. -HDFC",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-03-e06",
+      "source": "sms",
+      "ts": "2026-06-21T13:00:00+05:30",
+      "sender": "VM-CREDCL",
+      "text": "Your CRED rewards are waiting! Pay your credit card bill on CRED and win cashback up to ₹1,000.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

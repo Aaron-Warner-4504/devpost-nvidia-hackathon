@@ -1,0 +1,47 @@
+{
+  "id": "scam-kyc-bank-05",
+  "label": "scam",
+  "category": "kyc_bank",
+  "lang": "en",
+  "shape": "single",
+  "template": "kyc_en_icici_rewards",
+  "harm_index": 0,
+  "events": [
+    {
+      "device_event_id": "scam-kyc-bank-05-e00",
+      "source": "sms",
+      "ts": "2026-03-16T09:40:00+05:30",
+      "sender": "+91 77847 80809",
+      "text": "Dear ICICI Bank customer, your reward points worth Rs 9,500 will expire today. Redeem now by entering your card details at https://icici-rewardz.site/redeem",
+      "call": null,
+      "triage_score": 0.7,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 0,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {
+      "icici-rewardz.site": {
+        "age_days": 12
+      }
+    },
+    "link_reports": {
+      "https://icici-rewardz.site/redeem": {
+        "final_url": "https://icici-rewardz.site/redeem",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": true,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": null,
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

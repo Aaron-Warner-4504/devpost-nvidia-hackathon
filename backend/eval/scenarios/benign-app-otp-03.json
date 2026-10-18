@@ -1,0 +1,81 @@
+{
+  "id": "benign-app-otp-03",
+  "label": "benign",
+  "category": "app_otp",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_app_otp",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-app-otp-03-e00",
+      "source": "sms",
+      "ts": "2026-05-21T17:55:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "Use OTP 537423 to log in to Ola. Valid for 10 minutes. Never share your OTP.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-app-otp-03-e01",
+      "source": "sms",
+      "ts": "2026-05-24T07:54:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "Your Ola OTP is 753911. Please do not share this OTP with anyone for security reasons.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-app-otp-03-e02",
+      "source": "sms",
+      "ts": "2026-05-24T08:45:00+05:30",
+      "sender": "VK-DREAMS",
+      "text": "Use OTP 769519 to log in to Dream11. Valid for 10 minutes. Never share your OTP.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-app-otp-03-e03",
+      "source": "sms",
+      "ts": "2026-05-25T10:24:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "Your Ola OTP is 490402. Please do not share this OTP with anyone for security reasons.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-app-otp-03-e04",
+      "source": "sms",
+      "ts": "2026-05-26T19:17:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "923845 is your Swiggy verification code. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-app-otp-03-e05",
+      "source": "sms",
+      "ts": "2026-05-26T22:00:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "Your Swiggy OTP is 683427. Please do not share this OTP with anyone for security reasons.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

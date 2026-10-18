@@ -1,0 +1,49 @@
+{
+  "id": "scam-kyc-bank-02",
+  "label": "scam",
+  "category": "kyc_bank",
+  "lang": "en",
+  "shape": "single",
+  "template": "kyc_en_hdfc_link",
+  "harm_index": 0,
+  "events": [
+    {
+      "device_event_id": "scam-kyc-bank-02-e00",
+      "source": "sms",
+      "ts": "2026-03-13T19:42:00+05:30",
+      "sender": "9636585659",
+      "text": "Dear Customer, your HDFC Bank KYC has expired. Your NetBanking will be suspended in 24 hrs. Update now at https://hdfc-ekyc-india.info/ to avoid inconvenience.",
+      "call": null,
+      "triage_score": 0.7,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 0,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {
+      "hdfc-ekyc-india.info": {
+        "age_days": 12
+      }
+    },
+    "link_reports": {
+      "https://hdfc-ekyc-india.info/": {
+        "final_url": "https://hdfc-ekyc-india.info/",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": true,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [
+          "urlhaus:phishing"
+        ],
+        "title": null,
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "scam-sextortion-04",
+  "label": "scam",
+  "category": "sextortion",
+  "lang": "en",
+  "shape": "single",
+  "template": "sx_en_email_single",
+  "harm_index": 0,
+  "events": [
+    {
+      "device_event_id": "scam-sextortion-04-e00",
+      "source": "email",
+      "ts": "2026-04-06T09:41:00+05:30",
+      "sender": "hacker295@protonmail.com",
+      "text": "I hacked your device and recorded you through your webcam. Transfer Rs 65,000 in Bitcoin within 48 hours or I send the video to all your contacts. Do not tell anyone or go to police.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 0,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

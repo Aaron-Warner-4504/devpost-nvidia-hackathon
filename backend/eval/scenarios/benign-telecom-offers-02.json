@@ -1,0 +1,97 @@
+{
+  "id": "benign-telecom-offers-02",
+  "label": "benign",
+  "category": "telecom_offers",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_telecom",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-telecom-offers-02-e00",
+      "source": "sms",
+      "ts": "2026-05-28T07:16:00+05:30",
+      "sender": "VK-VIINDA",
+      "text": "आपका Vi प्लान 2 दिन में समाप्त हो रहा है। ₹299 में रिचार्ज करें: https://www.myvi.in/recharge",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-02-e01",
+      "source": "sms",
+      "ts": "2026-05-29T12:42:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "आपके एसबीआई खाते XX0078 से ₹3,356 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹73,017। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-02-e02",
+      "source": "sms",
+      "ts": "2026-05-30T08:19:00+05:30",
+      "sender": "VK-VIINDA",
+      "text": "आपने आज का 90% डेटा इस्तेमाल कर लिया है। - Vi",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-02-e03",
+      "source": "sms",
+      "ts": "2026-05-30T16:25:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "आपके एसबीआई खाते XX0983 से ₹1,959 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹11,305। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-02-e04",
+      "source": "sms",
+      "ts": "2026-06-02T19:29:00+05:30",
+      "sender": "VK-VIINDA",
+      "text": "आपका Vi प्लान 2 दिन में समाप्त हो रहा है। ₹299 में रिचार्ज करें: https://www.myvi.in/recharge",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-02-e05",
+      "source": "sms",
+      "ts": "2026-06-03T08:51:00+05:30",
+      "sender": "VK-VIINDA",
+      "text": "आपने आज का 90% डेटा इस्तेमाल कर लिया है। - Vi",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "myvi.in": {
+        "age_days": 3027
+      }
+    },
+    "link_reports": {
+      "https://www.myvi.in/recharge": {
+        "final_url": "https://www.myvi.in/recharge",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Vi recharge",
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

@@ -1,0 +1,81 @@
+{
+  "id": "benign-bank-txn-alerts-05",
+  "label": "benign",
+  "category": "bank_txn_alerts",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_bank_txn",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-bank-txn-alerts-05-e00",
+      "source": "sms",
+      "ts": "2026-04-20T21:58:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "आपके खाते XX9727 में ₹6,822 जमा कर दिए गए हैं। UPI संदर्भ 730058802273। - कोटक बैंक",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-05-e01",
+      "source": "sms",
+      "ts": "2026-04-21T15:52:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "आपके कोटक बैंक खाते XX2023 से ₹4,096 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹60,187। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-05-e02",
+      "source": "sms",
+      "ts": "2026-04-22T21:07:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "आपके कोटक बैंक खाते XX9051 से ₹5,868 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹54,958। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-05-e03",
+      "source": "sms",
+      "ts": "2026-04-23T19:44:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "आपके खाते XX0877 में ₹5,294 जमा कर दिए गए हैं। UPI संदर्भ 491179340041। - कोटक बैंक",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-05-e04",
+      "source": "sms",
+      "ts": "2026-04-24T08:38:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "आपके कोटक बैंक खाते XX7378 से ₹189 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹32,129। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-05-e05",
+      "source": "sms",
+      "ts": "2026-04-24T16:28:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "आपके कोटक बैंक खाते XX5563 से ₹3,367 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹72,696। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

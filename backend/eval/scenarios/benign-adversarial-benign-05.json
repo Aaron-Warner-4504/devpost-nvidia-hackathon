@@ -1,0 +1,91 @@
+{
+  "id": "benign-adversarial-benign-05",
+  "label": "benign",
+  "category": "adversarial_benign",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_adversarial",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-adversarial-benign-05-e00",
+      "source": "sms",
+      "ts": "2026-06-22T08:50:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "सावधान! बैंक कभी भी फ़ोन पर ओटीपी या पिन नहीं मांगता। ओटीपी किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-05-e01",
+      "source": "sms",
+      "ts": "2026-06-23T17:32:00+05:30",
+      "sender": "VM-PSKMEA",
+      "text": "आपके पासपोर्ट आवेदन के लिए पुलिस सत्यापन शुरू हो गया है। मुंबई पुलिस अधिकारी आपसे संपर्क कर सकते हैं।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-05-e02",
+      "source": "sms",
+      "ts": "2026-06-24T07:30:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "सावधान! बैंक कभी भी फ़ोन पर ओटीपी या पिन नहीं मांगता। ओटीपी किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-05-e03",
+      "source": "sms",
+      "ts": "2026-06-24T19:59:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "Beware of fraud! SBI never asks for OTP, PIN or password over phone, SMS or email. Do not share OTP with anyone. Report fraud at 1930. -SBI",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-05-e04",
+      "source": "sms",
+      "ts": "2026-06-26T14:22:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "आपके कोटक बैंक खाते XX3309 से ₹4,699 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹36,938। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-05-e05",
+      "source": "sms",
+      "ts": "2026-06-27T18:07:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "790546 आपके कोटक बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-05-e06",
+      "source": "sms",
+      "ts": "2026-06-28T14:10:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "केवाईसी अपडेट अनुस्मारक: कृपया 31-03-26 से पहले अपनी नज़दीकी एसबीआई शाखा में केवाईसी अपडेट करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

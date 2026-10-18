@@ -1,0 +1,71 @@
+{
+  "id": "scam-job-task-01",
+  "label": "scam",
+  "category": "job_task",
+  "lang": "en",
+  "shape": "slow_burn",
+  "template": "job_en_youtube_slow",
+  "harm_index": 4,
+  "events": [
+    {
+      "device_event_id": "scam-job-task-01-e00",
+      "source": "whatsapp",
+      "ts": "2026-03-21T08:31:00+05:30",
+      "sender": "8905552347",
+      "text": "Hi, I am Meera from Prime Placement. We are hiring for a part-time job, earn Rs 3,000 to 8,000 daily by liking YouTube videos from home. Are you interested?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-job-task-01-e01",
+      "source": "whatsapp",
+      "ts": "2026-03-21T11:33:00+05:30",
+      "sender": "8905552347",
+      "text": "Great! Task 1: like these 3 videos and send the screenshots. https://www.youtube.com/watch?v=8519abcXyZ",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-job-task-01-e02",
+      "source": "whatsapp",
+      "ts": "2026-03-21T13:34:00+05:30",
+      "sender": "+91 89055 52347",
+      "text": "Thank you! Rs 150 commission sent to your account. Very good work.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-job-task-01-e03",
+      "source": "whatsapp",
+      "ts": "2026-03-22T09:35:00+05:30",
+      "sender": "+918905552347",
+      "text": "For more tasks please join our Telegram group t.me/TaskMaster_VIP and contact the receptionist.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-job-task-01-e04",
+      "source": "whatsapp",
+      "ts": "2026-03-22T12:38:00+05:30",
+      "sender": "+918905552347",
+      "text": "Today's merchant task: deposit Rs 21,000 to taskmerchant150@ybl and get 30% profit back within 1 hour. This is a prepaid task, complete it fast to keep your bonus.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 4,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

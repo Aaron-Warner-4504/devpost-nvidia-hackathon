@@ -1,0 +1,61 @@
+{
+  "id": "scam-digital-arrest-04",
+  "label": "scam",
+  "category": "digital_arrest",
+  "lang": "en",
+  "shape": "slow_burn",
+  "template": "da_en_intl",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-digital-arrest-04-e00",
+      "source": "call",
+      "ts": "2026-03-05T14:04:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+923812768113",
+        "duration_s": 45,
+        "is_contact": false,
+        "direction": "missed"
+      },
+      "triage_score": 0.1,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-digital-arrest-04-e01",
+      "source": "call",
+      "ts": "2026-03-05T14:14:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+923812768113",
+        "duration_s": 1800,
+        "is_contact": false,
+        "direction": "in"
+      },
+      "triage_score": 0.3,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-digital-arrest-04-e02",
+      "source": "whatsapp",
+      "ts": "2026-03-05T14:28:00+05:30",
+      "sender": "+92 381 2768113",
+      "text": "Supreme Court of India. Arrest warrant No. 488001/CBI. You are directed to remain under digital arrest. To avoid physical arrest, deposit Rs 4,90,000 as security in the court escrow account shared by the officer immediately. Do not disconnect the call.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

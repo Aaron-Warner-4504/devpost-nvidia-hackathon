@@ -1,0 +1,161 @@
+{
+  "id": "benign-delivery-updates-03",
+  "label": "benign",
+  "category": "delivery_updates",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_delivery",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-delivery-updates-03-e00",
+      "source": "sms",
+      "ts": "2026-04-28T18:07:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Delivered: your Amazon package with USB-C charger was delivered. Rate your experience: https://www.amazon.in/o/376909 Thank you ji!",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-03-e01",
+      "source": "sms",
+      "ts": "2026-04-30T07:09:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "Your Swiggy order of Chole Bhature is out for delivery. Track live: https://www.swiggy.com/o/530645 Thank you ji!",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-03-e02",
+      "source": "sms",
+      "ts": "2026-04-30T11:41:00+05:30",
+      "sender": "BZ-MYNTRA",
+      "text": "Out for delivery: your Myntra order. Pay on delivery amount Rs 2,399. Details: https://www.myntra.com/o/151715 Thank you ji!",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-03-e03",
+      "source": "sms",
+      "ts": "2026-04-30T19:44:00+05:30",
+      "sender": "BZ-MYNTRA",
+      "text": "Out for delivery: your Myntra order. Pay on delivery amount Rs 862. Details: https://myntra.com/o/514587 Thank you ji!",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-03-e04",
+      "source": "sms",
+      "ts": "2026-05-01T20:58:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "Your Swiggy order of Pizza is out for delivery. Track live: https://www.swiggy.com/t/335278 Thank you ji!",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-03-e05",
+      "source": "sms",
+      "ts": "2026-05-01T21:04:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Arriving today: Cotton kurta. Share OTP 0432 with the delivery agent only at the time of delivery. Track: https://www.amzn.in/d/213072 Thank you ji!",
+      "call": null,
+      "triage_score": 0.7,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "amazon.in": {
+        "age_days": 3460
+      },
+      "swiggy.com": {
+        "age_days": 5161
+      },
+      "myntra.com": {
+        "age_days": 6692
+      },
+      "amzn.in": {
+        "age_days": 4272
+      }
+    },
+    "link_reports": {
+      "https://www.amazon.in/o/376909": {
+        "final_url": "https://www.amazon.in/o/376909",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://www.swiggy.com/o/530645": {
+        "final_url": "https://www.swiggy.com/o/530645",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://www.myntra.com/o/151715": {
+        "final_url": "https://www.myntra.com/o/151715",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://myntra.com/o/514587": {
+        "final_url": "https://myntra.com/o/514587",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://www.swiggy.com/t/335278": {
+        "final_url": "https://www.swiggy.com/t/335278",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://www.amzn.in/d/213072": {
+        "final_url": "https://www.amzn.in/d/213072",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

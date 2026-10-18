@@ -1,0 +1,116 @@
+{
+  "id": "benign-delivery-updates-06",
+  "label": "benign",
+  "category": "delivery_updates",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_delivery",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-delivery-updates-06-e00",
+      "source": "sms",
+      "ts": "2026-05-04T09:54:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Delivered: your Amazon package with Bournvita 1kg was delivered. Rate your experience: https://amazon.in/t/437832 Thank you ji!",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-06-e01",
+      "source": "sms",
+      "ts": "2026-05-04T14:34:00+05:30",
+      "sender": "VM-ZOMATO",
+      "text": "Your Zomato order is on the way! Rohan is your delivery partner. Track: https://zomato.com/t/062952 Thank you ji!",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-06-e02",
+      "source": "sms",
+      "ts": "2026-05-04T17:07:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Arriving today: Bedsheet double. Share OTP 9332 with the delivery agent only at the time of delivery. Track: https://amzn.in/track/642710 Thank you ji!",
+      "call": null,
+      "triage_score": 0.7,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-06-e03",
+      "source": "sms",
+      "ts": "2026-05-05T17:30:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Arriving today: Yoga mat. Share OTP 8126 with the delivery agent only at the time of delivery. Track: https://amzn.in/d/602664 Thank you ji!",
+      "call": null,
+      "triage_score": 0.7,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "amazon.in": {
+        "age_days": 4029
+      },
+      "zomato.com": {
+        "age_days": 5455
+      },
+      "amzn.in": {
+        "age_days": 6037
+      }
+    },
+    "link_reports": {
+      "https://amazon.in/t/437832": {
+        "final_url": "https://amazon.in/t/437832",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://zomato.com/t/062952": {
+        "final_url": "https://zomato.com/t/062952",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://amzn.in/track/642710": {
+        "final_url": "https://amzn.in/track/642710",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://amzn.in/d/602664": {
+        "final_url": "https://amzn.in/d/602664",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

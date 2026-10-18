@@ -1,0 +1,47 @@
+{
+  "id": "scam-remote-access-04",
+  "label": "scam",
+  "category": "remote_access",
+  "lang": "en",
+  "shape": "single",
+  "template": "ra_en_microsoft",
+  "harm_index": 0,
+  "events": [
+    {
+      "device_event_id": "scam-remote-access-04-e00",
+      "source": "email",
+      "ts": "2026-04-02T08:42:00+05:30",
+      "sender": "security@microsoft-defender-care.site",
+      "text": "Microsoft Defender detected a Trojan on your computer and your bank details are at risk. Download the support tool from https://microsoft-defender-care.site/fix and allow screen sharing so our technician can remove it.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 0,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {
+      "microsoft-defender-care.site": {
+        "age_days": 2
+      }
+    },
+    "link_reports": {
+      "https://microsoft-defender-care.site/fix": {
+        "final_url": "https://microsoft-defender-care.site/fix",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": true,
+        "triggers_download": true,
+        "threat_feed_hits": [],
+        "title": null,
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

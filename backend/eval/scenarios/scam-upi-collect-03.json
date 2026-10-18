@@ -1,0 +1,51 @@
+{
+  "id": "scam-upi-collect-03",
+  "label": "scam",
+  "category": "upi_collect",
+  "lang": "hinglish",
+  "shape": "slow_burn",
+  "template": "upi_hinglish_wrong_transfer",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-upi-collect-03-e00",
+      "source": "sms",
+      "ts": "2026-03-19T14:44:00+05:30",
+      "sender": "+91 60201 09764",
+      "text": "Rs.8,500.00 credited to your a/c XX2958 by UPI ref 356542267165. Avl bal Rs.8,867",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-upi-collect-03-e01",
+      "source": "whatsapp",
+      "ts": "2026-03-19T14:53:00+05:30",
+      "sender": "+916020109764",
+      "text": "Bhaiya galti se aapke number pe 8,500 chale gaye, mera beta hospital mein hai. Please wapas kar do, maine request bhej di hai.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-upi-collect-03-e02",
+      "source": "whatsapp",
+      "ts": "2026-03-19T15:00:00+05:30",
+      "sender": "6020109764",
+      "text": "Request accept karke apna UPI PIN daal do bas, 8,500 turant wapas aa jayega mere paas. Jaldi please.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

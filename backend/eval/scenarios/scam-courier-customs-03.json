@@ -1,0 +1,61 @@
+{
+  "id": "scam-courier-customs-03",
+  "label": "scam",
+  "category": "courier_customs",
+  "lang": "en",
+  "shape": "slow_burn",
+  "template": "cc_en_customs_slow",
+  "harm_index": 3,
+  "events": [
+    {
+      "device_event_id": "scam-courier-customs-03-e00",
+      "source": "whatsapp",
+      "ts": "2026-03-09T15:55:00+05:30",
+      "sender": "+91 79378 15856",
+      "text": "Hello dear, it's Daniel from London. I have sent you a small birthday gift box with a watch and some pounds, it should reach you this week. Take care.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-courier-customs-03-e01",
+      "source": "whatsapp",
+      "ts": "2026-03-10T22:00:00+05:30",
+      "sender": "+917937815856",
+      "text": "Did you receive the parcel? The courier said it reached Delhi.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-courier-customs-03-e02",
+      "source": "sms",
+      "ts": "2026-03-11T18:02:00+05:30",
+      "sender": "9965779779",
+      "text": "Delhi Airport Customs: a parcel in your name is held for clearance. Contact the customs desk at +91 99657 79779.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-courier-customs-03-e03",
+      "source": "whatsapp",
+      "ts": "2026-03-11T20:03:00+05:30",
+      "sender": "+919965779779",
+      "text": "Customs officer here. The parcel contains foreign currency. Pay customs duty Rs 41,000 to customsclearance548@axl today, else penalty of Rs 1,25,000 and legal action.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 3,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

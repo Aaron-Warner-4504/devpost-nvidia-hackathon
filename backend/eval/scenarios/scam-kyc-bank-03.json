@@ -1,0 +1,47 @@
+{
+  "id": "scam-kyc-bank-03",
+  "label": "scam",
+  "category": "kyc_bank",
+  "lang": "hi",
+  "shape": "single",
+  "template": "kyc_hi_link",
+  "harm_index": 0,
+  "events": [
+    {
+      "device_event_id": "scam-kyc-bank-03-e00",
+      "source": "sms",
+      "ts": "2026-03-14T15:18:00+05:30",
+      "sender": "+919807060675",
+      "text": "प्रिय ग्राहक, आपका एसबीआई खाता आज रात बंद कर दिया जाएगा। अपना केवाईसी अपडेट करने के लिए तुरंत इस लिंक पर क्लिक करें http://kyc-sbi24.online/hi",
+      "call": null,
+      "triage_score": 0.7,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 0,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {
+      "kyc-sbi24.online": {
+        "age_days": 8
+      }
+    },
+    "link_reports": {
+      "http://kyc-sbi24.online/hi": {
+        "final_url": "http://kyc-sbi24.online/hi",
+        "fetched_ok": false,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": null,
+        "status": null
+      }
+    }
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

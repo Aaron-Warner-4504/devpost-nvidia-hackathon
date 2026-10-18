@@ -1,0 +1,107 @@
+{
+  "id": "benign-appointments-03",
+  "label": "benign",
+  "category": "appointments",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_appointments",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-appointments-03-e00",
+      "source": "sms",
+      "ts": "2026-05-25T09:00:00+05:30",
+      "sender": "VM-PRACTO",
+      "text": "Your appointment with Dr. Mehta is confirmed for tomorrow 11:00 AM. Details: https://www.practo.com/a/142045",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-appointments-03-e01",
+      "source": "sms",
+      "ts": "2026-05-26T18:18:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "Rs.645.00 debited from A/c XX7300 on 07-03-26 to VPA bigbasket@axisbank. UPI Ref 943933243691. Not you? Call 18002586161 -SBI",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-appointments-03-e02",
+      "source": "sms",
+      "ts": "2026-05-27T18:00:00+05:30",
+      "sender": "AD-IRCTCi",
+      "text": "PNR 0152585456, Train 12951, CNF/B2/44. Happy journey. -IRCTC",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-appointments-03-e03",
+      "source": "sms",
+      "ts": "2026-05-28T08:00:00+05:30",
+      "sender": "AD-IRCTCi",
+      "text": "PNR 0152585456: chart prepared. Your berth B2/18 is confirmed.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-appointments-03-e04",
+      "source": "sms",
+      "ts": "2026-05-28T18:30:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "Your A/c XX7022 is debited for INR 5,902.00 on account of ATM withdrawal. Available balance INR 36,070.00 -SBI",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-appointments-03-e05",
+      "source": "sms",
+      "ts": "2026-05-29T19:00:00+05:30",
+      "sender": "JM-BMSHOW",
+      "text": "Booking confirmed: 2 tickets for Jawan 2, PVR, Screen 4, 7:15 PM. Booking ID 52518932.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-appointments-03-e06",
+      "source": "sms",
+      "ts": "2026-05-30T10:00:00+05:30",
+      "sender": "VM-APOLLO",
+      "text": "Reminder: your lab test at Apollo Diagnostics is due tomorrow at 8 AM. Please come fasting.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "practo.com": {
+        "age_days": 5000
+      }
+    },
+    "link_reports": {
+      "https://www.practo.com/a/142045": {
+        "final_url": "https://www.practo.com/a/142045",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Practo appointment",
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

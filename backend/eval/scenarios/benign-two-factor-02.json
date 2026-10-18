@@ -1,0 +1,81 @@
+{
+  "id": "benign-two-factor-02",
+  "label": "benign",
+  "category": "two_factor",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_2fa",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-two-factor-02-e00",
+      "source": "sms",
+      "ts": "2026-06-06T12:28:00+05:30",
+      "sender": "AD-MSFTAC",
+      "text": "Use 0056746 as Microsoft account security code.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-02-e01",
+      "source": "sms",
+      "ts": "2026-06-06T19:17:00+05:30",
+      "sender": "AX-DIGILK",
+      "text": "Your DigiLocker OTP is 062211. Valid for 10 minutes.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-02-e02",
+      "source": "sms",
+      "ts": "2026-06-07T15:29:00+05:30",
+      "sender": "JD-WHTSAP",
+      "text": "Your WhatsApp code: 483-768. Don't share this code with others.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-02-e03",
+      "source": "sms",
+      "ts": "2026-06-08T14:35:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "आपके आईसीआईसीआई बैंक खाते XX7374 से ₹1,427 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹34,727। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-two-factor-02-e04",
+      "source": "sms",
+      "ts": "2026-06-08T15:14:00+05:30",
+      "sender": "AD-MSFTAC",
+      "text": "Use 3394036 as Microsoft account security code.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-02-e05",
+      "source": "sms",
+      "ts": "2026-06-11T19:38:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "239595 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

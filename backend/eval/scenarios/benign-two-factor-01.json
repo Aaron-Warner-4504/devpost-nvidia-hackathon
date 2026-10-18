@@ -1,0 +1,91 @@
+{
+  "id": "benign-two-factor-01",
+  "label": "benign",
+  "category": "two_factor",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_2fa",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-two-factor-01-e00",
+      "source": "sms",
+      "ts": "2026-06-05T19:02:00+05:30",
+      "sender": "VK-INSTAG",
+      "text": "067729 is your Instagram code. Don't share it.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-01-e01",
+      "source": "whatsapp",
+      "ts": "2026-06-09T08:04:00+05:30",
+      "sender": "Mummy",
+      "text": "Happy birthday to Chintu! 🎂",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-01-e02",
+      "source": "sms",
+      "ts": "2026-06-09T13:43:00+05:30",
+      "sender": "AD-MSFTAC",
+      "text": "Use 1757149 as Microsoft account security code.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-01-e03",
+      "source": "sms",
+      "ts": "2026-06-09T17:03:00+05:30",
+      "sender": "JD-WHTSAP",
+      "text": "Your WhatsApp code: 317-115. Don't share this code with others.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-01-e04",
+      "source": "sms",
+      "ts": "2026-06-10T08:31:00+05:30",
+      "sender": "VK-INSTAG",
+      "text": "936245 is your Instagram code. Don't share it.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-01-e05",
+      "source": "sms",
+      "ts": "2026-06-11T17:39:00+05:30",
+      "sender": "AD-MSFTAC",
+      "text": "Use 8821129 as Microsoft account security code.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-01-e06",
+      "source": "sms",
+      "ts": "2026-06-11T21:49:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "790962 is your OTP for login to Kotak Bank NetBanking. Valid for 5 mins. Do not share it with anyone. -Kotak",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

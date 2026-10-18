@@ -1,0 +1,61 @@
+{
+  "id": "scam-courier-customs-05",
+  "label": "scam",
+  "category": "courier_customs",
+  "lang": "en",
+  "shape": "slow_burn",
+  "template": "cc_en_fedex_drugs",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-courier-customs-05-e00",
+      "source": "call",
+      "ts": "2026-03-11T11:19:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+916186653741",
+        "duration_s": 25,
+        "is_contact": false,
+        "direction": "missed"
+      },
+      "triage_score": 0.1,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-courier-customs-05-e01",
+      "source": "call",
+      "ts": "2026-03-11T11:45:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+916186653741",
+        "duration_s": 720,
+        "is_contact": false,
+        "direction": "in"
+      },
+      "triage_score": 0.3,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-courier-customs-05-e02",
+      "source": "whatsapp",
+      "ts": "2026-03-11T11:58:00+05:30",
+      "sender": "+916186653741",
+      "text": "FedEx Lucknow: the parcel booked on your Aadhaar contains 5 passports and 200g MDMA. As discussed, connect to the police officer now and share your Aadhaar and bank details for verification.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

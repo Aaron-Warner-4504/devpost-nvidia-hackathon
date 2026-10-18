@@ -1,0 +1,91 @@
+{
+  "id": "benign-app-otp-05",
+  "label": "benign",
+  "category": "app_otp",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_app_otp",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-app-otp-05-e00",
+      "source": "sms",
+      "ts": "2026-05-22T14:09:00+05:30",
+      "sender": "BZ-MEESHO",
+      "text": "Meesho लॉगिन के लिए आपका ओटीपी 152671 है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-app-otp-05-e01",
+      "source": "sms",
+      "ts": "2026-05-23T19:08:00+05:30",
+      "sender": "JD-PHONPE",
+      "text": "PhonePe लॉगिन के लिए आपका ओटीपी 280460 है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-app-otp-05-e02",
+      "source": "sms",
+      "ts": "2026-05-24T17:15:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "Swiggy लॉगिन के लिए आपका ओटीपी 432125 है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-app-otp-05-e03",
+      "source": "sms",
+      "ts": "2026-05-26T11:05:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "Swiggy लॉगिन के लिए आपका ओटीपी 453637 है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-app-otp-05-e04",
+      "source": "sms",
+      "ts": "2026-05-26T21:13:00+05:30",
+      "sender": "VM-ZOMATO",
+      "text": "Zomato लॉगिन के लिए आपका ओटीपी 257583 है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-app-otp-05-e05",
+      "source": "sms",
+      "ts": "2026-05-27T11:40:00+05:30",
+      "sender": "JD-PHONPE",
+      "text": "PhonePe लॉगिन के लिए आपका ओटीपी 303728 है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-app-otp-05-e06",
+      "source": "sms",
+      "ts": "2026-05-28T12:48:00+05:30",
+      "sender": "BZ-MEESHO",
+      "text": "Meesho लॉगिन के लिए आपका ओटीपी 893710 है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

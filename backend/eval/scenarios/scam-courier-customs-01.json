@@ -1,0 +1,49 @@
+{
+  "id": "scam-courier-customs-01",
+  "label": "scam",
+  "category": "courier_customs",
+  "lang": "en",
+  "shape": "single",
+  "template": "cc_en_single_link",
+  "harm_index": 0,
+  "events": [
+    {
+      "device_event_id": "scam-courier-customs-01-e00",
+      "source": "sms",
+      "ts": "2026-03-07T15:44:00+05:30",
+      "sender": "+91 60873 22983",
+      "text": "India Post: your package could not be delivered due to an incomplete address. Please update your address within 12 hours or it will be returned: https://indiapost-care.online/in",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 0,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {
+      "indiapost-care.online": {
+        "age_days": 7
+      }
+    },
+    "link_reports": {
+      "https://indiapost-care.online/in": {
+        "final_url": "https://indiapost-care.online/in",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": true,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [
+          "urlhaus:phishing"
+        ],
+        "title": null,
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

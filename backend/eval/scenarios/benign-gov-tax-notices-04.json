@@ -1,0 +1,90 @@
+{
+  "id": "benign-gov-tax-notices-04",
+  "label": "benign",
+  "category": "gov_tax_notices",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_gov",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-gov-tax-notices-04-e00",
+      "source": "sms",
+      "ts": "2026-06-04T15:06:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "412470 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-gov-tax-notices-04-e01",
+      "source": "sms",
+      "ts": "2026-06-06T20:43:00+05:30",
+      "sender": "JD-EPFOHO",
+      "text": "EPFO: Rs 6,121 contribution for Feb-26 credited to your UAN XXXX5135. Check passbook at https://passbook.epfindia.gov.in",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-gov-tax-notices-04-e02",
+      "source": "sms",
+      "ts": "2026-06-08T14:16:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "INR 442.00 spent on Kotak Credit Card XX1959 at DMART on 20-Mar-26. Avl limit INR 1,30,418.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-gov-tax-notices-04-e03",
+      "source": "sms",
+      "ts": "2026-06-10T10:17:00+05:30",
+      "sender": "JD-EPFOHO",
+      "text": "EPFO: Rs 6,121 contribution for Feb-26 credited to your UAN XXXX5135. Check passbook at https://passbook.epfindia.gov.in",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-gov-tax-notices-04-e04",
+      "source": "sms",
+      "ts": "2026-06-10T14:58:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "Rs.2,819.00 debited from A/c XX1263 on 16-03-26 to VPA zomato@hdfcbank. UPI Ref 580977116838. Not you? Call 18002586161 -Kotak",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "incometax.gov.in": {
+        "age_days": 4000
+      },
+      "epfindia.gov.in": {
+        "age_days": 6000
+      }
+    },
+    "link_reports": {
+      "https://www.incometax.gov.in/iec/foportal/": {
+        "final_url": "https://www.incometax.gov.in/iec/foportal/",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "e-Filing Home Page, Income Tax Department",
+        "status": 200
+      }
+    }
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

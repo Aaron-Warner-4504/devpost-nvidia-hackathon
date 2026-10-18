@@ -1,0 +1,91 @@
+{
+  "id": "benign-upi-confirmations-04",
+  "label": "benign",
+  "category": "upi_confirmations",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_upi",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-upi-confirmations-04-e00",
+      "source": "notification",
+      "ts": "2026-04-24T09:41:00+05:30",
+      "sender": "Paytm",
+      "text": "₹384 received from Karan via UPI.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-04-e01",
+      "source": "notification",
+      "ts": "2026-04-25T13:01:00+05:30",
+      "sender": "Paytm",
+      "text": "Payment of ₹1,534 to Shree Medical was successful.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-04-e02",
+      "source": "notification",
+      "ts": "2026-04-27T19:51:00+05:30",
+      "sender": "Paytm",
+      "text": "₹1,310 received from Pooja via UPI.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-04-e03",
+      "source": "notification",
+      "ts": "2026-04-27T20:38:00+05:30",
+      "sender": "Paytm",
+      "text": "₹503 received from Kavita via UPI.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-04-e04",
+      "source": "notification",
+      "ts": "2026-04-29T09:58:00+05:30",
+      "sender": "Paytm",
+      "text": "Payment of ₹1,877 to Sharma Kirana Store was successful.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-04-e05",
+      "source": "notification",
+      "ts": "2026-04-29T17:11:00+05:30",
+      "sender": "Paytm",
+      "text": "Payment of ₹1,362 to City Bakery was successful.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-upi-confirmations-04-e06",
+      "source": "notification",
+      "ts": "2026-04-30T10:26:00+05:30",
+      "sender": "Paytm",
+      "text": "₹2,412 received from Arjun via UPI.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

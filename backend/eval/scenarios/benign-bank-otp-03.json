@@ -1,0 +1,111 @@
+{
+  "id": "benign-bank-otp-03",
+  "label": "benign",
+  "category": "bank_otp",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_bank_otp",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-bank-otp-03-e00",
+      "source": "sms",
+      "ts": "2026-04-13T12:30:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "OTP for transaction of INR 7,168.00 on your ICICI card XX2661 at AMAZON is 934310. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-bank-otp-03-e01",
+      "source": "sms",
+      "ts": "2026-04-13T19:30:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "OTP for transaction of INR 9,616.00 on your ICICI card XX3929 at AMAZON is 694358. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-bank-otp-03-e02",
+      "source": "sms",
+      "ts": "2026-04-14T14:30:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "OTP for transaction of INR 11,839.00 on your ICICI card XX3462 at AMAZON is 497999. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-bank-otp-03-e03",
+      "source": "sms",
+      "ts": "2026-04-15T17:30:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "OTP for transaction of INR 9,696.00 on your ICICI card XX4383 at AMAZON is 904239. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-bank-otp-03-e04",
+      "source": "sms",
+      "ts": "2026-04-16T11:30:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "Dear Customer, 019845 is the OTP to add a beneficiary in ICICI Bank NetBanking. Never share your OTP. If not done by you, call the number on the back of your card.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-bank-otp-03-e05",
+      "source": "sms",
+      "ts": "2026-04-16T13:30:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "373682 is your OTP for login to ICICI Bank NetBanking. Valid for 5 mins. Do not share it with anyone. -ICICI",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-bank-otp-03-e06",
+      "source": "sms",
+      "ts": "2026-04-17T18:30:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "OTP for transaction of INR 18,550.00 on your ICICI card XX5039 at AMAZON is 571592. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-bank-otp-03-e07",
+      "source": "sms",
+      "ts": "2026-04-18T20:30:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "Dear Customer, 823681 is the OTP to add a beneficiary in ICICI Bank NetBanking. Never share your OTP. If not done by you, call the number on the back of your card.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-bank-otp-03-e08",
+      "source": "sms",
+      "ts": "2026-04-19T09:30:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "908782 is your OTP for login to ICICI Bank NetBanking. Valid for 5 mins. Do not share it with anyone. -ICICI",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

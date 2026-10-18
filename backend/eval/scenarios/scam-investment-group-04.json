@@ -1,0 +1,49 @@
+{
+  "id": "scam-investment-group-04",
+  "label": "scam",
+  "category": "investment_group",
+  "lang": "en",
+  "shape": "single",
+  "template": "inv_en_single_link",
+  "harm_index": 0,
+  "events": [
+    {
+      "device_event_id": "scam-investment-group-04-e00",
+      "source": "sms",
+      "ts": "2026-04-10T17:36:00+05:30",
+      "sender": "+919698888960",
+      "text": "Earn 10% daily with SEBI registered experts. Guaranteed returns, no loss. Register with your PAN and bank details at https://ipo-allotment-vip.top/join and deposit Rs 10,000 to start.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 0,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {
+      "ipo-allotment-vip.top": {
+        "age_days": 28
+      }
+    },
+    "link_reports": {
+      "https://ipo-allotment-vip.top/join": {
+        "final_url": "https://ipo-allotment-vip.top/join",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": true,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [
+          "urlhaus:phishing"
+        ],
+        "title": null,
+        "status": 200
+      }
+    }
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

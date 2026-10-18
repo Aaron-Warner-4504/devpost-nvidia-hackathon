@@ -1,0 +1,136 @@
+{
+  "id": "benign-family-chat-07",
+  "label": "benign",
+  "category": "family_chat",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_family",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-family-chat-07-e00",
+      "source": "whatsapp",
+      "ts": "2026-05-08T10:00:00+05:30",
+      "sender": "Papa",
+      "text": "Call me when you are free",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-family-chat-07-e01",
+      "source": "whatsapp",
+      "ts": "2026-05-09T07:27:00+05:30",
+      "sender": "Papa",
+      "text": "Did you reach office?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-family-chat-07-e02",
+      "source": "whatsapp",
+      "ts": "2026-05-09T09:05:00+05:30",
+      "sender": "Papa",
+      "text": "Can you send ₹2,000 for the electrician? Will return tomorrow",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-family-chat-07-e03",
+      "source": "whatsapp",
+      "ts": "2026-05-09T09:50:00+05:30",
+      "sender": "Papa",
+      "text": "Movie on Saturday?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-family-chat-07-e04",
+      "source": "whatsapp",
+      "ts": "2026-05-10T18:30:00+05:30",
+      "sender": "Priya Office",
+      "text": "Sending the photos from the wedding",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-family-chat-07-e05",
+      "source": "whatsapp",
+      "ts": "2026-05-10T21:28:00+05:30",
+      "sender": "Papa",
+      "text": "Movie on Saturday?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-family-chat-07-e06",
+      "source": "whatsapp",
+      "ts": "2026-05-11T10:13:00+05:30",
+      "sender": "Papa",
+      "text": "Can you send ₹2,000 for the electrician? Will return tomorrow",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-family-chat-07-e07",
+      "source": "whatsapp",
+      "ts": "2026-05-11T17:35:00+05:30",
+      "sender": "Papa",
+      "text": "Movie on Saturday?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-family-chat-07-e08",
+      "source": "whatsapp",
+      "ts": "2026-05-13T19:18:00+05:30",
+      "sender": "Papa",
+      "text": "Call me when you are free",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-family-chat-07-e09",
+      "source": "call",
+      "ts": "2026-05-13T20:00:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "6238928529",
+        "duration_s": 131,
+        "is_contact": true,
+        "direction": "in"
+      },
+      "triage_score": 0.1,
+      "lang": null
+    },
+    {
+      "device_event_id": "benign-family-chat-07-e10",
+      "source": "whatsapp",
+      "ts": "2026-05-13T22:21:00+05:30",
+      "sender": "Papa",
+      "text": "Can you send ₹2,000 for the electrician? Will return tomorrow",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

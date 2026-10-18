@@ -1,0 +1,101 @@
+{
+  "id": "benign-app-otp-01",
+  "label": "benign",
+  "category": "app_otp",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_app_otp",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-app-otp-01-e00",
+      "source": "sms",
+      "ts": "2026-05-20T18:45:00+05:30",
+      "sender": "VM-ZOMATO",
+      "text": "540991 is your Zomato verification code. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-app-otp-01-e01",
+      "source": "sms",
+      "ts": "2026-05-21T10:58:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "Use OTP 227137 to log in to Uber. Valid for 10 minutes. Never share your OTP.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-app-otp-01-e02",
+      "source": "sms",
+      "ts": "2026-05-21T13:14:00+05:30",
+      "sender": "VM-ZOMATO",
+      "text": "Your Zomato OTP is 138834. Please do not share this OTP with anyone for security reasons.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-app-otp-01-e03",
+      "source": "sms",
+      "ts": "2026-05-22T13:08:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "Use OTP 016973 to log in to Swiggy. Valid for 10 minutes. Never share your OTP.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-app-otp-01-e04",
+      "source": "sms",
+      "ts": "2026-05-22T22:09:00+05:30",
+      "sender": "BZ-MEESHO",
+      "text": "922157 is your Meesho verification code. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-app-otp-01-e05",
+      "source": "sms",
+      "ts": "2026-05-23T08:30:00+05:30",
+      "sender": "JD-PHONPE",
+      "text": "Your PhonePe OTP is 422407. Please do not share this OTP with anyone for security reasons.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-app-otp-01-e06",
+      "source": "sms",
+      "ts": "2026-05-23T14:47:00+05:30",
+      "sender": "BZ-MEESHO",
+      "text": "238673 is your Meesho verification code. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-app-otp-01-e07",
+      "source": "sms",
+      "ts": "2026-05-24T11:29:00+05:30",
+      "sender": "JD-PHONPE",
+      "text": "705496 is your PhonePe verification code. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}
