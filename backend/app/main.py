@@ -1,4 +1,7 @@
-from fastapi import Depends, FastAPI
+import logging
+
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from app.auth import current_user
 from app.routes import alerts, events, me
@@ -8,6 +11,15 @@ app = FastAPI(title="Sentinel API", version="0.1.0")
 app.include_router(me.router)
 app.include_router(events.router)
 app.include_router(alerts.router)
+log = logging.getLogger("app")
+
+
+@app.exception_handler(Exception)
+async def internal_error(request: Request, exc: Exception):
+    """Unexpected failures (e.g. the database is down): a fixed JSON 500 with no internals. Only the
+    exception type is logged: messages can echo SQL parameters or message text."""
+    log.error("unhandled %s on %s %s", type(exc).__name__, request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "internal error"})
 
 
 @app.get("/health")

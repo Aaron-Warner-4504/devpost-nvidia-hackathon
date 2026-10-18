@@ -25,7 +25,7 @@ def user(db, register):
 _n = iter(range(10**6))
 
 
-def prior(db, user, tier, key, ts, shown=True, interrupt=None):
+def prior(db, user, tier, key, ts, shown=True, interrupt=None, reason=None):
     """A previously assessed event with an alert row (shown or suppressed)."""
     e = Event(user_id=user.id, device_event_id=f"x{next(_n)}", source="sms", ts=ts, redacted_text="t", hash="h")
     db.add(e)
@@ -35,7 +35,7 @@ def prior(db, user, tier, key, ts, shown=True, interrupt=None):
     db.add(a)
     db.flush()
     db.add(Alert(user_id=user.id, assessment_id=a.id, shown_at=ts if shown else None, dedupe_key=key,
-                 interrupt=(tier in ("high", "critical")) if interrupt is None else interrupt))
+                 interrupt=(tier in ("high", "critical")) if interrupt is None else interrupt, reason=reason))
     db.flush()
     return e.id
 
@@ -87,9 +87,69 @@ def test_tier_increase_passes_dedupe(db, user):
     assert d.show and d.interrupt
 
 
-def test_critical_never_deduped(db, user):
-    prior(db, user, "critical", "k", T0 - timedelta(minutes=5))
+def test_dedupe_window_is_one_sided_and_strict(db, user):
+    prior(db, user, "high", "k", T0 - timedelta(hours=6))  # exactly 6h earlier: outside (ts - 6h < prior)
+    assert decide(db, user, cand("high"), always=False).show
+    prior(db, user, "high", "k", T0 + timedelta(hours=1))  # a LATER alert never dedupes an earlier one
+    assert decide(db, user, cand("high"), always=False).show
+    prior(db, user, "high", "k", T0)  # same instant: inside (prior_ts <= ts)
+    assert not decide(db, user, cand("high"), always=False).show
+
+
+# ---------------------------------------------------------------- critical flood guard / ceiling
+def test_critical_flood_guard_boundary(db, user):
+    prior(db, user, "critical", "k", T0 - timedelta(minutes=9, seconds=59))
+    d = decide(db, user, cand("critical"), always=False)
+    assert (d.show, d.interrupt, d.reason) == (False, False, "critical_flood")
+    assert decide(db, user, cand("critical", key="other"), always=False).show  # new key passes
+
+
+def test_critical_flood_exactly_10_minutes_passes(db, user):
+    prior(db, user, "critical", "k", T0 - timedelta(minutes=10))  # ts - 10min < prior_ts is strict
+    d = decide(db, user, cand("critical"), always=False)
+    assert d.show and d.interrupt
+
+
+def test_critical_flood_ignores_non_critical_and_suppressed(db, user):
+    prior(db, user, "high", "k", T0 - timedelta(minutes=1))
+    prior(db, user, "critical", "k", T0 - timedelta(minutes=2), shown=False)
     assert decide(db, user, cand("critical"), always=False).show
+
+
+def test_critical_daily_ceiling(db, user):
+    for i in range(policy.CRITICAL_DAILY_CEILING):
+        prior(db, user, "critical", f"k{i}", T0 - timedelta(hours=23, minutes=59) + timedelta(minutes=i))
+    d = decide(db, user, cand("critical", key="new"), always=False)
+    assert (d.show, d.reason) == (False, "critical_ceiling")
+    # once the oldest one is 24h old the window has room again
+    assert decide(db, user, cand("critical", key="new", ts=T0 + timedelta(minutes=1)), always=False).show
+
+
+# ---------------------------------------------------------------- /v1/check alerts are not organic
+def test_user_check_alerts_ignored_by_dedupe_cap_and_flood(db, user):
+    prior(db, user, "high", "k", T0 - timedelta(minutes=5), interrupt=False, reason="user_check")
+    prior(db, user, "critical", "c", T0 - timedelta(minutes=5), interrupt=False, reason="user_check")
+    for i in range(5):
+        prior(db, user, "high", f"x{i}", T0 - timedelta(minutes=10 + i), interrupt=True, reason="user_check")
+    assert decide(db, user, cand("high"), always=False).show
+    assert decide(db, user, cand("critical", key="c"), always=False).show
+    assert decide(db, user, cand("high", key="fresh"), always=False).show
+
+
+# ---------------------------------------------------------------- bad device clock
+def test_future_clock_clamped_for_dedupe(db, user):
+    prior(db, user, "high", "k", T0 + timedelta(days=10))
+    d = decide(db, user, cand("high", ts=T0 + timedelta(days=20)), always=False, now=T0)
+    assert d.reason == "duplicate"  # both clamp to now + 1 day
+    assert decide(db, user, cand("high", ts=T0 + timedelta(days=20)), always=False,
+                  now=T0 + timedelta(days=30)).show  # with a real clock they are 10 days apart
+
+
+def test_future_clock_clamped_for_cap(db, user):
+    for i in range(5):
+        prior(db, user, "high", f"k{i}", T0 + timedelta(days=100 * (i + 1)))
+    d = decide(db, user, cand("high", key="new", ts=T0 + timedelta(days=900)), always=False, now=T0)
+    assert d.reason == "daily_cap"
 
 
 def test_other_users_alerts_do_not_dedupe(db, user, register):

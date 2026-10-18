@@ -304,11 +304,52 @@ def test_daily_cap_five_high_interrupts_then_critical_still_shown(client, auth_h
     assert sum(1 for c in hook_calls if c[2].interrupt) == 7
 
 
-def test_critical_never_deduped(client, auth_headers, rules_mode):
+def test_critical_flood_guard(client, auth_headers, rules_mode, hook_calls, db):
     text = "CBI officer here. Share the OTP immediately. Do not tell anyone."
-    for i in range(3):
+    r = post(client, auth_headers, sms(0, "+919811100099", text, D1))
+    assert r["alert"]["tier"] == "critical"
+    for i in (1, 2):  # the same scam re-sent within 10 minutes: stored, not shown, no hooks
         r = post(client, auth_headers, sms(i, "+919811100099", text, D1 + timedelta(minutes=i)))
-        assert r["alert"]["tier"] == "critical"
+        assert r["alert"] is None
+    sup = db.scalar(select(Alert).join(Assessment).where(Assessment.event_id == r["event_id"]))
+    assert sup.reason == "critical_flood" and sup.shown_at is None
+    r = post(client, auth_headers, sms(3, "+919811100055", text, D1 + timedelta(minutes=3)))
+    assert r["alert"]["tier"] == "critical"  # another sender: new key
+    r = post(client, auth_headers, sms(4, "+919811100099", text, D1 + timedelta(minutes=10)))
+    assert r["alert"]["tier"] == "critical"  # exactly 10 min after the last SHOWN one
+    assert len(hook_calls) == 3
+
+
+def test_check_does_not_suppress_later_organic_alert(client, auth_headers, rules_mode, hook_calls):
+    text = "Pay Rs 500 fine immediately to avoid penalty."
+    r = post(client, auth_headers, sms(1, "+919811100010", text, D1), "/v1/check")
+    assert r["alert"]["tier"] == "high"
+    r = post(client, auth_headers, sms(2, "+919811100010", text, D1 + timedelta(minutes=1)))
+    assert r["alert"]["tier"] == "high"  # the user's own check does not count as a prior alert
+    assert [c[2].interrupt for c in hook_calls] == [False, True]
+
+
+def test_info_check_not_in_alert_history(client, auth_headers, rules_mode):
+    lunch = "Hi, are we still meeting for lunch tomorrow?"
+    r = post(client, auth_headers, sms(1, "+919811122233", lunch, D1), "/v1/check")
+    assert r["alert"]["tier"] == "info"
+    scam = post(client, auth_headers, sms(2, "+919811100010", "Pay Rs 500 fine immediately to avoid penalty.",
+                                          D1), "/v1/check")
+    ids = [a["id"] for a in client.get("/v1/alerts", headers=auth_headers).json()]
+    assert ids == [scam["alert"]["id"]]  # a check result of caution and up stays in history
+
+
+def test_unexpected_error_is_opaque_json_500(client, auth_headers, monkeypatch, caplog):
+    from fastapi.testclient import TestClient
+
+    def boom(*a, **kw):
+        raise RuntimeError("SELECT password FROM secrets WHERE otp=123456")
+
+    monkeypatch.setattr(orchestrator.memory, "store_event", boom)
+    r = TestClient(app, raise_server_exceptions=False).post("/v1/events", json=WHATSAPP, headers=auth_headers)
+    assert r.status_code == 500 and r.json() == {"detail": "internal error"}
+    assert "SELECT" not in caplog.text and "123456" not in caplog.text
+    assert "RuntimeError" in caplog.text
 
 
 # ---------------------------------------------------------------- hooks

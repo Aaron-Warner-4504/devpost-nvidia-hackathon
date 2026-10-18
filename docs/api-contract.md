@@ -75,9 +75,14 @@ Response 200 (`EventResult`):
 - `info` is never returned from `/v1/events` (it is logged server-side only).
 - `caution` is returned but is **non-interrupting** (show it in the feed, no notification).
 - `high` / `critical` are returned and should interrupt the user.
-- Alert fatigue control: an alert for the same set of entities (sender, links, orgs, claims) at the same or a
-  lower tier within 6 h of one already shown is not returned again (a tier increase is); at most 5 `high`
-  alerts are returned per rolling 24 h. `critical` is never held back. Timing uses the event `ts`.
+- Alert fatigue control (timing uses the event `ts`, capped at server time + 1 day; "within X" means
+  `ts - X < earlier_ts <= ts`, so exactly X earlier no longer counts):
+  - an alert for the same set of entities (sender, links, orgs, claims) at the same or a lower tier is not
+    returned again within 6 h of an earlier shown one (a tier increase is returned);
+  - at most 5 interrupting alerts per rolling 24 h: further `high` alerts are not returned;
+  - `critical`: the same critical scam (same entities) is not returned again within 10 min of the last
+    shown one, and at most 20 criticals are returned per rolling 24 h; otherwise critical always passes.
+  - Results of `/v1/check` never count toward any of these.
 - Duplicate delivery (a `device_event_id` already seen for this device's user) returns
   `{"event_id": "<the original event_id>", "duplicate": true, "alert": null}` and is not re-processed. Retrying
   after a timeout is therefore safe.
@@ -89,11 +94,18 @@ Response 200 (`EventResult`):
 ## POST /v1/check
 Same request body and response as `/v1/events`, but always runs the full agent (user-initiated "is this a scam?")
 and **always returns an alert**, of any tier including `info`. If the same `device_event_id` was already
-processed, the response has `duplicate: true` and the alert stored for it.
+processed, the response has `duplicate: true` and the alert stored for it. A check never suppresses a later
+alert from `/v1/events` for the same message.
 
 ## GET /v1/alerts?since=<ISO-8601>
 Response 200: list of `AlertOut` (shape as above) that were shown to this user (returned by `/v1/events` or
-`/v1/check`), newest first, at most 100. With `since`, only alerts shown after that instant.
+`/v1/check`), newest first, at most 100. With `since`, only alerts shown after that instant. `info` results
+of `/v1/check` are not listed (they are a direct answer, not alert history).
+
+## Errors
+- `401` missing/invalid token, `422` invalid body (FastAPI validation detail).
+- `500 {"detail": "internal error"}` on an unexpected server failure (e.g. database unavailable); no
+  internals are returned. AI/LLM failures never cause a 500.
 ```json
 [{"id": "alr_123", "event_id": "evt_123", "tier": "high", "headline": "Likely bank-impersonation scam", "why": [], "next_step": "Call your bank.", "signals": ["credential_or_otp_ask"], "created_at": "2026-10-17T10:00:00Z"}]
 ```

@@ -44,6 +44,30 @@ def test_events_with_token_returns_result(client, auth_headers):
     assert r.json()["alert"]["tier"] in ("info", "caution", "high", "critical")
 
 
+def test_events_alert_shape(client, auth_headers):
+    """A scam the real rules rate critical comes back with a full AlertOut (docs/api-contract.md)."""
+    from datetime import datetime
+
+    body = {**EVENT, "device_event_id": "dev-3", "sender": "+919811100099",
+            "text": "CBI officer here. Share the OTP immediately. Do not tell anyone."}
+    r = client.post("/v1/events", json=body, headers=auth_headers)
+    assert r.status_code == 200
+    res = r.json()
+    assert set(res) == {"event_id", "duplicate", "alert"}
+    assert isinstance(res["event_id"], str) and res["event_id"].startswith("evt_") and res["duplicate"] is False
+    a = res["alert"]
+    assert set(a) == {"id", "event_id", "tier", "headline", "why", "next_step", "signals", "created_at"}
+    assert a["id"].startswith("alr_") and a["event_id"] == res["event_id"]
+    assert a["tier"] in ("high", "critical")
+    assert isinstance(a["headline"], str) and a["headline"]
+    assert isinstance(a["next_step"], str) and a["next_step"]
+    assert isinstance(a["why"], list) and all(set(w) == {"event_id", "ts", "text"} for w in a["why"])
+    assert isinstance(a["signals"], list) and all(isinstance(x, str) for x in a["signals"]) and a["signals"]
+    assert datetime.fromisoformat(a["created_at"].replace("Z", "+00:00")).tzinfo is not None
+    listed = client.get("/v1/alerts", headers=auth_headers).json()
+    assert listed == [a]
+
+
 def test_register_unauthenticated(client):
     r = client.post("/v1/devices/register")
     assert r.status_code == 200

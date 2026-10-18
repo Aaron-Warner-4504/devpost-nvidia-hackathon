@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.auth import current_user
@@ -17,9 +17,11 @@ MAX_ALERTS = 100
 @router.get("/v1/alerts", response_model=list[AlertOut])
 def list_alerts(since: datetime | None = None, user: User = Depends(current_user),
                 db: Session = Depends(get_session)):
-    """Alerts that were shown to this user (shown after `since` if given), newest first, max 100."""
+    """Alerts that were shown to this user (shown after `since` if given), newest first, max 100.
+    `info` results of /v1/check are a direct UI response, not alert history, and are left out."""
     q = (select(Alert, Assessment).join(Assessment, Assessment.id == Alert.assessment_id)
-         .where(Alert.user_id == user.id, Assessment.user_id == user.id, Alert.shown_at.is_not(None)))
+         .where(Alert.user_id == user.id, Assessment.user_id == user.id, Alert.shown_at.is_not(None),
+                or_(Alert.reason.is_(None), Alert.reason != "user_check", Assessment.tier != "info")))
     if since is not None:
         q = q.where(Alert.shown_at > (since if since.tzinfo else since.replace(tzinfo=timezone.utc)))
     rows = db.execute(q.order_by(Alert.shown_at.desc(), Alert.id.desc()).limit(MAX_ALERTS)).all()
