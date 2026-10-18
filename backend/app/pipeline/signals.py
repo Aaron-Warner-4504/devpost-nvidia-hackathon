@@ -13,6 +13,7 @@ from decimal import Decimal, InvalidOperation
 
 from app.pipeline.extract import Entity, extract_entities
 from app.pipeline.memory import HistoryItem
+from app.pipeline.redact import redact
 from app.schemas import EventIn, Tier
 
 # ------------------------------------------------------------------ registry
@@ -124,10 +125,31 @@ _CRED_HINGLISH = _rx(
     r"\botp\s+(?:bata|share|bhej|de\b)|\b(?:bata|share|bhej)\w*\s+(?:do\s+)?(?:otp|pin|password|cvv)")
 _VERIFY = _rx(r"\bverif(?:y|ication)\b|\bre-?verify\b|सत्यापित|वेरिफाई|वेरीफाई")
 _LINK_WORD = _rx(r"https?://|www\.|\blink\b|लिंक")
+# Short anchored "standard bank warning" spans. A credential match is only ignored when it lies
+# entirely inside one of these, so an ask appended after the warning ("...with anyone, but send
+# me your OTP") is still caught. Text is already redacted, so OTP digits appear as "[OTP]".
+_TOK = r"(?:\s*\[otp\])?"
 _WARN = re.compile(
-    r"\b(?:do\s+not|don'?t|dont|never|please\s+do\s+not)\s+(?:share|disclose|give|reveal|tell)\b[^.!\n]*"
-    r"|[^।.!?\n]{0,40}?(?:साझा|शेयर)\s*(?:न|नहीं|ना|मत)\s*(?:करें|करना|कीजिए)",
+    r"\b(?:do\s*n[o']?t|don'?t|dont|never|please\s+do\s+not)\s+(?:share|disclose|give|reveal|tell)\s+"
+    r"(?:(?:this|your|the)\s+)?(?:(?:otp|pin|code|password|cvv)" + _TOK + r"|it|this)"
+    r"(?:\s+with\s+(?:anyone|anybody|any\s*one|others?))?"
+    r"|(?:(?:किसी\s*(?:के\s*साथ|से)\s*)?(?:ओटीपी|पिन|कोड|पासवर्ड)" + _TOK + r"\s*)?"
+    r"(?:किसी\s*(?:के\s*साथ|से)\s*)?(?:साझा|शेयर)\s*(?:न|नहीं|ना|मत)\s*(?:करें|करना|कीजिए)"
+    r"|\b(?:(?:otp|pin|code)" + _TOK + r"\s+)?(?:kisi\s+(?:ke\s+saath|se|ko)\s+)?"
+    r"(?:otp|pin|code)?" + _TOK + r"\s*share\s+(?:na|mat|nahi|nahin)\s+kar\w*",
     _I)
+
+
+def _unwarned(rx: re.Pattern, text: str, spans: list[tuple[int, int]]) -> re.Match | None:
+    """First match of `rx` not lying entirely inside a warning span."""
+    pos = 0
+    while (m := rx.search(text, pos)):
+        if not any(a <= m.start() and m.end() <= b for a, b in spans):
+            return m
+        pos = m.start() + 1
+    return None
+
+
 _REMOTE = _rx(
     r"\b(?:any\s*desk|team\s*viewer|quick\s*support|rust\s*desk|screen\s*shar\w*|\.apk|apk|install)\b"
     r"|एनीडेस्क|टीमव्यूअर|स्क्रीन\s*शेयर|इंस्टॉल")
@@ -139,8 +161,9 @@ _SECRECY = _rx(
     r"|किसी\s*(?:को|से)\s*(?:भी\s*)?(?:मत|न|नहीं)\s*(?:बता|कहना|कहें)" + _DEV
     + r"|गोपनीय|राज़?\s+रखें")
 _INJECTION = _rx(
-    r"\b(?:ignore|disregard|forget)\s+(?:all\s+|any\s+|the\s+|your\s+)*(?:previous|prior|above|earlier)\s*"
-    r"(?:instructions?|prompts?|rules?|messages?)"
+    r"\b(?:ignore|disregard|forget)\s+(?:all\s+|any\s+|the\s+|your\s+)*(?:previous|prior|above|earlier)\b"
+    r"|\byou\s+are\s+(?:now\s+)?(?:a|an|the)\s+(?:\w+\s+){0,4}?(?:assistant|ai|model|bot|agent|mode)\b"
+    r"|\brespond\s+with\s+(?:tier|\{|\"?(?:info|safe)\b)"
     r"|\bmark\s+(?:this\s+|it\s+|message\s+)?(?:as\s+)?(?:safe|benign|legit\w*|not\s+(?:a\s+)?scam)\b"
     r"|\b(?:classify|rate|label|treat)\s+(?:this\s+|it\s+)?as\s+(?:safe|info|benign)\b"
     r"|\bdo\s*n[o']?t\s+(?:flag|alert|warn)\b"
@@ -158,7 +181,7 @@ _BANK_HEADER = re.compile(
 
 def _ev(m: re.Match | str) -> str:
     s = m if isinstance(m, str) else m.group(0)
-    return " ".join(s.split())[:80]
+    return redact(" ".join(s.split())[:80])
 
 
 def _utc(d: datetime) -> datetime:
@@ -180,7 +203,7 @@ def _max_amount(entities) -> Decimal | None:
 # ------------------------------------------------------------------ detection
 def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryCtx, *,
                    overrides: Overrides | None = None) -> list[Signal]:
-    text = (event.text or "")[:10000]
+    text = redact((event.text or "")[:10000])
     ents = set(entities)
     out: list[Signal] = []
 
@@ -207,12 +230,13 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
     if payment:
         add("payment_request", _ev(payment))
 
-    clean = _WARN.sub(" ", text)
+    spans = [m.span() for m in _WARN.finditer(text)]
     has_link = bool(_LINK_WORD.search(text)) or any(e.type == "domain" for e in ents)
-    cred = (_CRED_EN.search(clean) or _CRED_HI.search(clean) or _CRED_HINGLISH.search(clean))
+    cred = (_unwarned(_CRED_EN, text, spans) or _unwarned(_CRED_HI, text, spans)
+            or _unwarned(_CRED_HINGLISH, text, spans))
     if cred:
         add("credential_or_otp_ask", _ev(cred))
-    elif has_link and (v := _VERIFY.search(clean)):
+    elif has_link and (v := _VERIFY.search(text)):
         add("credential_or_otp_ask", "verify link: " + _ev(v))
     elif has_link and Entity("claim", "kyc_expired") in ents:
         add("credential_or_otp_ask", "kyc update link")
@@ -239,7 +263,12 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
             add("new_domain", f"{e.canonical} is {di.age_days} days old")
 
     # sender
-    safe_sender = sorted((e for e in ents if e in safe and e.type in ("phone", "domain")),
+    # only entities identifying the actual originator may earn safe discounts; entities merely
+    # named in the body must not (an attacker could name a user-safe number).
+    origin = set(extract_entities(None, event.sender, event.call))
+    if event.source == "email" and event.sender and "@" in event.sender:
+        origin.add(Entity("domain", event.sender.rsplit("@", 1)[1].strip().lower().rstrip(">")))
+    safe_sender = sorted((e for e in origin if e in safe and e.type in ("phone", "domain")),
                          key=lambda x: (x.type, x.canonical))
     if event.call is not None:
         unknown = not event.call.is_contact
@@ -261,8 +290,8 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
             add("channel_hop", f"{key.canonical} seen earlier via {','.join(sorted(other))}")
             break
 
-    benign = _is_benign(event, ents, text, clean, bool(payment), bool(cred), bool(remote),
-                        bool(secrecy), bool(injection), has_link)
+    others = {s.name for s in out} - {"unknown_sender", "channel_hop"}
+    benign = not others and _is_benign(event, ents, text)
 
     risk_names = {s.name for s in out} - {"unknown_sender", "channel_hop"}
     content_risk = bool(risk_names)
@@ -288,15 +317,22 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
     return out
 
 
-def _is_benign(event, ents, text, clean, payment, cred, remote, secrecy, injection, has_link) -> bool:
-    if injection or event.source != "sms" or not event.sender:
+def _is_benign(event, ents, text) -> bool:
+    # NOTE: SMS sender headers are spoofable; a DLT registry lookup is a post-hackathon item.
+    # The discount is therefore only granted to a bare OTP message with no other risk content.
+    if event.source != "sms" or not event.sender:
         return False
     if not _BANK_HEADER.match(event.sender.strip().upper()):
         return False
-    if not _OTP_WORD.search(text):
+    if not _OTP_WORD.search(text) or _LINK_WORD.search(text):
         return False
-    return not (has_link or payment or cred or remote or secrecy
-                or any(e.type == "domain" for e in ents))
+    header_orgs = {e for e in extract_entities(None, event.sender, None) if e.type == "org"}
+    for e in ents:
+        if e.type in ("phone", "domain", "claim", "upi_id"):
+            return False
+        if e.type == "org" and e not in header_orgs:
+            return False
+    return True
 
 
 def _hist_window(ctx: HistoryCtx, now: datetime):
