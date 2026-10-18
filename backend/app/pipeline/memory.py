@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from itertools import combinations
 from typing import Protocol
 
-from sqlalchemy import func, literal_column, select
+from sqlalchemy import func, literal_column, select, true
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
@@ -41,7 +41,8 @@ class HistoryItem:
 def _entity_ids(db: Session, user: _HasId, entities: list[Entity]) -> dict[Entity, str]:
     """Upsert entity rows for this user and return their ids."""
     out: dict[Entity, str] = {}
-    for e in dict.fromkeys(entities):
+    # canonical lock order (type, canonical) so concurrent transactions cannot deadlock
+    for e in sorted(set(entities), key=lambda x: (x.type, x.canonical)):
         stmt = (pg_insert(EntityRow)
                 .values(user_id=user.id, type=e.type, canonical=e.canonical)
                 .on_conflict_do_update(index_elements=["user_id", "type", "canonical"],
@@ -53,10 +54,13 @@ def _entity_ids(db: Session, user: _HasId, entities: list[Entity]) -> dict[Entit
 
 def store_event(db: Session, user: _HasId, ev: EventIn, redacted: str,
                 entities: list[Entity]) -> StoredEvent:
+    """Idempotently store an event. duplicate=True means it was already stored: callers must
+    skip alerting. A naive `ev.ts` is assumed to be UTC."""
+    ts = ev.ts if ev.ts.tzinfo else ev.ts.replace(tzinfo=timezone.utc)
     digest = hashlib.sha256(redacted.encode()).hexdigest()
     stmt = (pg_insert(Event)
             .values(user_id=user.id, device_event_id=ev.device_event_id, source=ev.source,
-                    ts=ev.ts, redacted_text=redacted, hash=digest)
+                    ts=ts, redacted_text=redacted, hash=digest)
             .on_conflict_do_nothing(index_elements=["user_id", "device_event_id"])
             .returning(Event.id))
     new_id = db.execute(stmt).scalar_one_or_none()
@@ -89,14 +93,15 @@ def link(db: Session, user: _HasId, stored: StoredEvent, entities: list[Entity])
     if ts is None:
         return
     ids = _entity_ids(db, user, entities)
+    pending: set[tuple[str, str, str]] = set()
     for x, y in combinations(ids.values(), 2):
         a, b = sorted((x, y))
-        _upsert_edge(db, user.id, a, b, "co_occurs", ts, stored.id)
+        pending.add((a, b, "co_occurs"))
     claims = [i for e, i in ids.items() if e.type == "claim"]
     sources = [i for e, i in ids.items() if e.type in CLAIM_SOURCE_TYPES]
-    for s in sources:
-        for c in claims:
-            _upsert_edge(db, user.id, s, c, "claims", ts, stored.id)
+    pending.update((src, c, "claims") for src in sources for c in claims)
+    for a, b, relation in sorted(pending):  # canonical lock order
+        _upsert_edge(db, user.id, a, b, relation, ts, stored.id)
 
 
 def _entity_id(db: Session, user: _HasId, entity: Entity) -> str | None:
@@ -105,38 +110,73 @@ def _entity_id(db: Session, user: _HasId, entity: Entity) -> str | None:
         EntityRow.canonical == entity.canonical))
 
 
-def history(db: Session, user: _HasId, entity: Entity, now: datetime) -> list[HistoryItem]:
+def history(db: Session, user: _HasId, entity: Entity, now: datetime,
+            exclude_event_id: str | None = None) -> list[HistoryItem]:
+    """Events containing `entity` with ts <= now, oldest first. Includes the current event when
+    now == its ts; pass `exclude_event_id` to leave it out."""
     rows = db.execute(
         select(Event.id, Event.ts, Event.source, Event.redacted_text)
         .join(EventEntity, EventEntity.event_id == Event.id)
         .join(EntityRow, EntityRow.id == EventEntity.entity_id)
         .where(Event.user_id == user.id, EntityRow.user_id == user.id,
                EntityRow.type == entity.type, EntityRow.canonical == entity.canonical,
-               Event.ts <= now)
+               Event.ts <= now,
+               Event.id != exclude_event_id if exclude_event_id else true())
         .order_by(Event.ts, Event.id)).all()
     return [HistoryItem(*r) for r in rows]
 
 
-def related_entities(db: Session, user: _HasId, entity: Entity, depth: int = 2) -> list[Entity]:
-    """Entities reachable over edges (either direction) within `depth` hops, excluding itself."""
+def _edge_rows(db: Session, user_id: str, nodes: set[str], now: datetime | None):
+    q = select(Edge.a, Edge.b).where(Edge.user_id == user_id, Edge.a.in_(nodes) | Edge.b.in_(nodes))
+    if now is not None:
+        q = q.where(Edge.valid_from <= now, (Edge.valid_to.is_(None)) | (Edge.valid_to > now))
+    return db.execute(q).all()
+
+
+def neighbors_by_depth(db: Session, user: _HasId, entity: Entity, *, depth: int = 2,
+                       now: datetime | None = None, types: set[str] | None = None,
+                       hub_degree: int = 25) -> dict[int, list[Entity]]:
+    """Entities by hop distance ({1: direct, 2: indirect}). Edges are time-filtered by `now`.
+    Entities with more than `hub_degree` edges are returned but not expanded through at
+    depth >= 2. Each level is ordered by (type, canonical)."""
     eid = _entity_id(db, user, entity)
-    if eid is None:
-        return []
-    seen, frontier = {eid}, {eid}
-    for _ in range(depth):
-        edges = db.execute(select(Edge.a, Edge.b).where(
-            Edge.user_id == user.id, Edge.a.in_(frontier) | Edge.b.in_(frontier))).all()
-        frontier = {x for a, b in edges for x in (a, b)} - seen
-        seen |= frontier
-        if not frontier:
-            break
-    seen.discard(eid)
-    if not seen:
-        return []
-    rows = db.execute(select(EntityRow.type, EntityRow.canonical).where(
-        EntityRow.user_id == user.id, EntityRow.id.in_(seen))
-        .order_by(EntityRow.type, EntityRow.canonical)).all()
-    return [Entity(t, c) for t, c in rows]
+    levels: dict[int, set[str]] = {d: set() for d in range(1, depth + 1)}
+    if eid is not None:
+        seen, frontier = {eid}, {eid}
+        for d in range(1, depth + 1):
+            edges = _edge_rows(db, user.id, frontier, now)
+            if d >= 2:
+                degree: dict[str, int] = {}
+                for a, b in edges:
+                    for n in (a, b):
+                        if n in frontier:
+                            degree[n] = degree.get(n, 0) + 1
+                hubs = {n for n, c in degree.items() if c > hub_degree}
+                edges = [(a, b) for a, b in edges if not ({a, b} & frontier) <= hubs]
+            frontier = {x for a, b in edges for x in (a, b)} - seen
+            levels[d] = frontier
+            seen |= frontier
+            if not frontier:
+                break
+    out: dict[int, list[Entity]] = {}
+    for d, ids in levels.items():
+        out[d] = []
+        if ids:
+            q = select(EntityRow.type, EntityRow.canonical).where(
+                EntityRow.user_id == user.id, EntityRow.id.in_(ids))
+            if types is not None:
+                q = q.where(EntityRow.type.in_(types))
+            out[d] = [Entity(t, c) for t, c in db.execute(q.order_by(EntityRow.type, EntityRow.canonical))]
+    return out
+
+
+def related_entities(db: Session, user: _HasId, entity: Entity, *, depth: int = 2,
+                     now: datetime | None = None, types: set[str] | None = None,
+                     limit: int = 50, hub_degree: int = 25) -> list[Entity]:
+    """Flat list: depth-1 neighbours first, then depth-2, capped at `limit`."""
+    by = neighbors_by_depth(db, user, entity, depth=depth, now=now, types=types,
+                            hub_degree=hub_degree)
+    return [e for d in sorted(by) for e in by[d]][:limit]
 
 
 def store_embedding(db: Session, user: _HasId, event_id: str, vector: list[float]) -> None:
@@ -146,11 +186,15 @@ def store_embedding(db: Session, user: _HasId, event_id: str, vector: list[float
 
 def recall(db: Session, user: _HasId, text: str, k: int = 5, *, llm,
            vector: list[float] | None = None) -> list[HistoryItem]:
+    """Nearest events by cosine distance (k clamped to 1..50), one row per event."""
+    k = max(1, min(k, 50))
     vec = vector if vector is not None else llm.embed([text])[0]
+    dist = func.min(Embedding.vector.cosine_distance(vec))
     rows = db.execute(
         select(Event.id, Event.ts, Event.source, Event.redacted_text)
         .join(Embedding, Embedding.event_id == Event.id)
         .where(Embedding.user_id == user.id, Event.user_id == user.id)
-        .order_by(Embedding.vector.cosine_distance(vec), Event.ts)
+        .group_by(Event.id)
+        .order_by(dist, Event.ts)
         .limit(k)).all()
     return [HistoryItem(*r) for r in rows]

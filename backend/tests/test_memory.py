@@ -7,7 +7,8 @@ from app.llm import FakeLLM
 from app.models import Device, Edge, Event
 from app.models import Entity as EntityRow
 from app.pipeline.extract import Entity
-from app.pipeline.memory import (history, link, recall, related_entities, store_embedding,
+from app.pipeline.memory import (history, link, neighbors_by_depth, recall, related_entities,
+                                 store_embedding,
                                  store_event)
 from app.schemas import CallMeta, EventIn
 
@@ -113,3 +114,78 @@ def test_recall_scoped_by_user(db, register):
     assert [g.redacted_text for g in got] == ["parcel held", "bank kyc"]
     assert len(recall(db, u, "parcel held", k=1, llm=llm)) == 1
     assert recall(db, U("nobody"), "parcel held", llm=llm) == []
+
+
+def test_concurrent_opposite_order_no_deadlock(db, register):
+    import threading
+    from sqlalchemy.orm import sessionmaker
+    uids = uid(register, db)
+    Session = sessionmaker(bind=db.get_bind())
+    ents = [Entity("phone", f"+9198765432{i:02d}") for i in range(12)]
+    errors = []
+
+    def work(name, order):
+        try:
+            with Session() as s:
+                u = U(uids)
+                for r in range(5):
+                    barrier.wait(timeout=10)
+                    st = store_event(s, u, ev(f"{name}{r}"), "x", order)
+                    link(s, u, st, order)
+                    s.commit()
+        except Exception as e:  # noqa: BLE001
+            errors.append(e)
+
+    barrier = threading.Barrier(2)
+    ts = [threading.Thread(target=work, args=("a", ents)),
+          threading.Thread(target=work, args=("b", ents[::-1]))]
+    [t.start() for t in ts]
+    [t.join(30) for t in ts]
+    assert not errors, errors
+    assert db.scalar(select(func.count()).select_from(Edge).where(Edge.user_id == uids)) == 66
+
+
+def test_related_time_types_limit_and_depth_order(db, register):
+    u = U(uid(register, db))
+    ingest(db, u, ev("1", minutes=0), "a", [P, DOM])
+    ingest(db, u, ev("2", minutes=30), "b", [DOM, ORG])
+    now = T0 + timedelta(minutes=10)
+    assert related_entities(db, u, P, now=now) == [DOM]
+    by = neighbors_by_depth(db, u, P)
+    assert by[1] == [DOM] and by[2] == [ORG]
+    assert related_entities(db, u, P) == [DOM, ORG]
+    assert related_entities(db, u, P, types={"org"}) == [ORG]
+    assert related_entities(db, u, P, limit=1) == [DOM]
+    assert related_entities(db, u, P, depth=1) == [DOM]
+
+
+def test_hub_damping(db, register):
+    u = U(uid(register, db))
+    ingest(db, u, ev("1"), "a", [P, DOM])
+    for i in range(3):
+        ingest(db, u, ev(f"h{i}"), "h", [DOM, Entity("org", f"o{i}")])
+    by = neighbors_by_depth(db, u, P, hub_degree=2)
+    assert by[1] == [DOM] and by[2] == []  # DOM has 4 edges > 2: returned but not expanded
+    assert len(neighbors_by_depth(db, u, P)[2]) == 3
+
+
+def test_recall_clamps_k_and_dedups(db, register):
+    u = U(uid(register, db))
+    llm = FakeLLM()
+    s = store_event(db, u, ev("1", text="a"), "a", [])
+    store_embedding(db, u, s.id, llm.embed(["a"])[0])
+    store_embedding(db, u, s.id, llm.embed(["b"])[0])
+    db.commit()
+    assert len(recall(db, u, "a", k=0, llm=llm)) == 1
+    assert len(recall(db, u, "a", k=999, llm=llm)) == 1
+
+
+def test_history_exclude_and_naive_ts(db, register):
+    u = U(uid(register, db))
+    naive = EventIn(device_event_id="n", source="sms", ts=datetime(2026, 1, 1, 12, 0),
+                    text="t", triage_score=0.1)
+    s1 = ingest(db, u, naive, "n", [P])
+    assert db.get(Event, s1.id).ts == T0
+    s2 = ingest(db, u, ev("2", minutes=5), "m", [P])
+    h = history(db, u, P, T0 + timedelta(minutes=5), exclude_event_id=s2.id)
+    assert [i.event_id for i in h] == [s1.id]
