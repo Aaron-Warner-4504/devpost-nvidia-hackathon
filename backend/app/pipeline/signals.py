@@ -122,7 +122,8 @@ _CRED_HI = re.compile(
     r"|(?:शेयर|साझा|भेज|बता|दर्ज|डाल)" + _DEV + r"[^।.!?\n]{0,30}"
     r"(?:ओटीपी|पिन|पासवर्ड|सीवीवी|आधार|पैन|कार्ड)")
 _CRED_HINGLISH = _rx(
-    r"\botp\s+(?:bata|share|bhej|de\b)|\b(?:bata|share|bhej)\w*\s+(?:do\s+)?(?:otp|pin|password|cvv)")
+    r"\b(?:otp|pin|password|cvv)\b[^.!?\n,]{0,20}\b(?:bata|share|bhej|de\b)\w*"
+    r"|\botp\s+(?:bata|share|bhej|de\b)|\b(?:bata|share|bhej)\w*\s+(?:do\s+)?(?:otp|pin|password|cvv)")
 _VERIFY = _rx(r"\bverif(?:y|ication)\b|\bre-?verify\b|सत्यापित|वेरिफाई|वेरीफाई")
 _LINK_WORD = _rx(r"https?://|www\.|\blink\b|लिंक")
 # Short anchored "standard bank warning" spans. A credential match is only ignored when it lies
@@ -135,6 +136,8 @@ _WARN = re.compile(
     r"(?:\s+with\s+(?:anyone|anybody|any\s*one|others?))?"
     r"|(?:(?:किसी\s*(?:के\s*साथ|से)\s*)?(?:ओटीपी|पिन|कोड|पासवर्ड)" + _TOK + r"\s*)?"
     r"(?:किसी\s*(?:के\s*साथ|से)\s*)?(?:साझा|शेयर)\s*(?:न|नहीं|ना|मत)\s*(?:करें|करना|कीजिए)"
+    r"|\b(?:otp|pin|password|code)" + _TOK + r"\s+kisi\s+(?:ko|se)\s+(?:na|mat|nahi|nahin)\s+bata\w*"
+    r"|(?:ओटीपी|पिन|पासवर्ड|कोड)" + _TOK + r"\s*किसी\s*(?:को|से)\s*(?:न|मत|नहीं)\s*बता[ऀ-ॿ]*"
     r"|\b(?:(?:otp|pin|code)" + _TOK + r"\s+)?(?:kisi\s+(?:ke\s+saath|se|ko)\s+)?"
     r"(?:otp|pin|code)?" + _TOK + r"\s*share\s+(?:na|mat|nahi|nahin)\s+kar\w*",
     _I)
@@ -160,14 +163,21 @@ _SECRECY = _rx(
     r"|\bconfidential\b|\btell\s+(?:no\s*one|nobody)\b|\bkisi\s+ko\s+(?:mat|na)\s+bata\w*"
     r"|किसी\s*(?:को|से)\s*(?:भी\s*)?(?:मत|न|नहीं)\s*(?:बता|कहना|कहें)" + _DEV
     + r"|गोपनीय|राज़?\s+रखें")
+_AI_NOUN = r"(?:assistant|ai|bot|chatbot|llm|language\s+model|model|system)"
+_ROLE_WORD = (r"(?:manager|director|executive|professor|teacher|coach|officer|head|lead|supervisor|"
+              r"trainer|engineer|developer|consultant|analyst|designer|trainee|intern)")
+_DOC_NOUN = r"(?:instructions?|prompts?|rules?|messages?|context|text|conversation|directions?|commands?)"
 _INJECTION = _rx(
-    r"\b(?:ignore|disregard|forget)\s+(?:all\s+|any\s+|the\s+|your\s+)*(?:previous|prior|above|earlier)\b"
-    r"|\byou\s+are\s+(?:now\s+)?(?:a|an|the)\s+(?:\w+\s+){0,4}?(?:assistant|ai|model|bot|agent|mode)\b"
-    r"|\brespond\s+with\s+(?:tier|\{|\"?(?:info|safe)\b)"
+    r"\b(?:ignore|disregard|forget)\s+(?:(?:all|any|the|your|of)\s+)*(?:previous|prior|above|earlier)\s+"
+    r"(?:\w+\s+){0,2}?" + _DOC_NOUN + r"\b"
+    r"|\b(?:ignore|disregard|forget)\s+(?:the\s+)?above\s+and\s+(?:say|respond|reply|output|classify|mark|tell|answer)\b"
+    r"|\byou\s+are\s+(?:now\s+)?(?:a|an|the)\s+(?:\w+\s+){0,3}?" + _AI_NOUN + r"\b(?!\s+" + _ROLE_WORD + r")"
+    r"|\b(?:respond|answer|reply|output)\s+(?:with\s+)?(?:\{\s*)?\"?(?:tier|risk|label)\"?\s*[:=]?\s*\"?\w+"
+    r"|\b(?:respond|answer|reply|output)\s+(?:with\s+)?\"?(?:safe|benign|info|low)\"?\s+(?:tier|risk|label|classification)\b"
     r"|\bmark\s+(?:this\s+|it\s+|message\s+)?(?:as\s+)?(?:safe|benign|legit\w*|not\s+(?:a\s+)?scam)\b"
     r"|\b(?:classify|rate|label|treat)\s+(?:this\s+|it\s+)?as\s+(?:safe|info|benign)\b"
     r"|\bdo\s*n[o']?t\s+(?:flag|alert|warn)\b"
-    r"|\bsystem\s*:|\bassistant\s*:|\byou\s+are\s+now\b|\bnew\s+instructions?\b"
+    r"|\bsystem\s*:|\bassistant\s*:|\byou\s+are\s+now\s+(?:in\s+\w+\s+mode|acting|my)\b|\bnew\s+instructions?\b"
     r"|\{\s*\"(?:tool|tool_calls?|function|name|action)\"\s*:"
     r"|\bpichle\s+(?:sabhi\s+)?(?:nirdesh|instructions?)\b"
     r"|पिछले\s+(?:सभी\s+)?(?:निर्देश|आदेश)" + _DEV + r"[^।.!?\n]{0,15}(?:अनदेखा|नजरअंदाज|नज़रअंदाज़|इग्नोर)"
@@ -181,7 +191,14 @@ _BANK_HEADER = re.compile(
 
 def _ev(m: re.Match | str) -> str:
     s = m if isinstance(m, str) else m.group(0)
-    return redact(" ".join(s.split())[:80])
+    if not isinstance(m, str) and m.string[m.end():m.end() + 1] == "]" and s.count("[") > s.count("]"):
+        s += "]"  # keep a whole [TOKEN] placeholder
+    s = " ".join(s.split())
+    cut = s[:80]
+    if cut.count("[") > cut.count("]"):
+        close = s.find("]", 80)
+        cut = s[:close + 1] if close != -1 else cut[:cut.rfind("[")].rstrip()
+    return redact(cut)
 
 
 def _utc(d: datetime) -> datetime:
@@ -245,7 +262,7 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
     if remote:
         add("remote_access_ask", _ev(remote))
 
-    secrecy = _SECRECY.search(text)
+    secrecy = _unwarned(_SECRECY, text, spans)
     if secrecy:
         add("secrecy_demand", _ev(secrecy))
 
