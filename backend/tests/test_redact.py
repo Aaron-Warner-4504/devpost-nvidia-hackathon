@@ -170,3 +170,20 @@ def test_idempotent_aadhaar_with_phone():
     out = redact(s)
     assert "+91 9876543210" in out and "[AADHAAR]" in out
     assert redact(out) == out
+
+
+@pytest.mark.parametrize("s", [
+    "[aadhaar] 916234567890",
+    "[Aadhaar: 91 6234 567890]",
+    "(uid) 916234567890",
+    "[uid] 916234567890",
+])
+def test_aadhaar_keyword_after_bracket(s):
+    out = redact(s)
+    assert "[AADHAAR]" in out and "6234" not in out and "916" not in out
+
+
+def test_aadhaar_token_idempotence_still_holds():
+    s = "aadhaar number 9162 3456 7890 call +91 9876543210"
+    out = redact(s)
+    assert redact(out) == out and "+91 9876543210" in out

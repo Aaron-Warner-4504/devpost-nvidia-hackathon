@@ -17,7 +17,7 @@ _ACCT_CTX = re.compile(
     re.IGNORECASE,
 )
 _AADHAAR_CTX = re.compile(
-    r"((?<![A-Za-z\[])(?:aadhaar|aadhar|आधार|uid)[^\d]{0,20}?)(\d(?:[ -]?\d){11})(?!\d)",
+    r"((?<![A-Za-z])(?!(?-i:AADHAAR\]))(?:aadhaar|aadhar|आधार|uid)[^\d]{0,20}?)(\d(?:[ -]?\d){11})(?!\d)",
     re.IGNORECASE,
 )
 _PHONE_KW = re.compile(
