@@ -181,6 +181,18 @@ def _unwarned(rx: re.Pattern, text: str, spans: list[tuple[int, int]]) -> re.Mat
     return None
 
 
+_SECRECY_TOKEN = re.compile(r"\b(?:otp|pin|password|cvv)\b|ओटीपी|पिन|पासवर्ड", _I)
+# the warning clause must end right after the span (end, punctuation, or a "-SBI" style signature)
+_CLAUSE_END = re.compile(r"\s*(?:$|[.!?।\n]|[-–—~]\s*[\w &]{1,30}(?:[.!?\n]|$))")
+
+
+def _secrecy_spans(text: str, spans: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """Warning spans that may suppress secrecy_demand: credential token is otp/pin/password/cvv
+    (not bare 'code') and nothing demand-like follows in the clause ("... ki hum bank se ...")."""
+    return [(a, b) for a, b in spans
+            if _SECRECY_TOKEN.search(text[a:b]) and _CLAUSE_END.match(text, b)]
+
+
 _REMOTE = _rx(
     r"\b(?:any\s*desk|team\s*viewer|quick\s*support|rust\s*desk|screen\s*shar\w*|\.apk|apk|install)\b"
     r"|एनीडेस्क|टीमव्यूअर|स्क्रीन\s*शेयर|इंस्टॉल")
@@ -195,19 +207,27 @@ _AI_NOUN = r"(?:assistant|ai|bot|chatbot|llm|language\s+model|model|system)"
 _ROLE_WORD = (r"(?:manager|director|executive|professor|teacher|coach|officer|head|lead|supervisor|"
               r"trainer|engineer|developer|consultant|analyst|designer|trainee|intern)")
 _DOC_NOUN = r"(?:instructions?|prompts?|rules?|messages?|context|text|conversation|directions?|commands?)"
+_NOT_PREV = (r"(?!\s+(?:[\w']+\s+){0,2}?(?:owner|tenant|number|noise|year|bill|balance|address|email|one|"
+             r"time|times|message|messages)\b)")
+_NOT_PRIZE = (r"(?!(?:lucky|winner|eligible|selected|entitled|valued|verified|member|customer|premium|"
+              r"proud|part|subscriber|registered|beneficiary)\b)")
 _INJECTION = _rx(
-    r"\b(?:ignore|disregard|forget)\s+(?:(?:all|any|the|your|of)\s+)*(?:previous|prior|above|earlier)\s+"
-    r"(?:\w+\s+){0,2}?" + _DOC_NOUN + r"\b"
-    r"|\b(?:ignore|disregard|forget)\s+(?:the\s+)?above\s+and\s+(?:say|respond|reply|output|classify|mark|tell|answer)\b"
-    r"|\byou\s+are\s+(?:now\s+)?(?:a|an|the)\s+(?:\w+\s+){0,3}?" + _AI_NOUN + r"\b(?!\s+" + _ROLE_WORD + r")"
+    r"\b(?:ignore|disregard|forget)\s+(?:(?:all|any|the|your|my|of|everything|everyone)\s+)*"
+    r"(?:previous|prior|above|earlier)\b" + _NOT_PREV +
+    r"|\byou\s+are\s+(?:now\s+)?(?:a|an|the)\s+(?:[\w-]+\s+){0,3}?" + _AI_NOUN + r"\b(?!\s+" + _ROLE_WORD + r")"
+    r"|\byou\s+are\s+now\s+(?:(?:a|an|the)\s+" + _NOT_PRIZE + r"|free\b|unrestricted|jailbroken|dan\b"
+    r"|no\s+longer|my\b|acting|in\s+\w+(?:\s+\w+)?\s+mode)"
+    r"|\bfrom\s+now\s+on,?\s+you\b|\bpretend\s+(?:this|it|that|you|to\s+be)\b"
     r"|\b(?:respond|answer|reply|output)\s+(?:with\s+)?(?:\{\s*)?\"?(?:tier|risk|label)\"?\s*[:=]?\s*\"?\w+"
     r"|\b(?:respond|answer|reply|output)\s+(?:with\s+)?\"?(?:safe|benign|info|low)\"?\s+(?:tier|risk|label|classification)\b"
     r"|\bmark\s+(?:this\s+|it\s+|message\s+)?(?:as\s+)?(?:safe|benign|legit\w*|not\s+(?:a\s+)?scam)\b"
     r"|\b(?:classify|rate|label|treat)\s+(?:this\s+|it\s+)?as\s+(?:safe|info|benign)\b"
     r"|\bdo\s*n[o']?t\s+(?:flag|alert|warn)\b"
-    r"|\bsystem\s*:|\bassistant\s*:|\byou\s+are\s+now\s+(?:in\s+\w+\s+mode|acting|my)\b|\bnew\s+instructions?\b"
+    r"|\bsystem\s*:|\bassistant\s*:|\bnew\s+instructions?\b"
     r"|\{\s*\"(?:tool|tool_calls?|function|name|action)\"\s*:"
-    r"|\bpichle\s+(?:sabhi\s+)?(?:nirdesh|instructions?)\b"
+    r"|\bpichle\s+(?:sabhi\s+|sab\s+|saare\s+|saari\s+)?(?:nirdesh|instructions?)\b"
+    r"|(?:ऊपर|पिछले|पिछली)\s+(?:के\s+)?(?:सभी\s+)?(?:निर्देश|आदेश)" + _DEV
+    + r"\s*(?:को\s+)?(?:भूल|अनदेखा|नजरअंदाज|नज़रअंदाज़|इग्नोर|छोड़)"
     r"|पिछले\s+(?:सभी\s+)?(?:निर्देश|आदेश)" + _DEV + r"[^।.!?\n]{0,15}(?:अनदेखा|नजरअंदाज|नज़रअंदाज़|इग्नोर)"
     r"|(?:अनदेखा|नजरअंदाज|इग्नोर)\s*(?:कर)" + _DEV + r"[^।.!?\n]{0,25}(?:निर्देश|आदेश)"
     r"|सुरक्षित\s+(?:के\s+रूप\s+में\s+)?(?:मार्क|चिह्नित|चिन्हित)|\bतुम\s+अब\b|\bआप\s+अब\s+एक\b")
@@ -307,7 +327,7 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
     if remote:
         add("remote_access_ask", _ev(remote))
 
-    secrecy = _unwarned(_SECRECY, text, spans)
+    secrecy = _unwarned(_SECRECY, text, _secrecy_spans(text, spans))
     if secrecy:
         add("secrecy_demand", _ev(secrecy))
 
