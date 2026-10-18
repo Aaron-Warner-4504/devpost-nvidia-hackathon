@@ -19,6 +19,8 @@ from dataclasses import dataclass, field
 from typing import Awaitable, Callable
 from urllib.parse import quote, urlsplit
 
+import idna
+
 ALLOWED_PORTS = frozenset({80, 443, 8080, 8443})
 MAX_URL = 2048
 MAX_ADDRS = 32
@@ -103,10 +105,13 @@ def _host(raw: str) -> str:
         raise Blocked("bad host")
     host = raw[:-1] if raw.endswith(".") else raw
     if not host.isascii():
+        # UTS46 non-transitional (as browsers do): eß.com -> xn--e-qfa.com; also maps fullwidth
+        # digits, ideographic dots and circled letters, so those spellings hit the checks below
         try:
-            host = host.encode("idna").decode("ascii")
-        except (UnicodeError, ValueError):
+            host = idna.encode(host, uts46=True, transitional=False).decode("ascii")
+        except (idna.IDNAError, UnicodeError, ValueError):
             raise Blocked("bad idn host") from None
+        host = host[:-1] if host.endswith(".") else host
     host = host.lower()
     if len(host) > 253:
         raise Blocked("host too long")

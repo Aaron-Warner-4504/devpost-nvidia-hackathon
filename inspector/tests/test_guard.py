@@ -137,3 +137,20 @@ async def test_pinned_backend_connects_only_to_pinned_ip():
     with pytest.raises(Exception):
         await b.connect_unix_socket("/var/run/docker.sock")
     assert inner.connected == [("93.184.216.34", 443)]
+
+
+# ---------------------------------------------------------------- IDNA (UTS46 non-transitional)
+@pytest.mark.parametrize("url", [
+    "http://１２７.０.０.１/", "http://127。0。0。1/", "http://１６９.２５４.１６９.２５４/",
+    "http://ⓛⓞⓒⓐⓛⓗⓞⓢⓣ/", "http://ｌｏｃａｌｈｏｓｔ/", "http://ｍｅｔａｄａｔａ.ｇｏｏｇｌｅ.ｉｎｔｅｒｎａｌ/",
+    "http://ⓛⓞⓒⓐⓛⓗⓞⓢⓣ。/", "http://exa‍mple\u0000.com/", "http://xn--.com/", "http://á́.͸.com/",
+])
+def test_unicode_bypass_spellings_rejected(url):
+    with pytest.raises(Blocked):
+        parse_url(url)
+
+
+def test_idna_is_uts46_non_transitional():
+    assert parse_url("http://eß.com/").host == "xn--e-qfa.com"   # IDNA2003 would give "ess.com"
+    assert parse_url("http://ＥＸＡＭＰＬＥ.com/").host == "example.com"
+    assert parse_url("http://bücher.de/").host == "xn--bcher-kva.de"

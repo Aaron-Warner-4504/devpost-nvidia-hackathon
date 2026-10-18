@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 import unicodedata
 from urllib.parse import urlsplit
@@ -47,13 +48,36 @@ def _clean(s: str | None, n: int) -> str | None:
     return " ".join(s.split())[:n]
 
 
-def _bounded(r: LinkReport) -> LinkReport:
+MAX_URL = 300
+_FEED_HIT = re.compile(r"[a-z_]+:[A-Za-z0-9_]+")
+_BRAND = re.compile(r"[A-Za-z0-9 .&'-]{1,64}")
+
+
+def safe_url(u: object) -> bool:
+    """Strict check for page-influenced URLs before anything downstream (agent, UI) sees them:
+    http(s) only, printable ASCII without whitespace, <= 300 chars, parseable with a host."""
+    if not isinstance(u, str) or not 0 < len(u) <= MAX_URL:
+        return False
+    if any(not (0x21 <= ord(c) <= 0x7E) for c in u):
+        return False
+    try:
+        sp = urlsplit(u)
+        sp.port  # noqa: B018  (raises ValueError for a malformed port)
+        return sp.scheme in ("http", "https") and bool(sp.hostname)
+    except ValueError:
+        return False
+
+
+def sanitize_report(r: LinkReport, url: str) -> LinkReport:
+    """Validate/cap every page-influenced field. Invalid hops are dropped, an invalid final_url is
+    replaced by the original url, malformed feed hits are dropped. Idempotent."""
     return r.model_copy(update={
-        "final_url": _clean(r.final_url, 2048) or "",
-        "redirect_chain": [_clean(u, 2048) or "" for u in r.redirect_chain[:10]],
+        "final_url": r.final_url if safe_url(r.final_url) else url,
+        "redirect_chain": [u for u in r.redirect_chain[:10] if safe_url(u)],
         "title": _clean(r.title, 200) or None,
-        "brand_mismatch": _clean(r.brand_mismatch, 64) or None,
-        "threat_feed_hits": [h for h in (_clean(x, 64) for x in r.threat_feed_hits[:20]) if h],
+        "brand_mismatch": b if (b := _clean(r.brand_mismatch, 64)) and _BRAND.fullmatch(b) else None,
+        "threat_feed_hits": [h for h in r.threat_feed_hits[:20] if isinstance(h, str) and len(h) <= 64
+                             and _FEED_HIT.fullmatch(h)],
         "text_excerpt": _clean(r.text_excerpt, 1500) or "",
     })
 
@@ -83,7 +107,7 @@ def inspect_link(url: str, settings: Settings | None = None) -> LinkReport:
                     buf += chunk
                     if len(buf) > MAX_RESPONSE_BYTES or time.monotonic() > deadline:
                         return failed
-        return _bounded(LinkReport.model_validate(json.loads(bytes(buf))))
+        return sanitize_report(LinkReport.model_validate(json.loads(bytes(buf))), url)
     except Exception as e:  # message text could echo request details: log the type only
         log.info("inspector call failed: %s", type(e).__name__)
         return failed

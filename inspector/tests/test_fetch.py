@@ -40,7 +40,7 @@ async def test_meta_refresh_is_followed_as_a_hop(server, resolver, pol):
 
 
 @pytest.mark.parametrize("path", ["/to-metadata", "/to-localhost", "/to-loopback-ip", "/to-decimal",
-                                  "/to-private-host", "/meta-metadata"])
+                                  "/to-private-host"])
 async def test_redirect_into_private_space_is_blocked(server, resolver, pol, path):
     before = list(server.hits)
     r = await go(server, resolver, pol, "phish.sentinel-test.com", path)
@@ -115,3 +115,47 @@ async def test_read_idle_timeout(server, resolver, pol):
 async def test_404_still_fetched(server, resolver, pol):
     r = await go(server, resolver, pol, "phish.sentinel-test.com", "/notfound-phish")
     assert r.ok and r.status == 404 and b"password" in r.body
+
+
+# ---------------------------------------------------------------- review fix round 1
+async def test_blocked_location_is_not_echoed(server, resolver, pol):
+    r = await go(server, resolver, pol, "phish.sentinel-test.com", "/js-location")
+    assert not r.ok and r.chain[-1] == "<blocked: scheme>"
+    assert not any("ignore" in c.lower() or "SAFE" in c for c in r.chain) and "ignore" not in r.final_url.lower()
+    r = await go(server, resolver, pol, "phish.sentinel-test.com", "/to-decimal")
+    assert r.chain[-1] == "<blocked: host>"
+
+
+@pytest.mark.parametrize("path,marker", [("/meta-data-url", b"password"), ("/meta-js", b"otp"),
+                                         ("/meta-metadata", b"169.254")])
+async def test_blocked_meta_refresh_keeps_current_page(server, resolver, pol, path, marker):
+    r = await go(server, resolver, pol, "phish.sentinel-test.com", path)
+    assert r.ok and r.error is None and r.status == 200 and marker in r.body
+    assert r.chain == [server.url("phish.sentinel-test.com", path)] and r.final_url == r.chain[0]
+
+
+async def test_meta_refresh_to_private_resolving_host_keeps_page(server, resolver, pol):
+    resolver.table["meta-private.sentinel-test.com"] = ["10.9.9.9"]
+    before = len(server.hits)
+    r = await go(server, resolver, pol, "phish.sentinel-test.com", "/meta-private")
+    assert r.ok and r.final_url == server.url("phish.sentinel-test.com", "/meta-private")
+    assert len(r.chain) == 1 and b"password" in r.body and len(server.hits) == before + 1
+    ok = await go(server, resolver, pol, "phish.sentinel-test.com", "/meta")  # allowed targets still followed
+    assert ok.ok and ok.final_url.endswith("/login")
+
+
+@pytest.mark.parametrize("path", ["/br", "/zstd", "/badgzip", "/gzip-gzip"])
+async def test_undecodable_body_is_flagged_not_clean(server, resolver, pol, path):
+    r = await go(server, resolver, pol, "phish.sentinel-test.com", path)
+    assert r.ok and r.status == 200 and r.undecodable and r.body == b""
+
+
+@pytest.mark.parametrize("path", ["/rawdeflate", "/zdeflate", "/gzlogin"])
+async def test_deflate_variants_decoded(server, resolver, pol, path):
+    r = await go(server, resolver, pol, "phish.sentinel-test.com", path)
+    assert r.ok and not r.undecodable and b"type='password'" in r.body
+
+
+async def test_accept_encoding_never_offers_br_or_zstd(server, resolver, pol):
+    r = await go(server, resolver, pol, "phish.sentinel-test.com", "/echo-headers")
+    assert b"<title>gzip, deflate</title>" in r.body

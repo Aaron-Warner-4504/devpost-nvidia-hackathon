@@ -212,3 +212,74 @@ async def test_concurrency_cap(server, resolver):
 def test_response_is_json_safe(client, server):
     b = inspect(client, server.url("phish.sentinel-test.com", "/login"))
     json.dumps(b)
+
+
+# ---------------------------------------------------------------- review fix round 1
+def test_probe_location_and_meta_never_echoed(client, server):
+    b = inspect(client, server.url("phish.sentinel-test.com", "/js-location"))
+    assert b["fetched_ok"] is False
+    dumped = json.dumps(b)
+    assert "ignore" not in dumped.lower() and "verdict" not in dumped.lower()
+    assert b["redirect_chain"][-1] == "<blocked: scheme>"
+    m = inspect(client, server.url("phish.sentinel-test.com", "/meta-data-url"))
+    assert m["fetched_ok"] and m["has_password_field"] and "verified safe" not in json.dumps(m)
+    assert m["final_url"] == server.url("phish.sentinel-test.com", "/meta-data-url")
+
+
+def test_blocked_meta_refresh_keeps_static_findings(client, server):
+    for path, field in (("/meta-metadata", None), ("/meta-js", "has_otp_or_upi_or_card_field"),
+                        ("/meta-private", "has_password_field")):
+        b = inspect(client, server.url("phish.sentinel-test.com", path))
+        assert b["fetched_ok"] is True and b["redirect_chain"] == [server.url("phish.sentinel-test.com", path)]
+        if field:
+            assert b[field] is True
+
+
+def test_http_redirect_into_private_still_fails(client, server):
+    assert inspect(client, server.url("phish.sentinel-test.com", "/to-metadata"))["fetched_ok"] is False
+
+
+@pytest.mark.parametrize("path", ["/br", "/zstd", "/badgzip", "/gzip-gzip"])
+def test_undecodable_body_is_not_reported_clean(client, server, path):
+    b = inspect(client, server.url("phish.sentinel-test.com", path))
+    assert b["fetched_ok"] is False and b["status"] == 200 and b["title"] is None
+
+
+def test_raw_deflate_page_analysed(client, server):
+    b = inspect(client, server.url("phish.sentinel-test.com", "/rawdeflate"))
+    assert b["fetched_ok"] and b["has_password_field"]
+
+
+class StuckRenderer:
+    async def start(self):
+        return True
+
+    async def close(self):
+        pass
+
+    async def render(self, html, timeout=3.0):
+        await asyncio.sleep(60)  # ignores its timeout
+
+
+def test_render_timeout_keeps_static_findings(server, resolver):
+    with TestClient(make(server, resolver, renderer=StuckRenderer(), total_timeout=3)) as c:
+        t = time.monotonic()
+        b = inspect(c, server.url("phish.sentinel-test.com", "/login"))
+        assert time.monotonic() - t < 4
+    assert b["fetched_ok"] and b["has_password_field"] and b["has_otp_or_upi_or_card_field"]
+    assert b["title"].startswith("HDFC")
+
+
+SECRETS = {"INSPECTOR_SECRET": SECRET, "SAFE_BROWSING_API_KEY": "sb-key-" + "q" * 30,
+           "URLHAUS_AUTH_KEY": "uh-key-" + "w" * 30}
+
+
+def test_secrets_removed_from_environment_but_kept_in_objects(monkeypatch):
+    for k, v in SECRETS.items():
+        monkeypatch.setenv(k, v)
+    app = create_app(render=False)
+    assert not set(SECRETS) & set(os.environ)
+    feeds = app.state.inspector.feeds
+    assert feeds.sb_key == SECRETS["SAFE_BROWSING_API_KEY"] and feeds.urlhaus_key == SECRETS["URLHAUS_AUTH_KEY"]
+    with TestClient(app) as c:
+        assert c.post("/inspect", json={"url": "http://localhost/"}, headers=H).status_code == 200

@@ -24,7 +24,7 @@ from detect import TEXT_CAP, analyze_html, brand_mismatch, decode_body
 from feeds import Feeds
 from fetch import FetchResult, _is_html, fetch
 from guard import Blocked, Policy, Resolver, default_resolver
-from render import Renderer
+from render import SECRET_ENV, Renderer
 
 log = logging.getLogger("inspector")
 MIN_SECRET_LEN = 16
@@ -92,18 +92,26 @@ class Inspector:
             try:
                 async with asyncio.timeout_at(deadline - FEED_RESERVE):
                     await fetch(start.url, resolver=self.resolver, policy=self.policy, result=fr)
-                    if fr.ok:
-                        self._page(rep, fr)
-                        if (self.renderer is not None and not fr.triggers_download
-                                and _is_html(fr.content_type, fr.body)):
-                            budget = min(self.render_timeout, deadline - FEED_RESERVE - loop.time())
-                            html = decode_body(fr.body, fr.content_type)
-                            rendered = await self.renderer.render(html, timeout=budget)
-                            if rendered is not None:
-                                self._merge(rep, analyze_html(rendered))
-                        rep.fetched_ok = True
             except TimeoutError:
                 log.info("inspect timed out")
+            if fr.ok:
+                self._page(rep, fr)
+                # an undecodable body (br/zstd/corrupt) is unknown content, never a "clean" page
+                rep.fetched_ok = not fr.undecodable
+                if (rep.fetched_ok and self.renderer is not None and not fr.triggers_download
+                        and _is_html(fr.content_type, fr.body)):
+                    # rendering has its own sub-budget; if it fails or times out, the static
+                    # findings above stand (fetched_ok is already True)
+                    budget = min(self.render_timeout, deadline - FEED_RESERVE - loop.time() - 0.5)
+                    if budget > 0.3:
+                        html = decode_body(fr.body, fr.content_type)
+                        try:
+                            async with asyncio.timeout(budget + 0.25):
+                                rendered = await self.renderer.render(html, timeout=budget)
+                        except TimeoutError:
+                            rendered = None
+                        if rendered is not None:
+                            self._merge(rep, analyze_html(rendered))
             rep.redirect_chain = list(fr.chain)
             rep.final_url = fr.final_url or rep.final_url
             if rep.fetched_ok and rep.final_url != start.url:
@@ -130,7 +138,7 @@ class Inspector:
         rep.status = fr.status
         rep.triggers_download = fr.triggers_download
         rep.apk_download = fr.apk_download
-        if fr.triggers_download or not _is_html(fr.content_type, fr.body):
+        if fr.undecodable or fr.triggers_download or not _is_html(fr.content_type, fr.body):
             return
         f = analyze_html(decode_body(fr.body, fr.content_type))
         rep.title = f.title
@@ -149,7 +157,7 @@ class Inspector:
 
 
 def create_app(*, secret: str | None = None, resolver: Resolver | None = None, feeds=None,
-               render: bool = True, total_timeout: float = 10.0, render_timeout: float = 3.0,
+               render: bool = True, renderer=None, total_timeout: float = 10.0, render_timeout: float = 3.0,
                max_concurrency: int = 4, queue_timeout: float = 2.0,
                _test_allow: frozenset[tuple[str, int]] = frozenset()) -> FastAPI:
     """App factory. `_test_allow` (exact (ip, port) pairs) exists for tests only and can only be
@@ -158,9 +166,14 @@ def create_app(*, secret: str | None = None, resolver: Resolver | None = None, f
     if not isinstance(secret, str) or len(secret.strip()) < MIN_SECRET_LEN:
         raise RuntimeError("INSPECTOR_SECRET must be set (at least 16 characters)")
     key = secret.encode()
-    renderer = Renderer() if render else None
+    feeds = feeds if feeds is not None else Feeds.from_env()
+    # Secrets now live only in Python objects. Remove them from the environment so that no child
+    # process (Playwright's node driver copies os.environ; Chromium inherits from it) ever gets them.
+    for k in SECRET_ENV:
+        os.environ.pop(k, None)
+    renderer = renderer if renderer is not None else (Renderer() if render else None)
     inspector = Inspector(resolver=resolver or default_resolver, policy=Policy(test_allow=frozenset(_test_allow)),
-                          feeds=feeds if feeds is not None else Feeds.from_env(), renderer=renderer,
+                          feeds=feeds, renderer=renderer,
                           total_timeout=total_timeout, render_timeout=render_timeout)
     sem = asyncio.Semaphore(max_concurrency)
 
@@ -177,6 +190,7 @@ def create_app(*, secret: str | None = None, resolver: Resolver | None = None, f
 
     app = FastAPI(title="sentinel-inspector", docs_url=None, redoc_url=None, openapi_url=None,
                   lifespan=lifespan)
+    app.state.inspector = inspector
 
     @app.get("/health")
     async def health():

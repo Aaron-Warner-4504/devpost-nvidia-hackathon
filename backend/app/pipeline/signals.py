@@ -47,6 +47,8 @@ SIGNAL_WEIGHTS: dict[str, int] = {
     "threat_feed_hit": 5,
 }
 
+# Link-inspector verdicts that no discount (user_marked_safe, known_benign_sender) may offset
+LINK_HARD = frozenset({"credential_form_on_new_domain", "apk_download", "threat_feed_hit"})
 TIER_ORDER: tuple[Tier, ...] = ("info", "caution", "high", "critical")
 _THRESHOLDS: tuple[tuple[int, Tier], ...] = ((7, "critical"), (4, "high"), (2, "caution"))
 _FLOOR_A = {"payment_request", "credential_or_otp_ask"}
@@ -475,8 +477,9 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
     if bad:
         add("known_bad_entity", f"{bad[0].type}:{bad[0].canonical}")
 
-    # negative signals never apply when the text tries to instruct the AI
-    if not injection:
+    # negative signals never apply when the text tries to instruct the AI, or when an external
+    # link verdict (threat feed, APK, credential form on a fresh domain) says the link is bad
+    if not injection and not ({s.name for s in out} & LINK_HARD):
         if benign:
             add("known_benign_sender", f"trusted sender {event.sender}, OTP-only message")
         if safe_sender:
@@ -631,8 +634,8 @@ def _amount_escalation(ents: set[Entity], ctx: HistoryCtx, now: datetime) -> str
 # ------------------------------------------------------------------ tiers
 def tier_for(signals: list[Signal], history_ctx: HistoryCtx | None = None) -> Tier:
     names = {s.name for s in signals}
-    injected = "injection_attempt" in names
-    total = sum(s.weight for s in signals if not (injected and s.weight < 0))
+    no_discount = bool(names & ({"injection_attempt"} | LINK_HARD))
+    total = sum(s.weight for s in signals if not (no_discount and s.weight < 0))
     total = max(total, 0)
     tier: Tier = "info"
     for threshold, t in _THRESHOLDS:

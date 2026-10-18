@@ -36,7 +36,7 @@ UA = ("Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like 
 _HEADERS = [(b"User-Agent", UA.encode()),
             (b"Accept", b"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
             (b"Accept-Language", b"en-IN,en;q=0.9,hi;q=0.8"),
-            (b"Accept-Encoding", b"identity"),
+            (b"Accept-Encoding", b"gzip, deflate"),  # never br/zstd: we must be able to decode
             (b"Connection", b"close")]
 APK_TYPES = frozenset({"application/vnd.android.package-archive"})
 DOWNLOAD_TYPES = APK_TYPES | frozenset({
@@ -96,7 +96,17 @@ class FetchResult:
     truncated: bool = False
     triggers_download: bool = False
     apk_download: bool = False
+    undecodable: bool = False  # body could not be decoded: page content unknown (not "clean")
     error: str | None = None
+
+
+def _blocked_label(url: object) -> str:
+    """Safe chain entry for a hop that failed parsing: never echo the attacker's Location."""
+    try:
+        scheme = urlsplit(url).scheme.lower() if isinstance(url, str) else ""
+    except ValueError:
+        scheme = ""
+    return "<blocked: host>" if scheme in ("http", "https") else "<blocked: scheme>"
 
 
 def _header(headers, name: bytes) -> str:
@@ -123,31 +133,40 @@ def _download_info(t: Target, headers) -> tuple[bool, bool]:
     return dl, apk
 
 
-async def _read_body(resp, headers, max_bytes: int) -> tuple[bytes, bool]:
+async def _read_body(resp, headers, max_bytes: int) -> tuple[bytes, bool, bool]:
+    """-> (body, truncated, decodable). Undecodable (unsupported/stacked encoding, zlib error)
+    returns decodable=False so the caller never mistakes it for a clean empty page."""
     enc = _header(headers, b"content-encoding").strip().lower()
     if enc in ("gzip", "x-gzip"):
-        dec = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        mode, dec = "gzip", zlib.decompressobj(16 + zlib.MAX_WBITS)
     elif enc == "deflate":
-        dec = zlib.decompressobj(zlib.MAX_WBITS)
+        mode, dec = "deflate", None  # zlib-wrapped or raw: decided from the first two bytes
     elif enc in ("", "identity"):
-        dec = None
+        mode, dec = None, None
     else:
-        return b"", False  # unsupported/stacked encoding: never decode it
-    buf, raw = bytearray(), 0
+        return b"", False, False
+    buf, raw, pending = bytearray(), 0, b""
     async for chunk in resp.aiter_stream():
         raw += len(chunk)
+        if mode == "deflate" and dec is None:
+            pending += chunk
+            if len(pending) < 2:
+                continue
+            zlib_hdr = (pending[0] & 0x0F) == 8 and ((pending[0] << 8) | pending[1]) % 31 == 0
+            dec = zlib.decompressobj(zlib.MAX_WBITS if zlib_hdr else -zlib.MAX_WBITS)
+            chunk, pending = pending, b""
         if dec is not None:
             try:
                 buf += dec.decompress(chunk, max_bytes - len(buf) + 1)
             except zlib.error:
-                return bytes(buf[:max_bytes]), True
+                return b"", False, False
         else:
             buf += chunk
-        if len(buf) > max_bytes:
-            return bytes(buf[:max_bytes]), True
-        if raw > MAX_RAW:
-            return bytes(buf[:max_bytes]), True
-    return bytes(buf), False
+        if len(buf) > max_bytes or raw > MAX_RAW:
+            return bytes(buf[:max_bytes]), True, True
+    if mode == "deflate" and dec is None and pending:
+        return b"", False, False
+    return bytes(buf), False, True
 
 
 async def _sniff(resp) -> bytes:
@@ -178,22 +197,38 @@ async def fetch(url: str, *, resolver: Resolver = default_resolver, policy: Poli
     timeouts = {"connect": connect_timeout, "read": read_timeout, "write": read_timeout,
                 "pool": connect_timeout}
     current, hops = url, 0
+    meta_prev: dict | None = None  # page we left via meta refresh (restored if the target is blocked)
+
+    def back_to_meta_page() -> FetchResult:
+        # real browsers ignore javascript:/data:/unreachable refresh targets: keep the page we had
+        for k, v in meta_prev.items():
+            setattr(res, k, v)
+        res.ok, res.error = True, None
+        return res
+
     while True:
         try:
             t = policy.parse(current)
         except Blocked as e:
-            res.chain.append(current[:MAX_LOCATION] if isinstance(current, str) else "")
+            if meta_prev is not None:
+                return back_to_meta_page()
+            res.chain.append(_blocked_label(current))
             res.error = f"blocked: {e}"
             return res
         res.chain.append(t.url)
-        res.final_url = t.url
         try:
             ip = await resolve_pinned(t, resolver, policy)
         except Blocked as e:
+            if meta_prev is not None:
+                res.chain.pop()
+                return back_to_meta_page()
+            res.final_url = t.url
             res.error = f"blocked: {e}"
             return res
+        res.final_url = t.url
 
         nxt: str | None = None
+        via_meta = False
         try:
             pool = httpcore.AsyncConnectionPool(
                 ssl_context=ssl_context or _SSL, max_connections=1, http1=True, http2=False, retries=0,
@@ -217,15 +252,18 @@ async def fetch(url: str, *, resolver: Resolver = default_resolver, policy: Poli
                             res.triggers_download = True
                             res.apk_download = apk or apk_magic(res.body)
                         else:
-                            res.body, res.truncated = await _read_body(resp, headers, max_bytes)
-                            if apk_magic(res.body[:SNIFF]):
+                            res.body, res.truncated, ok = await _read_body(resp, headers, max_bytes)
+                            res.undecodable = not ok
+                            if res.undecodable:
+                                pass
+                            elif apk_magic(res.body[:SNIFF]):
                                 res.triggers_download = res.apk_download = True
                                 res.body = res.body[:SNIFF]
                             elif (_is_html(res.content_type, res.body) and 200 <= resp.status < 300
                                   and hops < max_hops):
                                 facts = analyze_html(decode_body(res.body, _header(headers, b"content-type")))
                                 if facts.meta_refresh:
-                                    nxt = urljoin(t.url, facts.meta_refresh)
+                                    nxt, via_meta = urljoin(t.url, facts.meta_refresh), True
         except httpcore.TimeoutException:
             res.error = "timeout"
             return res
@@ -244,6 +282,8 @@ async def fetch(url: str, *, resolver: Resolver = default_resolver, policy: Poli
             res.error = "too many redirects"
             return res
         hops += 1
+        meta_prev = ({k: getattr(res, k) for k in ("status", "content_type", "body", "truncated",
+                                                   "final_url", "undecodable")} if via_meta else None)
         res.status, res.content_type, res.body, res.truncated = None, "", b"", False
         current = nxt
 

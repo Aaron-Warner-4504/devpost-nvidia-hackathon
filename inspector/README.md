@@ -32,7 +32,10 @@ uv run pytest -q                                        # Chromium tests skip if
 
 Environment: `INSPECTOR_SECRET` (required, >= 16 chars, the app refuses to start otherwise),
 `SAFE_BROWSING_API_KEY` (optional; no key => Safe Browsing skipped), `URLHAUS_AUTH_KEY`
-(optional; without it URLhaus is tried anonymously and failures are ignored). The API side needs
+(URLhaus's API now requires an Auth-Key, free from https://auth.abuse.ch/; without it the
+lookup is still attempted but fails, which simply yields no hits). Secrets are read once at
+startup and then removed from `os.environ`, so neither Playwright's node driver nor Chromium
+inherits them. The API side needs
 `INSPECTOR_URL=http://inspector:8080` and the same `INSPECTOR_SECRET`.
 
 Docker: `backend/docker-compose.yml` builds `../inspector` as service `inspector`. Set
@@ -66,7 +69,8 @@ the image.
 * The service resolves the hostname itself (all A/AAAA answers) and rejects the URL if ANY answer
   is not a global unicast address (`ipaddress.is_global` plus explicit private, loopback,
   link-local incl. 169.254.169.254 and fd00:ec2::254, CGNAT 100.64/10, multicast, reserved,
-  unspecified, documentation, benchmarking; IPv4-mapped, 6to4, Teredo, NAT64 and IPv4-compatible
+  unspecified, documentation, benchmarking; non-ASCII hosts go through UTS46 non-transitional IDNA
+  (fullwidth digits, ideographic dots, circled letters are mapped first and then hit these checks); IPv4-mapped, 6to4, Teredo, NAT64 and IPv4-compatible
   IPv6 are rejected, and their embedded IPv4 is checked too).
 * Connection pinning: the HTTP client (httpcore) uses a network backend that can only open a TCP
   connection to the IP validated for that (host, port); TLS SNI/certificate checks still use the
@@ -75,7 +79,13 @@ the image.
 * Redirects (3xx and meta refresh <= 10 s) are followed manually, max 5, and every hop is parsed,
   resolved, validated and pinned again (a rebinding answer on a later hop is caught).
 * No cookies, no credentials, no proxy env (httpcore does not read proxy variables; the feed client
-  uses `trust_env=False`), `Accept-Encoding: identity`.
+  uses `trust_env=False`), `Accept-Encoding: gzip, deflate` only (zlib-wrapped and raw deflate are
+  both decoded). A body that cannot be decoded (br/zstd/stacked/corrupt) is reported
+  `fetched_ok=false`, never as a clean empty page.
+* Blocked hops are recorded as `<blocked: scheme>` / `<blocked: host>`, never the raw Location.
+  A meta refresh to a blocked/invalid target (javascript:, data:, private) is ignored like a
+  browser would: the current page is the final page (`fetched_ok=true`). HTTP 3xx into private
+  space remains a failure.
 * 10 s wall-clock budget for the whole inspection (DNS, fetch, render, feeds) via `asyncio`
   timeouts; 4 s per-read idle timeout; body capped at 2 MB of DECOMPRESSED bytes (bounded zlib
   decompressor; 4 MB raw cap; unknown encodings are not decoded), so gzip bombs and slow-drip
@@ -105,7 +115,10 @@ The service fetches the HTML itself (above) and only then renders it in headless
   incl. loopback, `--host-resolver-rules=MAP * ~NOTFOUND`, WebRTC limited to proxied UDP;
 * secrets are removed from Chromium's environment, and the Python process marks itself
   non-dumpable so a same-uid child cannot read its `/proc/<pid>/environ` or memory;
-* the rendered DOM is read with `page.content()` (Playwright's isolated world), and the result is
+* JS heap capped (`--max-old-space-size=128`); the rendered DOM is read in a fresh CDP isolated
+  world (pristine prototypes), with element count / text size checked before serialising and the
+  result capped at 2 MB; rendering has its own sub-budget and a render failure or timeout keeps
+  the static findings (`fetched_ok=true`); the result is
   UNIONED with the static analysis: page scripts can add fields but cannot hide ones present in
   the served HTML. If Chromium is missing or fails, static analysis (lexbor parser) is used alone.
 
@@ -149,3 +162,13 @@ victim tokens) are disclosed to Google and abuse.ch.
   instructions.
 * The brand list for `brand_mismatch` is small and hand-maintained; no screenshot/vision check.
 * DNS resolution runs in a worker thread; a timed-out lookup is abandoned, not killed.
+
+## Notes for the API orchestrator (Task 10)
+
+* `HistoryCtx.link_reports` must be populated (keyed by the message's domain-entity canonical,
+  lower-case host without `www.`); until then the `credential_form_on_new_domain`, `apk_download`
+  and `threat_feed_hit` signals cannot fire.
+* Add `DomainInfo` for the FINAL URL's host too (from `LinkReport.final_url`), not only the
+  message's domain; otherwise `credential_form_on_new_domain` cannot fire for a shortener or
+  redirect landing on a freshly registered phishing domain.
+* Those three signals also disable `user_marked_safe` / `known_benign_sender` discounts.

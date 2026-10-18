@@ -864,3 +864,25 @@ def test_link_signals_block_benign_discount():
     text = "123456 is your OTP for login to HDFC Bank. Do not share OTP with anyone."
     # no domain in message -> report ignored -> benign as before
     assert "known_benign_sender" in names(run(ev(text, sender="VM-HDFCBK"))[0])
+
+
+# ---------------------------------------------------------------- review fix round 1: no discounts on link verdicts
+@pytest.mark.parametrize("report", [
+    rep("https://evil-site.xyz/x", threat_feed_hits=["safe_browsing:MALWARE"]),
+    rep("https://evil-site.xyz/x", triggers_download=True, apk_download=True),
+    rep("https://evil-site.xyz/x", has_password_field=True),
+])
+def test_link_verdicts_are_not_discountable(report):
+    ov = Overrides(safe=frozenset({Entity("phone", "+919811122233")}))
+    sigs, tier = run(ev("hi see https://evil-site.xyz/x", sender="+919811122233"),
+                     lctx({"evil-site.xyz": report}, {"evil-site.xyz": DomainInfo(age_days=2)}), overrides=ov)
+    assert "user_marked_safe" not in names(sigs)
+    assert TIER_ORDER.index(tier) >= TIER_ORDER.index("high")
+
+
+def test_tier_for_ignores_negatives_with_link_verdict():
+    sigs = [Signal("threat_feed_hit", 5, "x"), Signal("user_marked_safe", -2, "y"),
+            Signal("known_benign_sender", -2, "z")]
+    assert tier_for(sigs) == "high"  # 5, not 5-2-2=1
+    assert tier_for([Signal("apk_download", 4, "x"), Signal("user_marked_safe", -2, "y")]) == "high"
+    assert tier_for([Signal("new_domain", 2, "x"), Signal("user_marked_safe", -2, "y")]) == "info"  # unchanged

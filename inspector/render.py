@@ -12,8 +12,8 @@ Chromium must never touch the network. Layers:
   5. JS runs only with --jitless (no JIT/WASM: removes a large class of V8 exploits);
   6. a fresh context per call (no cookies/storage), closed in finally; hard timeout; secrets are
      scrubbed from Chromium's environment.
-The rendered DOM is read with page.content(), which runs in Playwright's isolated utility world,
-so page scripts cannot monkey-patch what we read.
+The rendered DOM is read in a fresh CDP isolated world (pristine prototypes, so page scripts
+cannot monkey-patch what we read), size-checked first and capped; JS heap capped at 128 MB.
 """
 
 from __future__ import annotations
@@ -26,9 +26,23 @@ from fetch import UA
 
 log = logging.getLogger("inspector.render")
 MAX_RENDERED_CHARS = 2 * 1024 * 1024
+MAX_ELEMENTS = 50_000
+# Runs in a fresh CDP isolated world (pristine prototypes: page scripts cannot patch it). Checks
+# the DOM size cheaply (element count, CharacterData.length without copying) and returns null for
+# oversized documents instead of serialising them; otherwise the serialisation capped to N chars.
+_DOM_EXPR = """(() => {
+  const N = %d, E = %d, d = document.documentElement;
+  if (!d) return '';
+  if (document.getElementsByTagName('*').length > E) return null;
+  const w = document.createTreeWalker(d, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_COMMENT);
+  let total = 0;
+  while (w.nextNode()) { total += w.currentNode.length; if (total > N) return null; }
+  const h = d.outerHTML;
+  return h.length > N ? h.slice(0, N) : h;
+})()""" % (MAX_RENDERED_CHARS, MAX_ELEMENTS)
 SECRET_ENV = ("INSPECTOR_SECRET", "SAFE_BROWSING_API_KEY", "URLHAUS_AUTH_KEY")
 ARGS = [
-    "--js-flags=--jitless",
+    "--js-flags=--jitless --max-old-space-size=128",  # one flag: a second --js-flags would override
     "--disable-gpu",
     "--disable-dev-shm-usage",
     "--proxy-server=http://127.0.0.1:9",
@@ -70,6 +84,15 @@ def _router(html: str):
             pass
 
     return handle
+
+
+async def _quiet(coro, raise_: bool = False):
+    """Await a cleanup coroutine in a detached task without 'exception never retrieved' noise."""
+    try:
+        return await coro
+    except Exception:
+        if raise_:
+            raise
 
 
 async def _ws_close(ws) -> None:
@@ -154,18 +177,36 @@ class Renderer:
                 await asyncio.sleep(0.25)  # let short inline timers build the DOM
                 if page.url != DOC_URL:
                     return None
-                content = await page.content()
-                return content[:MAX_RENDERED_CHARS]
+                return await self._dom(ctx, page)
         except Exception:  # includes TimeoutError from the hard render deadline
             return None
         finally:
             if ctx is not None:
+                closing = asyncio.ensure_future(_quiet(ctx.close(), raise_=True))  # survives our cancellation
                 try:
-                    await asyncio.wait_for(ctx.close(), 3)
+                    await asyncio.wait_for(asyncio.shield(closing), 3)
                 except Exception:
                     healthy = False  # a wedged renderer: restart the browser
             if not healthy:
                 await self._reset()
+
+    @staticmethod
+    async def _dom(ctx, page) -> str | None:
+        cdp = await ctx.new_cdp_session(page)
+        try:
+            tree = await cdp.send("Page.getFrameTree")
+            world = await cdp.send("Page.createIsolatedWorld", {
+                "frameId": tree["frameTree"]["frame"]["id"], "worldName": "sentinel-inspector"})
+            r = await cdp.send("Runtime.evaluate", {
+                "expression": _DOM_EXPR, "contextId": world["executionContextId"],
+                "returnByValue": True, "timeout": 1500})
+        finally:
+            try:  # a renderer stuck in a JS loop never answers: never wait unboundedly
+                await asyncio.wait_for(asyncio.shield(asyncio.ensure_future(_quiet(cdp.detach()))), 1)
+            except Exception:
+                pass
+        val = (r.get("result") or {}).get("value")
+        return val[:MAX_RENDERED_CHARS] if isinstance(val, str) else None
 
     async def close(self) -> None:
         await self._reset()

@@ -36,7 +36,7 @@ services:
     environment:
       INSPECTOR_SECRET: ${INSPECTOR_SECRET:-}          # required, >= 16 chars; the app refuses to start otherwise
       SAFE_BROWSING_API_KEY: ${SAFE_BROWSING_API_KEY:-}
-      URLHAUS_AUTH_KEY: ${URLHAUS_AUTH_KEY:-}
+      URLHAUS_AUTH_KEY: ${URLHAUS_AUTH_KEY:-}         # URLhaus API now requires an Auth-Key
     expose: ["8080"]
     networks: [inspector_net, inspector_egress]
     read_only: true
@@ -48,7 +48,7 @@ services:
     memswap_limit: 1g
     cpus: 1.0
     pids_limit: 256
-    restart: on-failure:5
+    restart: unless-stopped
 networks:
   inspector_net:
     internal: true
