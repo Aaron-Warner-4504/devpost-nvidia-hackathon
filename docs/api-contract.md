@@ -34,7 +34,7 @@ Request: empty body. Response 200:
 ```json
 {"device_id": "dev_123", "token": "example-token"}
 ```
-At most 20 registrations per client IP per rolling hour; beyond that `429 {"detail": "too many requests, try
+At most 20 registrations per client IP (IPv6: per /64 network) per rolling hour; beyond that `429 {"detail": "too many requests, try
 again later"}`. Register once per install and keep the token.
 
 ## POST /v1/events

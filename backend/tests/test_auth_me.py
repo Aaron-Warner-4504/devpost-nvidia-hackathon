@@ -185,7 +185,9 @@ def test_register_ignores_forwarded_for_unless_trusted(client, monkeypatch):
     # spoofed XFF does not help when proxy headers are not trusted
     assert a.post("/v1/devices/register", headers={"X-Forwarded-For": "198.51.100.99"}).status_code == 429
     monkeypatch.setattr(settings, "trust_proxy_headers", True)
-    assert a.post("/v1/devices/register", headers={"X-Forwarded-For": "198.51.100.99, 10.0.0.1"}).status_code == 200
+    # behind our proxy the RIGHTMOST entry (appended by the proxy) is the client; a forged left part is ignored
+    assert a.post("/v1/devices/register", headers={"X-Forwarded-For": "10.0.0.1, 198.51.100.99"}).status_code == 200
+    assert a.post("/v1/devices/register", headers={"X-Forwarded-For": "198.51.100.5, 10.0.0.1"}).status_code == 429
 
 
 def test_register_window_and_cleanup(client, monkeypatch, db):

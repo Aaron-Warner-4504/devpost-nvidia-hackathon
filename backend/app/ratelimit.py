@@ -7,6 +7,7 @@ than 24 h are purged on the same write path, so the table stays small without a 
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, Request
@@ -24,14 +25,41 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def normalize_ip(raw: str | None) -> str | None:
+    """Canonical rate-limit identity for an address: IPv4-mapped IPv6 -> IPv4, IPv6 -> its /64 network
+    (one routed /64 must not mint unlimited keys). None if `raw` is not an IP address."""
+    try:
+        ip = ipaddress.ip_address((raw or "").strip())
+    except ValueError:
+        return None
+    if isinstance(ip, ipaddress.IPv6Address):
+        if ip.ipv4_mapped is not None:
+            return str(ip.ipv4_mapped)
+        return str(ipaddress.IPv6Network((ip, 64), strict=False))
+    return str(ip)
+
+
+def _peer(request: Request) -> str:
+    host = request.client.host if request.client else None
+    if not host:
+        return "unknown"
+    return normalize_ip(host) or host  # non-IP peers (e.g. the test client) are used as-is
+
+
 def client_ip(request: Request) -> str:
-    """The peer address; X-Forwarded-For (its first hop) only when TRUST_PROXY_HEADERS is set, because
-    any client can send that header."""
+    """The socket peer by default. With TRUST_PROXY_HEADERS, the X-Forwarded-For entry TRUSTED_PROXY_COUNT
+    positions from the right (the one our proxy appended; anything further left is client-controlled).
+    Too few entries or a non-IP entry -> the socket peer."""
     if settings.trust_proxy_headers:
-        fwd = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
-        if fwd:
-            return fwd
-    return request.client.host if request.client else "unknown"
+        raw = request.headers.get("x-forwarded-for")
+        n = settings.trusted_proxy_count
+        if raw is not None and n >= 1:
+            parts = [p.strip() for p in raw.split(",")]
+            if len(parts) >= n:
+                ip = normalize_ip(parts[-n])
+                if ip:
+                    return ip
+    return _peer(request)
 
 
 def hit(db: Session, kind: str, value: str, *, limit: int, window: timedelta) -> None:

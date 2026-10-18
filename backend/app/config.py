@@ -28,8 +28,11 @@ class Settings(BaseSettings):
     family_global_accept_failures_per_hour: int = 300
     # POST /v1/devices/register per client IP per rolling hour
     register_per_ip_per_hour: int = 20
-    # Use X-Forwarded-For for the client IP. Only enable behind a proxy that overwrites the header.
+    # Use X-Forwarded-For for the client IP. Only enable behind a reverse proxy that appends to it.
     trust_proxy_headers: bool = False
+    # Number of trusted proxies appending to X-Forwarded-For: the client is the entry this many positions
+    # from the RIGHT (1 = the entry our Caddy appended). Entries further left are client-controlled.
+    trusted_proxy_count: int = 1
 
 
 settings = Settings()
