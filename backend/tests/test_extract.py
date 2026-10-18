@@ -90,3 +90,32 @@ def test_claims_and_dedupe():
         "KYC expired, account blocked. digital arrest! डिजिटल अरेस्ट refund part time job lucky draw", None, None)
     assert types(ents, "claim") == ["kyc_expired", "account_blocked", "digital_arrest", "refund",
                                     "job_offer", "lottery"]
+
+
+def test_never_raises_on_huge_numbers():
+    for t in ["Rs " + "9" * 400, "Rs 1e999", "₹" + "9" * 15 + " lakh", "9" * 400 + " रुपये",
+              "Rs 99999999999999999 lakh", "Rs " + "1," * 300]:
+        assert isinstance(extract_entities(t, None, None), list)
+    assert types(extract_entities("Rs " + "9" * 400, None, None), "amount") == []
+    assert types(extract_entities("Rs 999999999999999 lakh", None, None), "amount") == ["INR:99999999999999900000"]
+
+
+@pytest.mark.parametrize("t", ["1," * 100000, "a." * 100000 + "@", "9" * 200000, "x@" * 100000,
+                               "Rs " * 100000, "Rs 1" * 50000])
+def test_linear_time(t):
+    import time
+    s = time.perf_counter()
+    extract_entities(t, t, None)
+    assert time.perf_counter() - s < 1.0
+
+
+def test_amount_not_double_counted_as_phone():
+    for t in ["Rs.9876543210", "₹9876543210"]:
+        ents = extract_entities(t, None, None)
+        assert types(ents, "phone") == ["+919876543210"] and types(ents, "amount") == []
+
+
+def test_bare_domain_needs_lowercase_tld():
+    ents = extract_entities("done.Click http://x.com", None, None)
+    assert types(ents, "domain") == ["x.com"]
+    assert types(extract_entities("https://Bit.ly/AbC", None, None), "domain") == ["bit.ly"]

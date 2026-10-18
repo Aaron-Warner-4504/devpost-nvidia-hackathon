@@ -48,3 +48,10 @@ def test_openapi_has_all_paths(client):
     paths = client.get("/openapi.json").json()["paths"]
     for p in PATHS:
         assert p in paths, p
+
+
+def test_oversized_text_rejected(client, auth_headers):
+    r = client.post("/v1/events", json={**EVENT, "text": "x" * 10001}, headers=auth_headers)
+    assert r.status_code == 422
+    r = client.post("/v1/events", json={**EVENT, "sender": "x" * 201}, headers=auth_headers)
+    assert r.status_code == 422

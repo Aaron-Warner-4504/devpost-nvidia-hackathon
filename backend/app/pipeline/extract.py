@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass
 from typing import Literal
 
@@ -67,7 +68,7 @@ def _number_phone(number: str) -> list[str]:
 
 # ---------------------------------------------------------------- UPI / domains
 _UPI = re.compile(r"(?<![\w.\-+@])([\w.\-]{2,})@([A-Za-z][A-Za-z0-9]+)(?![\w@]|\.\w)")
-_EMAIL = re.compile(r"[\w.\-+]+@[\w\-]+(?:\.[\w\-]+)+")
+_EMAIL = re.compile(r"(?<![\w.\-+])[\w.\-+]+@[\w\-]+(?:\.[\w\-]+)+")
 _DOMAIN = re.compile(
     r"(?<![\w@.\-])((?:[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?\.)+([a-z]{2,24}))(?![\w\-]|\.\w)",
     re.IGNORECASE,
@@ -83,7 +84,7 @@ _SHORTENERS = {"bit.ly", "tinyurl.com", "t.co", "goo.gl", "cutt.ly", "is.gd", "r
 
 # ---------------------------------------------------------------- amounts
 _CUR = r"(?:₹|\bRs\.?|\bINR|रुपये|रुपए|रु\.?)"
-_NUM = r"(\d[\d,]*(?:\.\d+)?)"
+_NUM = r"(?<![\d,.])(\d[\d,]{0,30}(?:\.\d{1,6})?)(?![\d,]\d)(?!\d)"
 _LAKH = r"(?:\s*(lakhs?|lacs?|लाख))?"
 _AMT_PRE = re.compile(_CUR + r"\s*" + _NUM + _LAKH, re.IGNORECASE)
 _AMT_POST = re.compile(_NUM + _LAKH + r"\s*(?:/-|₹|\bRs\b\.?|\bINR\b|रुपये|रुपए|रु(?![ऀ-ॿ])|\brupees\b)",
@@ -93,13 +94,15 @@ _AMT_POST = re.compile(_NUM + _LAKH + r"\s*(?:/-|₹|\bRs\b\.?|\bINR\b|रुप
 def _amount(num: str, lakh: str | None) -> str | None:
     s = num.replace(",", "").rstrip(".")
     try:
-        v = float(s)
-    except ValueError:
+        d = Decimal(s)
+    except InvalidOperation:
+        return None
+    if len(s.split(".")[0].lstrip("0")) > 15:
         return None
     if lakh:
-        v *= 100000
-    if v == int(v):
-        return f"INR:{int(v)}"
+        d *= 100000
+    if d == d.to_integral_value():
+        return f"INR:{int(d)}"
     return f"INR:{s}"
 
 
@@ -155,7 +158,8 @@ def extract_entities(text: str | None, sender: str | None, call: CallMeta | None
     def add(t: EntityType, c: str) -> None:
         seen.setdefault(Entity(t, c), None)
 
-    body = (text or "").translate(_DEVANAGARI_DIGITS)
+    sender = sender[:200] if sender else sender
+    body = (text or "")[:10000].translate(_DEVANAGARI_DIGITS)
 
     for p in _phones(body):
         add("phone", p)
@@ -173,6 +177,9 @@ def extract_entities(text: str | None, sender: str | None, call: CallMeta | None
     for m in _DOMAIN.finditer(scan):
         if m.group(2).lower() not in _TLDS:
             continue
+        # bare (scheme-less) domains need a lowercase TLD, to avoid "done.Click"
+        if not m.group(2).islower() and scan[max(0, m.start(1) - 3):m.start(1)] != "://":
+            continue
         host = m.group(1).lower()
         if host.startswith("www."):
             host = host[4:]
@@ -182,6 +189,8 @@ def extract_entities(text: str | None, sender: str | None, call: CallMeta | None
 
     for pat in (_AMT_PRE, _AMT_POST):
         for m in pat.finditer(body):
+            if re.fullmatch(r"[6-9]\d{9}", m.group(1)):
+                continue  # currency token directly followed by a mobile number
             a = _amount(m.group(1), m.group(2))
             if a:
                 add("amount", a)

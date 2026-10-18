@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 Source = Literal["sms", "whatsapp", "email", "call", "share", "notification"]
 Tier = Literal["info", "caution", "high", "critical"]
@@ -18,8 +18,8 @@ class EventIn(BaseModel):
     device_event_id: str
     source: Source
     ts: datetime
-    sender: str | None = None
-    text: str | None = None
+    sender: str | None = Field(default=None, max_length=200)
+    text: str | None = Field(default=None, max_length=10000)
     call: CallMeta | None = None
     triage_score: float
     lang: str | None = None
