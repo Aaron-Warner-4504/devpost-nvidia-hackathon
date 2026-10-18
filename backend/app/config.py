@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     token_factory_base_url: str = ""
     token_factory_api_key: str = ""
     tavily_api_key: str = ""
+    inspector_url: str = ""
+    inspector_secret: str = ""
     agent_mode: str = "hybrid"
     embed_dim: int = 1024
 
