@@ -108,25 +108,37 @@ _AUTHORITY = _rx(
     r"\b(?:officer|inspector|cyber\s*crime|narcotics|enforcement\s+directorate|arrest\s+warrant"
     r"|court\s+order|legal\s+action|supreme\s+court|income\s+tax\s+department|ministry)\b"
     r"|अधिकारी|इंस्पेक्टर|साइबर\s*क्राइम|गिरफ्तारी|वारंट|सरकारी|न्यायालय")
+# Hindi credit notifications ("जमा कर दिए गए हैं", "जमा हो गए", "जमा किए गए"): passive/perfective forms
+_HI_NOTIF = r"(?![^।.!?\n]*?(?:जमा|डेबिट|क्रेडिट|निकाले|निकाला)\s*(?:कर\s*)?(?:दिए|दिया|दी|किए|किया|की\b|गए|गई|गया|हो\s|हो$|हुए|हुआ|हुई))"
+_HI_JAMA_ASK = (r"जमा\s*(?:करें|करे\b|कीजिए|कीजिये|करिए|करिये|करो|करना|कर\s*(?:दो|दें|दीजिए|दीजिये|देना))"
+                r"(?![ऀ-ॿ])")
 _PAYMENT = _rx(
     r"\b(?:collect\s+request|payment\s+request|pay\s*(?:₹|rs\.?|inr|rupees)"
     r"|pay\s+\d|pay\s+(?:the\s+|a\s+)?(?:fee|fine|amount|charges?|penalty|duty|deposit)|pay\s+now"
     r"|transfer|send\s+(?:me\s+)?(?:money|₹|rs\.?)|approve\s+(?:the\s+)?(?:request|collect)"
     r"|scan\s+(?:the\s+)?qr|paise\s+bhej\w*|paisa\s+bhej\w*|pay\s+kar\w*"
-    r"|jama\s+(?:kar(?:o|ein|en|iye|na)\b|kar\s+(?:do|dein|den|dijiye|de)\b)"
+    r"|(?:jama|deposit)\s+(?:kar(?:o|ein|en|iye|na)\b|kar\s+(?:do|dein|den|dijiye|de)\b|kiji\w*)"
     r"|pay\s+\[(?:otp|acct)\]"
     r"|(?:send|bhej\w*)\b[^.!?\n]{0,30}\[(?:acct|card)\]"
     r"|(?:₹|rs\.?|inr|rupe\w*)\s*\d[\d,]*\s*(?:bhej\w*|भेज[ऀ-ॿ]*)"
     r"|\d[\d,]*\s*(?:rs|rupe\w*|रुपये?|रुपए)\s+(?:bhej\w*|भेज[ऀ-ॿ]*))"
-    r"|(?:भेज|जमा)[ऀ-ॿ]*\s*(?:₹|रु\.?)?\s*\d[\d,]*\s*(?:रुपये?|रुपए)|खाता[^.!?\n]{0,20}\[acct\]|(?:भेज|जमा)[ऀ-ॿ]*[^.!?\n]{0,30}\[acct\]"
-    r"|भुगतान|ट्रांसफर|पैसे\s*भेज" + _DEV + r"|रुपये?\s*भेज|जमा\s+कर" + _DEV)
+    r"|(?:भेज|जमा)[ऀ-ॿ]*\s*(?:₹|रु\.?)?\s*\d[\d,]*\s*(?:रुपये?|रुपए)" + _HI_NOTIF +
+    r"|(?<![ऀ-ॿ])(?:खाता|खाते)[^.!?\n]{0,20}\[acct\]" + _HI_NOTIF +
+    r"|(?:भेज|जमा)[ऀ-ॿ]*[^.!?\n]{0,30}\[acct\]" + _HI_NOTIF +
+    r"|भुगतान|ट्रांसफर|पैसे\s*भेज" + _DEV + r"|रुपये?\s*भेज|" + _HI_JAMA_ASK)
 # "deposit" only as an ask: at clause start or after please/kindly/now/must/..., and never in the
 # notification forms ("Cash deposit of", "Deposit received:", "fixed deposit will mature").
 _DEPOSIT_ASK = _rx(
     r"(?:^|[.!?\n,;:]\s*|\b(?:please|pls|plz|kindly|now|immediately|must|should|need\s+to|have\s+to"
-    r"|has\s+to|and|then)\s+)deposit\b"
+    r"|has\s+to|and|then|you|to|unless|by)\s+)deposit\b"
     r"(?!\s*(?::|-|of\b|received|credited|matured|maturity|amount\b|is\b|has\b|was\b|will\b|rate|"
-    r"interest|scheme|receipt|slip|details|account\s+(?:no|number|opened|statement)))")
+    r"interest|scheme|receipt|slip|details|account\s+(?:no|number|opened|statement)"
+    r"|(?:the\s+|your\s+)?(?:cheques?|checks?|documents?|kyc|forms?)\b))")
+# "deposit ... [ACCT]/[CARD]/a/c <number>" is an ask unless it reads as a notification
+_DEPOSIT_ACCT = _rx(
+    r"(?<!cash\s)(?<!cheque\s)(?<!check\s)(?<!fixed\s)(?<!fd\s)(?<!security\s)(?<!recurring\s)(?<!rd\s)"
+    r"\bdeposit\b(?![^.!?\n]{0,60}?\b(?:received|credited|matured|successful(?:ly)?|refunded)\b)"
+    r"[^.!?\n]{0,30}?(?:\[(?:acct|card)\]|\b(?:a/c|acct|account)\s*(?:no\.?|number)?\s*[:.]?\s*\d{6,})")
 _CRED_EN = _rx(
     r"\b(?:share|send|enter|tell|give|provide|submit|confirm|read\s+out|reply\s+with|forward|update)\b"
     r"[^.!?\n]{0,40}?\b(?:otp|pin|password|passcode|cvv|card(?:\s+(?:number|details|no))?"
@@ -242,12 +254,13 @@ _ROLE_WORD = (r"(?:manager|director|executive|professor|teacher|coach|officer|he
 # Instruction nouns: "ignore/disregard/forget/override ... <noun>" within ~4 words always fires.
 _INSTR_NOUN = (r"(?:instructions?|prompts?|rules|context|commands?|guidelines|directives?|system\s+prompt)"
                r"\b|निर्देश")
-_IGNORE_NOUN = (r"\b(?:ignore|disregard|forget|override)\b(?:[\s,]+(?!(?:and|but)\b)[\w'-]+){0,4}?[\s,]+"
+_IGNORE_VERB = r"(?:ignore|disregard|forget|override|skip|do\s*n[o']?t\s+follow|stop\s+following)"
+_IGNORE_NOUN = (r"\b" + _IGNORE_VERB + r"\b(?:[\s,;]+(?!(?:and|but)\b)[\w'-]+){0,4}?[\s,;]+"
                 + _INSTR_NOUN)
 # Classification steering words; when one follows within ~6 words, ordinary-notice exclusions
 # ("ignore the previous message") no longer apply.
 _STEER = (r"(?:" + _INSTR_NOUN + r"|\b(?:classify|mark|safe|benign|tier|label|treat|say|respond|reply|"
-          r"legit\w*|not\s+(?:a\s+)?scam)\b)")
+          r"legit\w*|not\s+(?:a\s+)?scam|approve|accept|allow|pass|(?:is|it'?s|as)\s+ok(?:ay)?)\b)")
 # Ordinary "ignore the previous <thing>" notices. Only IMMEDIATELY after previous/prior/earlier/
 # above (no word skipping), and never when a steering word follows.
 _NOT_PREV = (r"(?!\s+(?:owner|tenant|number|noise|year|bill|balance|address|e-?mails?|mail|one|times?|"
@@ -257,7 +270,7 @@ _PERSONA = (r"(?:jailbroken|unrestricted|uncensored|unfiltered|dan|developer\s+m
             r"evil\s+(?:twin|mode)|" + _AI_NOUN + r")")
 _INJECTION = _rx(
     _IGNORE_NOUN +
-    r"|\b(?:ignore|disregard|forget|override)\s+(?:(?:all|any|the|your|my|of|everything|everyone)\s+)*"
+    r"|\b" + _IGNORE_VERB + r"[\s,;]+(?:(?:all|any|the|your|my|of|everything|everyone)[\s,;]+)*"
     r"(?:previous|prior|above|earlier)\b" + _NOT_PREV +
     r"|\byou\s+are\s+(?:now\s+)?(?:a|an|the)\s+(?:[\w-]+\s+){0,3}?" + _AI_NOUN + r"\b(?!\s+" + _ROLE_WORD + r")"
     r"|\byou\s+are\s+now\s+(?:(?:a|an|the)\s+(?:[\w-]+\s+){0,2}?" + _PERSONA + r"\b"
@@ -277,6 +290,8 @@ _INJECTION = _rx(
     r"|पिछले\s+(?:सभी\s+)?(?:निर्देश|आदेश)" + _DEV + r"[^।.!?\n]{0,15}(?:अनदेखा|नजरअंदाज|नज़रअंदाज़|इग्नोर)"
     r"|(?:अनदेखा|नजरअंदाज|इग्नोर)\s*(?:कर)" + _DEV + r"[^।.!?\n]{0,25}(?:निर्देश|आदेश)"
     r"|सुरक्षित\s+(?:के\s+रूप\s+में\s+)?(?:मार्क|चिह्नित|चिन्हित)|\bतुम\s+अब\b|\bआप\s+अब\s+एक\b")
+_ZW = re.compile("[\u200b-\u200d\u2060\ufeff]")
+_MD = re.compile(r"[*_`]+")  # markdown emphasis, matched as a word separator for injection only
 _OTP_WORD = _rx(r"\botp\b|one[\s-]?time\s+pass|ओटीपी")
 _BANK_HEADER = re.compile(
     r"^(?:[A-Z]{2}-)?(?:HDFCBK|HDFCBN|SBIINB|SBIPSG|SBICRD|SBIBNK|ICICIB|ICICIT|AXISBK|KOTAKB|"
@@ -331,7 +346,7 @@ def _max_amount(entities) -> Decimal | None:
 # ------------------------------------------------------------------ detection
 def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryCtx, *,
                    overrides: Overrides | None = None) -> list[Signal]:
-    text = redact((event.text or "")[:10000])
+    text = redact(_ZW.sub("", (event.text or "")[:10000]))
     ents = set(entities)
     out: list[Signal] = []
 
@@ -341,7 +356,7 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
     safe = overrides.safe if overrides else frozenset()
     known_bad = overrides.known_bad if overrides else frozenset()
 
-    injection = _INJECTION.search(text)
+    injection = _INJECTION.search(text) or _INJECTION.search(_MD.sub(" ", text))
     if injection:
         add("injection_attempt", _ev(injection))
 
@@ -354,7 +369,7 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
     elif m := _AUTHORITY.search(text):
         add("authority_impersonation", _ev(m))
 
-    payment = _PAYMENT.search(text) or _DEPOSIT_ASK.search(text)
+    payment = _PAYMENT.search(text) or _DEPOSIT_ASK.search(text) or _DEPOSIT_ACCT.search(text)
     if payment:
         add("payment_request", _ev(payment))
 
@@ -374,7 +389,8 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
         add("remote_access_ask", _ev(remote))
 
     secrecy = _unwarned(_SECRECY, text, _secrecy_spans(text, spans))
-    if (secrecy and _OTP_WORD.search(text) and not {s.name for s in out} & _SECRECY_BLOCKERS
+    if (secrecy and _bank_sms(event) and _OTP_WORD.search(text)
+            and not {s.name for s in out} & _SECRECY_BLOCKERS
             and not _SHARE_BACK.search(text) and not _LINK_WORD.search(text)
             and not any(e.type in ("phone", "domain", "claim", "upi_id")
                         for e in extract_entities(text, None, None))
@@ -453,12 +469,16 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
     return out
 
 
+def _bank_sms(event) -> bool:
+    """SMS from an allowlisted bank header (spoofable; see _is_benign), no call context."""
+    return (event.source == "sms" and bool(event.sender) and event.call is None
+            and bool(_BANK_HEADER.match(event.sender.strip().upper())))
+
+
 def _is_benign(event, ents, text) -> bool:
     # NOTE: SMS sender headers are spoofable; a DLT registry lookup is a post-hackathon item.
     # The discount is therefore only granted to a bare OTP message with no other risk content.
-    if event.source != "sms" or not event.sender:
-        return False
-    if not _BANK_HEADER.match(event.sender.strip().upper()):
+    if not _bank_sms(event):
         return False
     if not _OTP_WORD.search(text) or _LINK_WORD.search(text):
         return False
