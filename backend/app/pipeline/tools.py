@@ -260,7 +260,11 @@ def inspect_link(ctx: ToolContext, url: str) -> dict:
     if sp is None or sp.scheme not in ("http", "https") or not sp.hostname or any(
             ord(c) < 33 for c in url):
         return {"error": "invalid url"}
-    return link_client.inspect_link(url, ctx.settings).model_dump()
+    out = link_client.inspect_link(url, ctx.settings).model_dump()
+    for k in ("title", "text_excerpt"):  # page-derived text is attacker-controlled
+        if out.get(k):
+            out[k] = UNTRUSTED + out[k]
+    return out
 
 
 _CTRL = re.compile(r"[\x00-\x1f\x7f-\x9f]")

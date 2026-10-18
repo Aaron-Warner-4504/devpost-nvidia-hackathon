@@ -11,15 +11,19 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from email.utils import getaddresses
 from decimal import Decimal, InvalidOperation
+from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 
 from app.pipeline.extract import Entity, extract_entities
 from app.pipeline.memory import HistoryItem
 from app.pipeline.redact import redact
 from app.schemas import EventIn, Tier
 
+if TYPE_CHECKING:  # duck-typed at runtime: keeps this module free of config/network imports
+    from app.pipeline.link_client import LinkReport
+
 # ------------------------------------------------------------------ registry
-# Single source of truth for weights. Add new signals (e.g. credential_form_on_new_domain,
-# apk_download, threat_feed_hit) here; tier_for sums whatever names it finds.
+# Single source of truth for weights. Add new signals here; tier_for sums whatever names it finds.
 SIGNAL_WEIGHTS: dict[str, int] = {
     "urgency": 1,
     "authority_impersonation": 2,
@@ -37,6 +41,10 @@ SIGNAL_WEIGHTS: dict[str, int] = {
     "injection_attempt": 2,
     "known_bad_entity": 7,
     "user_marked_safe": -2,
+    # link inspector (Task 8b): positive only; a clean or failed inspection never lowers a tier
+    "credential_form_on_new_domain": 4,
+    "apk_download": 4,
+    "threat_feed_hit": 5,
 }
 
 TIER_ORDER: tuple[Tier, ...] = ("info", "caution", "high", "critical")
@@ -83,6 +91,10 @@ class HistoryCtx:
     domain_info: dict[str, DomainInfo] | None = None
     # True only if the caller verified the email sender (SPF/DKIM/DMARC); From: is spoofable
     sender_authenticated: bool = False
+    # Sandboxed link-inspector results keyed by the message's domain entity canonical (lower-case
+    # host without "www.", exactly as extract_entities produces it). Reports for domains that are
+    # not in the current message are ignored.
+    link_reports: dict[str, "LinkReport"] = field(default_factory=dict)
 
     @classmethod
     def empty(cls, now: datetime) -> "HistoryCtx":
@@ -412,6 +424,9 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
         if di.age_days is not None and di.age_days < NEW_DOMAIN_DAYS:
             add("new_domain", f"{e.canonical} is {di.age_days} days old")
 
+    for name, evidence in _link_signals(ents, history_ctx, safe):
+        add(name, evidence)
+
     # sender
     # only entities identifying the actual originator may earn safe discounts; entities merely
     # named in the body must not (an attacker could name a user-safe number).
@@ -467,6 +482,65 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
         if safe_sender:
             add("user_marked_safe", f"{safe_sender[0].type}:{safe_sender[0].canonical}")
     return out
+
+
+def _host_key(url: str) -> str | None:
+    try:
+        h = (urlsplit(url).hostname or "").lower().rstrip(".")
+    except ValueError:
+        return None
+    return (h[4:] if h.startswith("www.") else h) or None
+
+
+def _risky_domain(di: DomainInfo | None) -> str | None:
+    if di is None:
+        return None
+    if di.lookalike_of:
+        return f"resembles {di.lookalike_of}"
+    if di.age_days is not None and di.age_days < NEW_DOMAIN_DAYS:
+        return f"{di.age_days} days old"
+    return None
+
+
+_FEED_LABEL = re.compile(r"[^A-Za-z0-9_:]+")
+
+
+def _link_signals(ents: set[Entity], ctx: HistoryCtx, safe) -> list[tuple[str, str]]:
+    """Signals from sandboxed link inspection. Additive only: a clean report, an unfetched report
+    (inspector failure, blocked hop) or a missing report contributes nothing, and nothing here is
+    ever negative (attackers cloak pages for scanners). Page-derived fields are only trusted when
+    fetched_ok; threat-feed hits are independent of the fetch and always count. Each signal fires
+    at most once per message."""
+    reports = ctx.link_reports or {}
+    info = ctx.domain_info or {}
+    out: dict[str, str] = {}
+    for e in sorted((x for x in ents if x.type == "domain"), key=lambda x: x.canonical):
+        r = reports.get(e.canonical)
+        if r is None:
+            continue
+        hits = [h for h in (r.threat_feed_hits or []) if isinstance(h, str)]
+        if hits and "threat_feed_hit" not in out:
+            label = _FEED_LABEL.sub("_", hits[0])[:60]
+            more = f" (+{len(hits) - 1})" if len(hits) > 1 else ""
+            out["threat_feed_hit"] = f"{e.canonical}: {label}{more}"[:120]
+        if not r.fetched_ok:
+            continue
+        if r.apk_download and "apk_download" not in out:
+            out["apk_download"] = f"{e.canonical} serves an Android app (APK) download"
+        if ((r.has_password_field or r.has_otp_or_upi_or_card_field) and e not in safe
+                and "credential_form_on_new_domain" not in out):
+            final = _host_key(r.final_url)
+            fdi = info.get(final) if final else None
+            di = info.get(e.canonical)
+            why = _risky_domain(di) or (_risky_domain(fdi) if final != e.canonical else None)
+            if why is None and di is not None and di.shortener and final and final != e.canonical and (
+                    fdi is None or fdi.age_days is None):
+                why = f"behind link shortener, lands on unverified {final}"
+            if why:
+                kind = "password" if r.has_password_field else "OTP/UPI/card"
+                out["credential_form_on_new_domain"] = f"{e.canonical}: {kind} form, {why}"[:120]
+    order = ("credential_form_on_new_domain", "apk_download", "threat_feed_hit")
+    return [(n, out[n]) for n in order if n in out]
 
 
 def _bank_sms(event) -> bool:
