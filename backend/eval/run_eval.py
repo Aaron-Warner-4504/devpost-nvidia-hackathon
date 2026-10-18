@@ -231,6 +231,7 @@ class ScriptedAgentLLM(FakeLLM):
     apply). Final answer, from the facts the tools confirmed (agent.confirmed_facts):
       critical  threat-feed hit | APK | credential form + new/lookalike site | <7-day domain + pay/OTP ask
       high      lookalike site | new domain or repeat unknown number while the rules see some risk
+                (or the base tier if that is already critical)
       info      every link checked out (old, not a lookalike, nothing flagged) and the message has no
                 content risk (no pay/OTP/remote/secrecy/authority ask): the link was the only worry
       else      the rules' base tier
@@ -315,8 +316,8 @@ class ScriptedAgentLLM(FakeLLM):
                  and not any(r.get("threat_feed_hits") or r.get("apk_download") for r in inspected))
         if strong:
             tier, raises, head = "critical", strong, "Likely scam: the link is dangerous"
-        elif weak:
-            tier, raises, head = "high", weak, "Possible scam: suspicious website or number"
+        elif weak:  # confirmed risk never argues the rules' tier down
+            tier, raises, head = max(("high", base), key=TIER_ORDER.index), weak, "Possible scam: suspicious website or number"
         elif clean and not names & _CONTENT_RISK and base in ("info", "caution"):
             tier, raises, head = "info", [], "The link in this message checks out"
         else:
@@ -373,6 +374,7 @@ def _run_one(sc: dict, mode: str, llm, session_factory, run_settings) -> dict:
                 "interrupt": bool(shown and dec is not None and dec.interrupt),
                 "reason": reason, "signals": list(asm.signals or []) if asm else [],
                 "used_tools": list(payload.get("used_tools") or []), "mode_used": payload.get("mode"),
+                "raised_by": list(payload.get("raised_by") or []),
                 "degraded": bool(asm.degraded) if asm else False, "latency_ms": round(ms, 2),
                 "text": (raw.get("text") or (f"[call {raw['call']['duration_s']}s]" if raw.get("call") else ""))[:160],
             })
@@ -422,8 +424,9 @@ def compute_metrics(results: list[dict]) -> dict:
                        "events": [{"index": e["index"], "tier": e["tier"], "signals": e["signals"],
                                    "text": e["text"]} for e in hits]})
     lat = [e["latency_ms"] for r in results for e in r["events"]]
+    firsts = [fa for r in scams if (fa := _first_alert(r)) is not None and fa["index"] <= r["first_alert_at_index"]]
     return {
-        "n_scam": len(scams), "n_benign": len(benign),
+        "n_scam": len(scams), "n_benign": len(benign), "n_detected": len(detected),
         "scam_recall": len(detected) / len(scams) if scams else None,
         "false_interrupts_per_user_week": statistics.mean(interrupts) if benign else None,
         "benign_with_interrupt_frac": sum(1 for n in interrupts if n) / len(benign) if benign else None,
@@ -431,6 +434,10 @@ def compute_metrics(results: list[dict]) -> dict:
         "median_hours_to_warning": statistics.median(hours) if hours else None,
         "median_index_to_warning": statistics.median(idxs) if idxs else None,
         "per_category_recall": {c: sum(v) / len(v) for c, v in sorted(per_cat.items())},
+        # severity of the first in-time warning, and how often a tool-confirmed agent raise changed a tier
+        "critical_first_alert_frac": (sum(1 for fa in firsts if fa["tier"] == "critical") / len(firsts)
+                                      if firsts else None),
+        "agent_raised_events": sum(1 for r in results for e in r["events"] if e.get("raised_by")),
         "latency_ms": {"n": len(lat), "p50": _pct(lat, 50), "p95": _pct(lat, 95),
                        "mean": statistics.mean(lat) if lat else None, "max": max(lat) if lat else None},
         "failures": {"missed_scams": missed, "false_interrupts": fi},
@@ -456,8 +463,9 @@ def _f(v, fmt="{:.2f}") -> str:
 
 def render_tables(report: dict) -> str:
     lines = ["| mode | split | scams | recall | benign weeks | false interrupts / week | weeks with ≥1 interrupt "
-             "| caution / week | median h to warning | median index | latency p50 / p95 ms |",
-             "|---|---|---|---|---|---|---|---|---|---|---|"]
+             "| caution / week | median h to warning | median index | first warning critical | agent raises "
+             "| latency p50 / p95 ms |",
+             "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for mode, by in report["modes"].items():
         for split in ("tune", "holdout", "all"):
             m = by.get(split)
@@ -465,10 +473,11 @@ def render_tables(report: dict) -> str:
                 continue
             lat = m["latency_ms"]
             lines.append(
-                f"| {mode} | {split} | {m['n_scam']} | {_f(m['scam_recall'])} | {m['n_benign']} "
-                f"| {_f(m['false_interrupts_per_user_week'])} | {_f(m['benign_with_interrupt_frac'])} "
+                f"| {mode} | {split} | {m['n_scam']} | {m['n_detected']}/{m['n_scam']} = {_f(m['scam_recall'], '{:.3f}')} "
+                f"| {m['n_benign']} | {_f(m['false_interrupts_per_user_week'], '{:.3f}')} | {_f(m['benign_with_interrupt_frac'])} "
                 f"| {_f(m['caution_alerts_per_user_week'])} | {_f(m['median_hours_to_warning'], '{:.1f}')} "
-                f"| {_f(m['median_index_to_warning'], '{:.1f}')} | {_f(lat['p50'], '{:.0f}')} / {_f(lat['p95'], '{:.0f}')} |")
+                f"| {_f(m['median_index_to_warning'], '{:.1f}')} | {_f(m['critical_first_alert_frac'])} "
+                f"| {m['agent_raised_events']} | {_f(lat['p50'], '{:.0f}')} / {_f(lat['p95'], '{:.0f}')} |")
     cats = sorted({c for by in report["modes"].values() for c in (by.get("all") or {}).get("per_category_recall", {})})
     if cats:
         modes = list(report["modes"])

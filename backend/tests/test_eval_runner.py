@@ -199,6 +199,28 @@ def test_compute_metrics_exact_values():
     assert hold["scam_recall"] == 0.0 and hold["false_interrupts_per_user_week"] == 0.0
 
 
+def test_scripted_agent_never_argues_a_confirmed_risk_down():
+    """Weak tool facts allow 'high'; when the rules already say critical the fake agent keeps critical."""
+    payload = {"base_tier": "critical", "rule_signals": [{"name": "payment_request"}], "entities": []}
+    done = [("check_number", {"e164": "+919876543210"}, {"seen_count": 4, "in_contacts": False})]
+    assert ev.ScriptedAgentLLM._answer(payload, done)["tier"] == "critical"
+    payload["base_tier"] = "caution"
+    ans = ev.ScriptedAgentLLM._answer(payload, done)
+    assert ans["tier"] == "high" and ans["raises"] == [{"tool": "check_number", "fact": "repeat_number"}]
+
+
+def test_agent_raise_and_severity_metrics():
+    results = [
+        _r("s1", "scam", "tune", [_ev(0, 0, "critical", True, True) | {"raised_by": ["new_domain_7d"]}],
+           harm=0, first=0),
+        _r("s2", "scam", "tune", [_ev(0, 0, "high", True, True)], harm=0, first=0),
+        _r("b1", "benign", "tune", [_ev(0, 0)]),
+    ]
+    m = ev.compute_metrics(results)
+    assert m["agent_raised_events"] == 1
+    assert m["critical_first_alert_frac"] == pytest.approx(0.5)
+
+
 def test_metrics_empty_subsets_are_none():
     m = ev.compute_metrics([])
     assert m["scam_recall"] is None and m["false_interrupts_per_user_week"] is None
