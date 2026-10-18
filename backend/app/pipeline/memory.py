@@ -111,18 +111,21 @@ def _entity_id(db: Session, user: _HasId, entity: Entity) -> str | None:
 
 
 def history(db: Session, user: _HasId, entity: Entity, now: datetime,
-            exclude_event_id: str | None = None) -> list[HistoryItem]:
+            exclude_event_id: str | None = None, limit: int | None = None) -> list[HistoryItem]:
     """Events containing `entity` with ts <= now, oldest first. Includes the current event when
-    now == its ts; pass `exclude_event_id` to leave it out."""
-    rows = db.execute(
-        select(Event.id, Event.ts, Event.source, Event.redacted_text)
+    now == its ts; pass `exclude_event_id` to leave it out. With `limit`, only the newest
+    `limit` events are returned (still oldest first)."""
+    q = (select(Event.id, Event.ts, Event.source, Event.redacted_text)
         .join(EventEntity, EventEntity.event_id == Event.id)
         .join(EntityRow, EntityRow.id == EventEntity.entity_id)
         .where(Event.user_id == user.id, EntityRow.user_id == user.id,
                EntityRow.type == entity.type, EntityRow.canonical == entity.canonical,
                Event.ts <= now,
-               Event.id != exclude_event_id if exclude_event_id else true())
-        .order_by(Event.ts, Event.id)).all()
+               Event.id != exclude_event_id if exclude_event_id else true()))
+    if limit is None:
+        rows = db.execute(q.order_by(Event.ts, Event.id)).all()
+    else:
+        rows = db.execute(q.order_by(Event.ts.desc(), Event.id.desc()).limit(limit)).all()[::-1]
     return [HistoryItem(*r) for r in rows]
 
 

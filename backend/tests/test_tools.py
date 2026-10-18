@@ -115,8 +115,8 @@ def test_rdap_redirect_only_to_https():
     assert run_tool(make_ctx(), "check_url", {"domain": "a.xyz"})["age_days"] is None
     assert not bad.called
     respx.get("https://rdap.org/domain/b.xyz").mock(
-        return_value=httpx.Response(302, headers={"location": "https://rdap.registry.org/domain/b.xyz"}))
-    respx.get("https://rdap.registry.org/domain/b.xyz").mock(return_value=rdap(9))
+        return_value=httpx.Response(302, headers={"location": "https://rdap.verisign.com/domain/b.xyz"}))
+    respx.get("https://rdap.verisign.com/domain/b.xyz").mock(return_value=rdap(9))
     assert run_tool(make_ctx(), "check_url", {"domain": "b.xyz"})["age_days"] == 9
 
 
@@ -170,7 +170,8 @@ def test_web_lookup_caps_and_marks_untrusted():
     assert sent["max_results"] == 5 and len(sent["query"]) <= 200 and "\x00" not in sent["query"]
     assert 0 < len(out) <= 5
     for r in out:
-        assert len(r["title"]) <= 120
+        assert r["title"].startswith("[untrusted web text] ") and len(r["title"]) <= 120 + 21
+        assert r["untrusted"] is True and r["url"].startswith("https://") and len(r["url"]) <= 200
         assert r["snippet"].startswith("[untrusted web text] ")
         assert len(r["snippet"]) <= 300 + len("[untrusted web text] ")
     res = run_tool(ctx, "web_lookup", {"query": "q"})
@@ -269,3 +270,84 @@ def test_run_tool_catches_exceptions_and_caps_size(monkeypatch):
     big = tools.Tool("check_number", "d", TOOLS["check_number"].parameters, lambda ctx, **kw: {"x": "y" * 50000})
     monkeypatch.setitem(TOOLS, "check_number", big)
     assert len(json.dumps(run_tool(make_ctx(), "check_number", {"e164": "+919876543210"}))) <= 4100
+
+
+# ---------------------------------------------------------------- fix round 1
+BIG = httpx.Response(200, content=b'{"events": [], "pad": "' + b"x" * (5 * 1024 * 1024) + b'"}')
+
+
+@respx.mock
+def test_rdap_oversize_body_is_failure():
+    respx.get("https://rdap.org/domain/a.xyz").mock(return_value=BIG)
+    assert run_tool(make_ctx(), "check_url", {"domain": "a.xyz"})["age_days"] is None
+    # Content-Length lie / header check path
+    respx.get("https://rdap.org/domain/b.xyz").mock(return_value=httpx.Response(
+        200, content=b"{}", headers={"content-length": "999999999"}))
+    assert run_tool(make_ctx(), "check_url", {"domain": "b.xyz"})["age_days"] is None
+
+
+@respx.mock
+def test_tavily_oversize_body_is_empty():
+    respx.post("https://api.tavily.com/search").mock(return_value=BIG)
+    assert tools.web_lookup(make_ctx(settings=settings(tavily_api_key="k")), query="x") == []
+
+
+@respx.mock
+@pytest.mark.parametrize("loc", ["https://localtest.me/", "https://user:pw@rdap.org/x",
+                                 "https://rdap.org:8443/x", "http://rdap.org/x",
+                                 "https://rdap.org.evil.com/x", "https://evilrdap.org/x"])
+def test_rdap_redirect_rejected(loc):
+    first = respx.get("https://rdap.org/domain/a.xyz").mock(
+        return_value=httpx.Response(302, headers={"location": loc}))
+    other = respx.route().mock(return_value=rdap(3))
+    assert run_tool(make_ctx(), "check_url", {"domain": "a.xyz"})["age_days"] is None
+    assert first.call_count == 1 and other.call_count == 0
+
+
+@respx.mock
+@pytest.mark.parametrize("d", ["hdfcbank-login.amazonaws.com", "hdfcbank.web.app", "sbi-kyc.github.io",
+                               "paytm-refund.vercel.app", "x.sbi-kyc.github.io"])
+def test_infra_hosted_lookalikes_flagged(d):
+    respx.get(url__startswith="https://rdap.org/").mock(return_value=httpx.Response(404))
+    assert run_tool(make_ctx(), "check_url", {"domain": d})["lookalike_of"] is not None
+
+
+@respx.mock
+@pytest.mark.parametrize("d", ["aws.amazon.com", "s3.amazonaws.com", "mail.google.com", "my-app.web.app",
+                               "foo.github.io", "amazonaws.com"])
+def test_infra_legit_not_flagged(d):
+    respx.get(url__startswith="https://rdap.org/").mock(return_value=httpx.Response(404))
+    assert run_tool(make_ctx(), "check_url", {"domain": d})["lookalike_of"] is None
+
+
+@respx.mock
+def test_case_insensitive_and_punycode_skeleton():
+    respx.get(url__startswith="https://rdap.org/").mock(return_value=httpx.Response(404))
+    assert run_tool(make_ctx(), "check_url", {"domain": "HDFCBank-KYC.in"})["lookalike_of"] == "hdfcbank.com"
+    cyr = "раураl".encode("idna").decode()  # cyrillic homoglyph label
+    d = "\u0440\u0430ytm-refund.top".encode("idna").decode()
+    assert d.startswith("xn--")
+    assert run_tool(make_ctx(), "check_url", {"domain": d})["lookalike_of"] == "paytm.com"
+    assert cyr
+
+
+def test_final_output_cap_with_truncated_key(monkeypatch):
+    big = tools.Tool("check_number", "d", TOOLS["check_number"].parameters,
+                     lambda ctx, **kw: {"events": [{"t": "y" * 100}] * 100, "pad": "z" * 10})
+    monkeypatch.setitem(TOOLS, "check_number", big)
+    out = run_tool(make_ctx(), "check_number", {"e164": "+919876543210"})
+    assert out["truncated"] is True and len(json.dumps(out)) <= 4000
+    edge = tools.Tool("check_number", "d", TOOLS["check_number"].parameters,
+                      lambda ctx, **kw: {"events": [{"t": "y" * 30}] * 99 + [{"t": "y" * 3871}][:0]})
+    monkeypatch.setitem(TOOLS, "check_number", edge)
+    assert len(json.dumps(run_tool(make_ctx(), "check_number", {"e164": "+919876543210"}))) <= 4000
+
+
+def test_memory_history_limit(db, register):
+    a = uid(register, db)
+    for i in range(5):
+        ingest(db, a, f"l{i}", [P], minutes=i)
+    from app.pipeline.memory import history
+    full = history(db, a, P, NOW)
+    lim = history(db, a, P, NOW, limit=2)
+    assert lim == full[-2:] and len(full) == 5
