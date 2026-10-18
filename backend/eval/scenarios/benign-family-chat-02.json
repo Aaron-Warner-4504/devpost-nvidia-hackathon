@@ -15,7 +15,8 @@
       "text": "ठीक है, ध्यान रखना",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-02-e01",
@@ -25,7 +26,8 @@
       "text": "शाम को फ़ोन करना",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-02-e02",
@@ -35,7 +37,8 @@
       "text": "बेटा खाना खा लिया?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-02-e03",
@@ -60,7 +63,8 @@
       "text": "दवाई ले आना मेरे लिए",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-02-e05",
@@ -70,7 +74,8 @@
       "text": "शाम को फ़ोन करना",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-02-e06",
@@ -80,7 +85,8 @@
       "text": "शाम को फ़ोन करना",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-02-e07",
@@ -90,7 +96,8 @@
       "text": "₹1,000 भेज देना, सब्ज़ी वाले को देने हैं",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-02-e08",
@@ -100,7 +107,8 @@
       "text": "बेटा खाना खा लिया?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-02-e09",
@@ -110,7 +118,8 @@
       "text": "ठीक है, ध्यान रखना",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     }
   ],
   "expect": {

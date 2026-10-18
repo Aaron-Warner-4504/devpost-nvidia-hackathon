@@ -113,17 +113,24 @@ def test_benign_must_not_have_harm_index():
 
 def test_all_committed_scenarios_validate_and_set_properties():
     scs = ev.load_scenarios(SCEN_DIR)
-    assert len(scs) == 120
+    n_scam = sum(gen.SCAM_COUNTS.values()) + sum(gen.EXTRA_SCAM_COUNTS.values())  # 40 + 3 (R34)
+    assert len(scs) == n_scam + 80
     for s in scs:
         assert ev.validate_scenario(s) == [], s["id"]
     assert ev.validate_set(scs) == []
     labels = Counter(s["label"] for s in scs)
-    assert labels == {"scam": 40, "benign": 80}
-    assert len({s["id"] for s in scs}) == 120
+    assert labels == {"scam": n_scam, "benign": 80} and n_scam == 43
+    assert len({s["id"] for s in scs}) == n_scam + 80
     for label, n in labels.items():
         hold = sum(1 for s in scs if s["label"] == label and s["split"] == "holdout")
         assert 0.25 <= hold / n <= 0.35, (label, hold)
-    assert {s["category"] for s in scs if s["label"] == "scam"} == set(gen.SCAM_COUNTS)
+    assert {s["category"] for s in scs if s["label"] == "scam"} == set(gen.SCAM_COUNTS) | set(gen.EXTRA_SCAM_COUNTS)
+    # R34: saved-contact family chat carries the client-checked flag; name-spoofing scams never do
+    fam = [e for s in scs if s["category"] == "family_chat" for e in s["events"] if e["source"] == "whatsapp"]
+    assert fam and all(e.get("is_contact") is True for e in fam)
+    spoof = [e for s in scs if s["category"] == "contact_name_spoof" for e in s["events"]]
+    assert len(spoof) >= 3 and all(e.get("is_contact") is not True for e in spoof)
+    assert {e["sender"] for e in spoof} >= {"Mom", "Papa", "Bank Manager"}
     assert all(s["source"] == "synthetic" for s in scs)
     assert {s["lang"] for s in scs} == {"en", "hi", "hinglish"}
     shapes = Counter(s["shape"] for s in scs if s["label"] == "scam")
@@ -145,7 +152,7 @@ def test_generator_is_deterministic_and_matches_committed_files(tmp_path):
     gen.write(a)
     gen.write(b)
     fa = sorted(p.name for p in a.glob("*.json"))
-    assert fa == sorted(p.name for p in b.glob("*.json")) and len(fa) == 120
+    assert fa == sorted(p.name for p in b.glob("*.json")) and len(fa) == 123
     for name in fa:
         assert (a / name).read_bytes() == (b / name).read_bytes()
         assert (a / name).read_bytes() == (SCEN_DIR / name).read_bytes(), f"{name}: regenerate eval/scenarios"

@@ -49,10 +49,18 @@ Request:
   "text": "Your account is blocked, click http://x.co",
   "call": null,
   "triage_score": 0.8,
-  "lang": "en"
+  "lang": "en",
+  "is_contact": false
 }
 ```
 For `source: "call"`, `call` is `{"number": "+911234567890", "duration_s": 42, "is_contact": false, "direction": "in"}`.
+
+`is_contact` (optional, `true` | `false` | omitted/`null`): set it to `true` only when the app has checked that the
+sender is a saved contact, e.g. via `ContactsContract` lookup of the sender number or the notification's `Person`
+contact URI. Never infer it from the display name: anyone can call themselves "Mom" on WhatsApp. Group-chat
+notifications send `false` or omit it. Omitted means "not known to be a contact", the same as before this
+field existed. It only suppresses the "unknown sender" signal and never lowers a tier on its own. For calls,
+`call.is_contact` keeps working as before.
 
 Response 200 (`EventResult`):
 ```json

@@ -25,7 +25,8 @@
       "text": "घर कब आ रहे हो?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-marketing-eligible-03-e02",

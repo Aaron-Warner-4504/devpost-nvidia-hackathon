@@ -35,7 +35,8 @@
       "text": "Khana kha liya?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-emi-reminder-03-e03",
@@ -55,7 +56,8 @@
       "text": "Kal milte hain",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-emi-reminder-03-e05",

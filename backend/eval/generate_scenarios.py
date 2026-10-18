@@ -34,6 +34,9 @@ SCAM_COUNTS = {  # 40
     "digital_arrest": 5, "courier_customs": 5, "kyc_bank": 5, "upi_collect": 4, "job_task": 5,
     "electricity_bill": 4, "remote_access": 4, "sextortion": 4, "investment_group": 4,
 }
+# Added in Task 12 fix round 1 (R34): attackers whose WhatsApp display name looks like a contact. Generated
+# after everything else with their own RNG and split stream, so earlier scenarios and splits are unchanged.
+EXTRA_SCAM_COUNTS = {"contact_name_spoof": 3}
 BENIGN_COUNTS = {  # 80
     "bank_otp": 5, "bank_txn_alerts": 5, "upi_confirmations": 5, "delivery_updates": 6, "family_chat": 8,
     "salary_credit": 4, "emi_reminder": 4, "app_otp": 5, "appointments": 4, "telecom_offers": 5,
@@ -143,8 +146,12 @@ def call(number: str, duration: int, contact: bool = False, direction: str = "in
             "call": {"number": number, "duration_s": duration, "is_contact": contact, "direction": direction}}
 
 
-def msg(source: str, sender: str | None, text: str) -> dict:
-    return {"source": source, "sender": sender, "text": text}
+def msg(source: str, sender: str | None, text: str, contact: bool | None = None) -> dict:
+    """`contact` -> EventIn.is_contact (client-checked saved contact); None = omitted."""
+    out = {"source": source, "sender": sender, "text": text}
+    if contact is not None:
+        out["is_contact"] = contact
+    return out
 
 
 def report(final_url: str, *, fetched_ok: bool = True, password: bool = False, otp_form: bool = False,
@@ -723,6 +730,35 @@ def inv_en_single_link(s: Slots):
                                f"with your PAN and bank details at {url} and deposit Rs 10,000 to start."))])
 
 
+def spoof_mom_hinglish(s: Slots):
+    amt = s.amount(8000, 40000, 500)
+    return dict(lang="hinglish", shape="single", harm=0, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", "Mom",
+                f"Beta ye mera naya number hai, purana phone kharab ho gaya. Hospital mein urgent ₹{inr(amt)} "
+                f"chahiye, abhi {s.upi_handle('medhelp')} pe bhej do, ghar aake bataungi.")),
+    ])
+
+
+def spoof_papa_en(s: Slots):
+    amt = s.amount(15000, 60000, 1000)
+    return dict(lang="en", shape="slow_burn", harm=1, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", "Papa", "Hi beta, this is my new number, save it. Old phone fell in water.", contact=False)),
+        (2, msg("whatsapp", "Papa",
+                f"I am stuck at the airport, my card got blocked. Transfer Rs {inr(amt)} to account "
+                f"5010{s.digits(10)} IFSC SBIN0001234 immediately, will explain later. Don't tell Mummy.",
+                contact=False)),
+    ])
+
+
+def spoof_bank_manager_hi(s: Slots):
+    return dict(lang="hi", shape="slow_burn", harm=1, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", "Bank Manager",
+                "नमस्ते, मैं आपकी शाखा का बैंक मैनेजर हूँ। आपके खाते का केवाईसी आज अपडेट होना ज़रूरी है।")),
+        (0.2, msg("whatsapp", "Bank Manager",
+                  "आपके फ़ोन पर अभी जो ओटीपी आया है वह मुझे बताएं, केवाईसी पूरा हो जाएगा।")),
+    ])
+
+
 SCAM_TEMPLATES = {
     "digital_arrest": [da_en_slow, da_hi_slow, da_hinglish_slow, da_en_intl, da_en_single],
     "courier_customs": [cc_en_single_link, cc_hi_single_link, cc_en_customs_slow, cc_hinglish_courier_call,
@@ -734,6 +770,7 @@ SCAM_TEMPLATES = {
     "remote_access": [ra_en_amazon_refund, ra_hi_bank, ra_hinglish_card, ra_en_microsoft],
     "sextortion": [sx_en_video, sx_en_police_followup, sx_hi, sx_en_email_single],
     "investment_group": [inv_en_group, inv_hi_group, inv_hinglish_crypto, inv_en_single_link],
+    "contact_name_spoof": [spoof_mom_hinglish, spoof_papa_en, spoof_bank_manager_hi],
 }
 
 
@@ -802,7 +839,7 @@ def filler(s: Slots, lang: str, n: int) -> list[tuple[int, float, dict]]:
                     f"{s.otp()} is your login OTP. Do not share it with anyone."),
         lambda: msg("whatsapp", s.pick([f[0] for f in FAMILY]),
                     s.pick(["Reached home?", "Call me when free", "Khana kha liya?", "Ok 👍", "Kal milte hain",
-                            "घर कब आ रहे हो?", "Happy birthday to Chintu! 🎂"])),
+                            "घर कब आ रहे हो?", "Happy birthday to Chintu! 🎂"]), contact=True),
     ]
     return [(d, h, s.pick(pool)()) for d, h in times(s, n)]
 
@@ -878,12 +915,12 @@ def b_family(s: Slots, lang: str):
         lines = ["Did you reach office?", "Please pick up milk on the way back", "Call me when you are free",
                  f"Can you send ₹{s.pick(['500', '1,200', '2,000'])} for the electrician? Will return tomorrow",
                  "Movie on Saturday?", "Mom says hi", "Sending the photos from the wedding"]
-    evs = [(d, h, msg("whatsapp", who, s.pick(lines))) for d, h in times(s, s.r.randrange(5, 9))]
+    evs = [(d, h, msg("whatsapp", who, s.pick(lines), contact=True)) for d, h in times(s, s.r.randrange(5, 9))]
     ask = [line for line in lines if "₹" in line][0]
     d, h = times(s, 1)[0]
-    evs.append((d, h, msg("whatsapp", who, ask)))
+    evs.append((d, h, msg("whatsapp", who, ask, contact=True)))
     evs.append((s.r.randrange(0, 7), 20.0, call(s.phone_fmt(), s.r.randrange(60, 900), contact=True)))
-    evs.append((s.r.randrange(0, 7), 18.5, msg("whatsapp", other, s.pick(lines))))
+    evs.append((s.r.randrange(0, 7), 18.5, msg("whatsapp", other, s.pick(lines), contact=True)))
     return sorted(evs, key=lambda x: (x[0], x[1])), _fx()
 
 
@@ -1113,6 +1150,8 @@ def _event(sid: str, i: int, ev: dict, ts: datetime) -> dict:
     out = {"device_event_id": f"{sid}-e{i:02d}", "source": ev["source"], "ts": _ts(ts),
            "sender": ev.get("sender"), "text": ev.get("text"), "call": ev.get("call"),
            "triage_score": device_triage(ev), "lang": lang}
+    if ev.get("is_contact") is not None:
+        out["is_contact"] = ev["is_contact"]
     return out
 
 
@@ -1167,13 +1206,13 @@ def build_benign(sid: str, category: str, k: int, rng: random.Random, start: dat
 def assign_splits(scenarios: list[dict], seed: int) -> None:
     """Stratified by (label, category): within each group (sorted by id) a seeded shuffle puts
     round(30%) (at least 1 when the group has >= 3) in holdout."""
-    rng = random.Random(seed + 1)
+    rng, xrng = random.Random(seed + 1), random.Random(seed + 2)
     groups: dict[tuple, list[dict]] = {}
     for sc in scenarios:
         groups.setdefault((sc["label"], sc["category"]), []).append(sc)
     for key in sorted(groups):
         g = sorted(groups[key], key=lambda x: x["id"])
-        rng.shuffle(g)
+        (xrng if key[1] in EXTRA_SCAM_COUNTS else rng).shuffle(g)
         n = round(len(g) * HOLDOUT_FRACTION)
         if n == 0 and len(g) >= 3:
             n = 1
@@ -1196,6 +1235,13 @@ def generate(seed: int = SEED) -> list[dict]:
             sid = f"benign-{category.replace('_', '-')}-{k + 1:02d}"
             start = BASE + timedelta(days=day)
             out.append(build_benign(sid, category, k, rng, start))
+            day += 1
+    xrng = random.Random(seed + 7)
+    for category, n in EXTRA_SCAM_COUNTS.items():
+        for k in range(n):
+            sid = f"scam-{category.replace('_', '-')}-{k + 1:02d}"
+            start = BASE + timedelta(days=day, hours=xrng.randrange(8, 20), minutes=xrng.randrange(0, 60))
+            out.append(build_scam(sid, category, k, xrng, start))
             day += 1
     assign_splits(out, seed)
     return out

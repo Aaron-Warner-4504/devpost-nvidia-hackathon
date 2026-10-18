@@ -15,7 +15,8 @@
       "text": "Call me when you are free",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-07-e01",
@@ -25,7 +26,8 @@
       "text": "Did you reach office?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-07-e02",
@@ -35,7 +37,8 @@
       "text": "Can you send ₹2,000 for the electrician? Will return tomorrow",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-07-e03",
@@ -45,7 +48,8 @@
       "text": "Movie on Saturday?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-07-e04",
@@ -55,7 +59,8 @@
       "text": "Sending the photos from the wedding",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-07-e05",
@@ -65,7 +70,8 @@
       "text": "Movie on Saturday?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-07-e06",
@@ -75,7 +81,8 @@
       "text": "Can you send ₹2,000 for the electrician? Will return tomorrow",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-07-e07",
@@ -85,7 +92,8 @@
       "text": "Movie on Saturday?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-07-e08",
@@ -95,7 +103,8 @@
       "text": "Call me when you are free",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-07-e09",
@@ -120,7 +129,8 @@
       "text": "Can you send ₹2,000 for the electrician? Will return tomorrow",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     }
   ],
   "expect": {

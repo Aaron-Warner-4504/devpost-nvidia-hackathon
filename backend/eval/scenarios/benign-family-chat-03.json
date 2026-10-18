@@ -15,7 +15,8 @@
       "text": "Bijli ka bill bhar diya kya?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-03-e01",
@@ -40,7 +41,8 @@
       "text": "Aaj dinner pe kya banau?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-03-e03",
@@ -50,7 +52,8 @@
       "text": "Kahan ho? Call karo",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-03-e04",
@@ -60,7 +63,8 @@
       "text": "Beta paise bhej do ₹500, kal wapas kar dungi",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-03-e05",
@@ -70,7 +74,8 @@
       "text": "Beta paise bhej do ₹500, kal wapas kar dungi",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-03-e06",
@@ -80,7 +85,8 @@
       "text": "Haan theek hai, kal milte hain",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-03-e07",
@@ -90,7 +96,8 @@
       "text": "Beta paise bhej do ₹500, kal wapas kar dungi",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-03-e08",
@@ -100,7 +107,8 @@
       "text": "Haan theek hai, kal milte hain",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-03-e09",
@@ -110,7 +118,8 @@
       "text": "Gas cylinder book kar dena",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     }
   ],
   "expect": {

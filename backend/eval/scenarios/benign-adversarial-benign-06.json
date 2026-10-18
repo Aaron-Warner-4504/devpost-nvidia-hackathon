@@ -35,7 +35,8 @@
       "text": "Ok 👍",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-adversarial-benign-06-e03",

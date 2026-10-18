@@ -23,6 +23,10 @@ class EventIn(BaseModel):
     call: CallMeta | None = None
     triage_score: float
     lang: str | None = None
+    # Client-checked: true only when the app verified the sender is a saved contact (ContactsContract /
+    # the notification's Person contact URI). Group notifications send false/omit it. Omitted -> None
+    # (treated as not a known contact). Only suppresses the unknown_sender signal.
+    is_contact: bool | None = None
 
 
 class WhyItem(BaseModel):

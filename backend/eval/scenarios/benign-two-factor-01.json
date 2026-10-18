@@ -25,7 +25,8 @@
       "text": "Happy birthday to Chintu! 🎂",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-two-factor-01-e02",

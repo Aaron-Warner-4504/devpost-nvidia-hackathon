@@ -35,7 +35,8 @@
       "text": "Call me when free",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-card-statement-03-e03",
@@ -55,7 +56,8 @@
       "text": "घर कब आ रहे हो?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-card-statement-03-e05",

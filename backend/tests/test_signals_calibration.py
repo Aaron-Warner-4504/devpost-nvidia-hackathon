@@ -115,12 +115,44 @@ def test_authority_org_and_claims_still_hop():
     assert "channel_hop" in names(run(ev("parcel is held at customs", sender="x"), ctx)[0])
 
 
-# ---------------------------------------------------------------- 6. saved-contact display names
-@pytest.mark.parametrize("sender", ["Mummy", "Rohan (cousin)", "Priya Office", "दीदी"])
-def test_whatsapp_display_name_is_a_saved_contact(sender):
-    sigs, _ = run(ev("Can you send ₹1,200 for the electrician? Will return tomorrow", source="whatsapp",
-                     sender=sender))
-    assert "unknown_sender" not in names(sigs)
+# ---------------------------------------------------------------- 6. explicit is_contact (R34)
+# The display-name shape inference from the first tuning round was removed (an attacker can name
+# itself "Mom"); only the client-checked `is_contact` flag suppresses unknown_sender.
+def _evc(text, sender, source="whatsapp", is_contact=None):
+    e = ev(text, source=source, sender=sender)
+    return e.model_copy(update={"is_contact": is_contact})
+
+
+@pytest.mark.parametrize("sender", ["Mom", "Mummy", "Papa", "Bank Manager", "Rohan (cousin)", "दीदी"])
+def test_display_name_alone_is_not_a_contact(sender):
+    assert "unknown_sender" in names(run(_evc("Can you send ₹1,200 today?", sender))[0])
+
+
+@pytest.mark.parametrize("source,sender", [("whatsapp", "Mummy"), ("sms", "+919811122233"),
+                                           ("whatsapp", "+91 98111 22233"), ("email", "a@b.com")])
+def test_is_contact_true_suppresses_unknown_sender(source, sender):
+    assert "unknown_sender" not in names(run(_evc("Can you send ₹1,200 today?", sender, source, True))[0])
+
+
+@pytest.mark.parametrize("flag", [False, None])
+def test_is_contact_false_or_missing_keeps_unknown_sender(flag):
+    assert "unknown_sender" in names(run(_evc("hello", "Mom", is_contact=flag))[0])
+
+
+def test_is_contact_never_lowers_a_scam_beyond_unknown_sender():
+    sigs, tier = run(_evc("I am stuck, transfer Rs 25,000 immediately to a/c 501001234567890. Don't tell anyone",
+                          "Papa", is_contact=True))
+    assert "unknown_sender" not in names(sigs) and {"payment_request", "secrecy_demand"} <= names(sigs)
+    assert tier in ("high", "critical")
+
+
+def test_call_path_unchanged():
+    from app.schemas import CallMeta
+    c = lambda contact: ev(None, source="call", call=CallMeta(number="+919811122233", duration_s=60,
+                                                               is_contact=contact, direction="in"))
+    assert "unknown_sender" in names(run(c(False))[0])
+    assert "unknown_sender" not in names(run(c(True))[0])
+    assert "unknown_sender" not in names(run(c(False).model_copy(update={"is_contact": True}))[0])
 
 
 @pytest.mark.parametrize("sender,source", [("+91 98111 22233", "whatsapp"), ("9811122233", "whatsapp"),

@@ -55,7 +55,8 @@
       "text": "Kal milte hain",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-card-statement-02-e05",

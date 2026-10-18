@@ -15,7 +15,8 @@
       "text": "Beta paise bhej do ₹800, kal wapas kar dungi",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-06-e01",
@@ -25,7 +26,8 @@
       "text": "Aaj dinner pe kya banau?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-06-e02",
@@ -35,7 +37,8 @@
       "text": "Bijli ka bill bhar diya kya?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-06-e03",
@@ -45,7 +48,8 @@
       "text": "Bijli ka bill bhar diya kya?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-06-e04",
@@ -70,7 +74,8 @@
       "text": "Bijli ka bill bhar diya kya?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-06-e06",
@@ -80,7 +85,8 @@
       "text": "Bijli ka bill bhar diya kya?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-06-e07",
@@ -90,7 +96,8 @@
       "text": "Aaj dinner pe kya banau?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-06-e08",
@@ -100,7 +107,8 @@
       "text": "Haan theek hai, kal milte hain",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-06-e09",
@@ -110,7 +118,8 @@
       "text": "Beta paise bhej do ₹800, kal wapas kar dungi",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     }
   ],
   "expect": {

@@ -449,8 +449,10 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
     if event.call is not None:
         unknown = not event.call.is_contact
     elif event.sender:
-        unknown = not history_ctx.sender_seen_before and not _contact_name(event)
+        unknown = not history_ctx.sender_seen_before
     else:
+        unknown = False
+    if getattr(event, "is_contact", None) is True:  # client-checked saved contact (never inferred from names)
         unknown = False
     if unknown and not safe_sender:
         add("unknown_sender", "call from non-contact" if event.call else f"first contact: {event.sender}")
@@ -551,18 +553,6 @@ def _link_signals(ents: set[Entity], ctx: HistoryCtx, safe) -> list[tuple[str, s
                 out["credential_form_on_new_domain"] = f"{e.canonical}: {kind} form, {why}"[:120]
     order = ("credential_form_on_new_domain", "apk_download", "threat_feed_hit")
     return [(n, out[n]) for n in order if n in out]
-
-
-_HEADERISH = re.compile(r"^[A-Z0-9]{2}-[A-Z0-9]{3,9}(?:-[A-Z])?$|^[A-Z0-9]{3,11}$")
-
-
-def _contact_name(event) -> bool:
-    """WhatsApp notifications are titled with the SAVED contact name only for saved contacts (unknown
-    senders appear as their phone number), so a plain name with no digits, '@' or SMS-header shape is
-    the user's own contact. SMS is excluded: alphanumeric SMS sender ids can be spoofed."""
-    s = (event.sender or "").strip()
-    return (event.source == "whatsapp" and event.call is None and bool(s)
-            and not any(c.isdigit() or c in "@+" for c in s) and not _HEADERISH.match(s))
 
 
 def _bank_sms(event) -> bool:
