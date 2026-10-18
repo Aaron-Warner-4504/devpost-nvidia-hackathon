@@ -18,7 +18,7 @@ def counts(db, user_id):
 
 def seed(db, user_id):
     """Insert one row into every user-owned table."""
-    from app.models import (Alert, Assessment, Edge, Embedding, Entity, Override,
+    from app.models import (Alert, Assessment, Edge, Embedding, Entity, EventEntity, Override,
                             TrustedContact)
     from datetime import datetime, timezone
     from app.config import settings
@@ -35,6 +35,7 @@ def seed(db, user_id):
         Edge(user_id=user_id, a=e1.id, b=e2.id, relation="linked",
              valid_from=datetime.now(timezone.utc), evidence_event_ids=[ev.id]),
         Embedding(user_id=user_id, event_id=ev.id, vector=[0.1] * settings.embed_dim),
+        EventEntity(user_id=user_id, event_id=ev.id, entity_id=e1.id),
         TrustedContact(user_id=user_id, name="Mom", phone="+2"),
         Override(user_id=user_id, kind="safe", type="domain", canonical="ok.com"),
         Consent(user_id=user_id, source="sms", granted_at=datetime.now(timezone.utc)),
@@ -88,7 +89,7 @@ def test_delete_me_cascades_and_isolates_other_user(client, register, db):
     db.expire_all()
     c1 = counts(db, u1)
     assert set(c1) >= {"devices", "consents", "events", "entities", "edges", "assessments",
-                       "alerts", "trusted_contacts", "embeddings", "overrides"}
+                       "alerts", "trusted_contacts", "embeddings", "overrides", "event_entities"}
     assert all(v == 0 for v in c1.values()), c1
     assert db.get(User, u1) is None
     assert counts(db, u2) == before2

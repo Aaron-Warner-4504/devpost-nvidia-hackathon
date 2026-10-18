@@ -75,6 +75,7 @@ class Entity(Base):
 
 class Edge(Base):
     __tablename__ = "edges"
+    __table_args__ = (UniqueConstraint("user_id", "a", "b", "relation", name="uq_edges_user_a_b_relation"),)
     id: Mapped[str] = _pk("edg")
     user_id: Mapped[str] = _uid()
     a: Mapped[str] = mapped_column(String, ForeignKey("entities.id", ondelete="CASCADE"))
@@ -124,7 +125,7 @@ class Embedding(Base):
     id: Mapped[str] = _pk("emb")
     user_id: Mapped[str] = _uid()
     event_id: Mapped[str] = mapped_column(String, ForeignKey("events.id", ondelete="CASCADE"), index=True)
-    vector = mapped_column(Vector(settings.embed_dim))
+    vector = mapped_column(Vector(settings.embed_dim), nullable=False)
 
 
 class Override(Base):
@@ -139,3 +140,13 @@ class Override(Base):
     kind: Mapped[str] = mapped_column(String)
     type: Mapped[str] = mapped_column(String)
     canonical: Mapped[str] = mapped_column(String)
+
+
+class EventEntity(Base):
+    """Event <-> entity membership."""
+    __tablename__ = "event_entities"
+    user_id: Mapped[str] = _uid()
+    event_id: Mapped[str] = mapped_column(
+        String, ForeignKey("events.id", ondelete="CASCADE"), primary_key=True)
+    entity_id: Mapped[str] = mapped_column(
+        String, ForeignKey("entities.id", ondelete="CASCADE"), primary_key=True, index=True)
