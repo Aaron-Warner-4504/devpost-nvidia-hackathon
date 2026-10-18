@@ -88,3 +88,62 @@ def test_amount_kept(s):
 ])
 def test_idempotent(s):
     assert redact(redact(s)) == redact(s)
+
+
+@pytest.mark.parametrize("s", [
+    "Aadhaar 916234567890",
+    "my aadhaar is 916 234 567 890",
+    "आधार 9162-3456-7890",
+    "UID: 916234567890",
+    "id 916234567890 given",
+    "id 9162 3456 7890 given",
+])
+def test_aadhaar_starting_91_masked(s):
+    out = redact(s)
+    assert "[AADHAAR]" in out and "9162" not in out and "916" not in out
+
+
+@pytest.mark.parametrize("s", [
+    "ping 91 98765 43210",
+    "ping 91-9876543210",
+    "call 919876543210 now",
+    "संपर्क 919876543210",
+    "WhatsApp: 919876543210",
+])
+def test_phone12_kept(s):
+    assert redact(s) == s
+
+
+def test_currency_anchored():
+    assert "[ACCT]" in redact("ours 482913012345 ok") or "[AADHAAR]" in redact("ours 482913012345 ok")
+    assert "482913012345" not in redact("ours 482913012345 ok")
+    assert "482913012345" not in redact("Fnrs 482913012345")
+    assert redact("Rs 1,00,000") == "Rs 1,00,000"
+    assert redact("₹4,999") == "₹4,999"
+    assert redact("Rs. 123456789 due") == "Rs. 123456789 due"
+
+
+def test_pan_lowercase():
+    out = redact("pan abcde1234f ok")
+    assert "[PAN]" in out and "abcde1234f" not in out
+
+
+@pytest.mark.parametrize("s", [
+    "OTP:\n482913",
+    "Your one time password is 482913",
+    "passcode 482913",
+    "वन टाइम पासवर्ड 482913",
+    "OTP 1234 5678",
+    "OTP 123-456",
+    "482913 passcode",
+])
+def test_otp_variants(s):
+    out = redact(s)
+    assert "[OTP]" in out
+    assert not any(ch.isdigit() for ch in out)
+    assert redact(out) == out
+
+
+def test_split_otp_single_token():
+    assert redact("OTP 1234 5678") == "OTP [OTP]"
+    assert redact("OTP 123-456") == "OTP [OTP]"
