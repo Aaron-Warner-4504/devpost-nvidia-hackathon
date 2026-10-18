@@ -1,0 +1,91 @@
+{
+  "id": "benign-marketing-eligible-04",
+  "label": "benign",
+  "category": "marketing_eligible",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_marketing",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-marketing-eligible-04-e00",
+      "source": "sms",
+      "ts": "2026-06-17T10:30:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "Good news! You are now eligible for a pre-approved personal loan of up to Rs 3,00,000 at attractive rates. Apply on the ICICI mobile app. T&C apply.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-04-e01",
+      "source": "sms",
+      "ts": "2026-06-18T11:58:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "You are now eligible for an instant top-up loan. Get funds in your account in minutes. Apply via ICICI Bank NetBanking. T&C apply.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-04-e02",
+      "source": "whatsapp",
+      "ts": "2026-06-18T17:20:00+05:30",
+      "sender": "Mummy",
+      "text": "Ok 👍",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-04-e03",
+      "source": "sms",
+      "ts": "2026-06-18T21:16:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "Your A/c XX5190 is debited for INR 3,284.00 on account of ATM withdrawal. Available balance INR 74,357.00 -SBI",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-04-e04",
+      "source": "sms",
+      "ts": "2026-06-19T09:28:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "You are now eligible for an instant top-up loan. Get funds in your account in minutes. Apply via ICICI Bank NetBanking. T&C apply.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-04-e05",
+      "source": "sms",
+      "ts": "2026-06-20T13:00:00+05:30",
+      "sender": "VM-CREDCL",
+      "text": "Your CRED rewards are waiting! Pay your credit card bill on CRED and win cashback up to ₹1,000.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-04-e06",
+      "source": "sms",
+      "ts": "2026-06-21T10:04:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "INR 5,597.00 spent on SBI Credit Card XX0794 at DMART on 17-Mar-26. Avl limit INR 1,95,890.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

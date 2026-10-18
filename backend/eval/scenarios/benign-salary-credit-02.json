@@ -1,0 +1,71 @@
+{
+  "id": "benign-salary-credit-02",
+  "label": "benign",
+  "category": "salary_credit",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_salary",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-salary-credit-02-e00",
+      "source": "sms",
+      "ts": "2026-05-11T10:00:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "वेतन: आपके खाते XX6960 में ACME SOFTWARE PVT LTD से ₹49,168 जमा किए गए हैं। - आईसीआईसीआई बैंक",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-salary-credit-02-e01",
+      "source": "sms",
+      "ts": "2026-05-12T09:00:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "EMI of Rs 12,034 for loan XX4550 has been debited. -ICICI",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-salary-credit-02-e02",
+      "source": "sms",
+      "ts": "2026-05-12T16:16:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "432688 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-salary-credit-02-e03",
+      "source": "sms",
+      "ts": "2026-05-13T11:00:00+05:30",
+      "sender": "AD-SIPMFD",
+      "text": "Your SIP of Rs 4,000 in HDFC Index Fund is processed.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-salary-credit-02-e04",
+      "source": "sms",
+      "ts": "2026-05-14T20:46:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "406251 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

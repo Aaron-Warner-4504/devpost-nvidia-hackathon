@@ -1,0 +1,161 @@
+{
+  "id": "benign-delivery-updates-04",
+  "label": "benign",
+  "category": "delivery_updates",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_delivery",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-delivery-updates-04-e00",
+      "source": "sms",
+      "ts": "2026-04-29T18:25:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Arriving today: Redmi Note 13 cover. Share OTP 9726 with the delivery agent only at the time of delivery. Track: https://amzn.in/d/081289",
+      "call": null,
+      "triage_score": 0.7,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-04-e01",
+      "source": "sms",
+      "ts": "2026-04-30T08:59:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Delivered: your Amazon package with Redmi Note 13 cover was delivered. Rate your experience: https://amazon.in/o/581298",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-04-e02",
+      "source": "sms",
+      "ts": "2026-05-01T11:30:00+05:30",
+      "sender": "VK-FLPKRT",
+      "text": "Your Flipkart order for Yoga mat has been shipped and will be delivered by Friday. Track: https://flipkart.com/o/171261",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-04-e03",
+      "source": "sms",
+      "ts": "2026-05-03T14:20:00+05:30",
+      "sender": "BZ-MYNTRA",
+      "text": "Out for delivery: your Myntra order. Pay on delivery amount Rs 1,138. Details: https://www.myntra.com/o/951795",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-04-e04",
+      "source": "sms",
+      "ts": "2026-05-04T15:32:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Delivered: your Amazon package with Bournvita 1kg was delivered. Rate your experience: https://amazon.in/t/544023",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-04-e05",
+      "source": "sms",
+      "ts": "2026-05-05T15:24:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Arriving today: Prestige pressure cooker. Share OTP 6016 with the delivery agent only at the time of delivery. Track: https://amzn.in/o/512108",
+      "call": null,
+      "triage_score": 0.7,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "amzn.in": {
+        "age_days": 3142
+      },
+      "amazon.in": {
+        "age_days": 3795
+      },
+      "flipkart.com": {
+        "age_days": 6812
+      },
+      "myntra.com": {
+        "age_days": 8362
+      }
+    },
+    "link_reports": {
+      "https://amzn.in/d/081289": {
+        "final_url": "https://amzn.in/d/081289",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://amazon.in/o/581298": {
+        "final_url": "https://amazon.in/o/581298",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://flipkart.com/o/171261": {
+        "final_url": "https://flipkart.com/o/171261",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://www.myntra.com/o/951795": {
+        "final_url": "https://www.myntra.com/o/951795",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://amazon.in/t/544023": {
+        "final_url": "https://amazon.in/t/544023",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://amzn.in/o/512108": {
+        "final_url": "https://amzn.in/o/512108",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      }
+    }
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

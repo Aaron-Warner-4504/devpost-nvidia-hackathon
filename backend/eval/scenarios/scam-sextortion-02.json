@@ -1,0 +1,71 @@
+{
+  "id": "scam-sextortion-02",
+  "label": "scam",
+  "category": "sextortion",
+  "lang": "en",
+  "shape": "slow_burn",
+  "template": "sx_en_police_followup",
+  "harm_index": 3,
+  "events": [
+    {
+      "device_event_id": "scam-sextortion-02-e00",
+      "source": "call",
+      "ts": "2026-04-04T15:38:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+916596198601",
+        "duration_s": 35,
+        "is_contact": false,
+        "direction": "in"
+      },
+      "triage_score": 0.1,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-sextortion-02-e01",
+      "source": "whatsapp",
+      "ts": "2026-04-04T15:49:00+05:30",
+      "sender": "+91 65961 98601",
+      "text": "[Video] Check this video of yours. Talk to me now else I will share.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-sextortion-02-e02",
+      "source": "call",
+      "ts": "2026-04-05T11:52:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+917433990099",
+        "duration_s": 600,
+        "is_contact": false,
+        "direction": "in"
+      },
+      "triage_score": 0.3,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-sextortion-02-e03",
+      "source": "whatsapp",
+      "ts": "2026-04-05T12:05:00+05:30",
+      "sender": "+917433990099",
+      "text": "This is Inspector Anil Yadav, Delhi Police Cyber Cell. A girl has filed a complaint and your video is with us. To delete the video from YouTube and close the FIR, deposit Rs 36,000 now. Do not discuss this with family.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 3,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

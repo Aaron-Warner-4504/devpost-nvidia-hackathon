@@ -1,0 +1,61 @@
+{
+  "id": "scam-job-task-02",
+  "label": "scam",
+  "category": "job_task",
+  "lang": "hi",
+  "shape": "slow_burn",
+  "template": "job_hi_slow",
+  "harm_index": 3,
+  "events": [
+    {
+      "device_event_id": "scam-job-task-02-e00",
+      "source": "whatsapp",
+      "ts": "2026-03-22T18:13:00+05:30",
+      "sender": "+916338401935",
+      "text": "नमस्ते! घर बैठे पार्ट टाइम काम करें और रोज़ ₹2,000 से ₹5,000 कमाएं। सिर्फ होटल को रेटिंग देनी है। रुचि हो तो 'हाँ' लिखें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "scam-job-task-02-e01",
+      "source": "whatsapp",
+      "ts": "2026-03-22T23:21:00+05:30",
+      "sender": "+91 63384 01935",
+      "text": "बहुत बढ़िया! आपका पहला काम पूरा हुआ, ₹210 आपके खाते में भेज दिए गए हैं।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "scam-job-task-02-e02",
+      "source": "whatsapp",
+      "ts": "2026-03-23T23:29:00+05:30",
+      "sender": "+91 63384 01935",
+      "text": "आज के VIP टास्क से 40% अधिक कमाई होगी। सीट सीमित हैं।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "scam-job-task-02-e03",
+      "source": "whatsapp",
+      "ts": "2026-03-24T01:32:00+05:30",
+      "sender": "+91 63384 01935",
+      "text": "VIP टास्क शुरू करने के लिए ₹16,500 इस UPI hrtasks569@okaxis पर भेजें। एक घंटे में मूल राशि और कमीशन वापस मिल जाएगा।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 3,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

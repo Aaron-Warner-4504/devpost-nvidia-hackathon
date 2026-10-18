@@ -1,0 +1,31 @@
+{
+  "id": "scam-upi-collect-02",
+  "label": "scam",
+  "category": "upi_collect",
+  "lang": "hi",
+  "shape": "single",
+  "template": "upi_hi_cashback",
+  "harm_index": 0,
+  "events": [
+    {
+      "device_event_id": "scam-upi-collect-02-e00",
+      "source": "sms",
+      "ts": "2026-03-18T09:26:00+05:30",
+      "sender": "+916333666582",
+      "text": "बधाई हो! आपको PhonePe से ₹9,510 का कैशबैक मिला है। पैसे अपने खाते में पाने के लिए अभी आए रिक्वेस्ट को स्वीकार करें और UPI पिन डालें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 0,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

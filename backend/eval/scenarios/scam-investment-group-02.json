@@ -1,0 +1,51 @@
+{
+  "id": "scam-investment-group-02",
+  "label": "scam",
+  "category": "investment_group",
+  "lang": "hi",
+  "shape": "slow_burn",
+  "template": "inv_hi_group",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-investment-group-02-e00",
+      "source": "whatsapp",
+      "ts": "2026-04-08T11:09:00+05:30",
+      "sender": "+91 70098 96081",
+      "text": "शेयर बाज़ार ग्रुप में आपका स्वागत है। हर दिन मुफ्त टिप्स, पिछले महीने सदस्यों को 40% मुनाफा हुआ।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "scam-investment-group-02-e01",
+      "source": "whatsapp",
+      "ts": "2026-04-09T17:13:00+05:30",
+      "sender": "+91 70098 96081",
+      "text": "आज का शेयर: खरीदें और 3 दिन होल्ड करें। लक्ष्य 8%।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "scam-investment-group-02-e02",
+      "source": "whatsapp",
+      "ts": "2026-04-11T17:17:00+05:30",
+      "sender": "7009896081",
+      "text": "IPO में पक्का आवंटन चाहिए तो ₹1,25,000 कंपनी के खाते 920191147203 में जमा करें। आज आखिरी दिन है।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

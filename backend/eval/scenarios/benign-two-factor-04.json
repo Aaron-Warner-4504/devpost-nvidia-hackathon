@@ -1,0 +1,101 @@
+{
+  "id": "benign-two-factor-04",
+  "label": "benign",
+  "category": "two_factor",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_2fa",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-two-factor-04-e00",
+      "source": "sms",
+      "ts": "2026-06-08T19:10:00+05:30",
+      "sender": "JD-WHTSAP",
+      "text": "Your WhatsApp code: 531-848. Don't share this code with others.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-04-e01",
+      "source": "sms",
+      "ts": "2026-06-08T22:34:00+05:30",
+      "sender": "AX-DIGILK",
+      "text": "Your DigiLocker OTP is 630802. Valid for 10 minutes.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-04-e02",
+      "source": "sms",
+      "ts": "2026-06-09T12:26:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "690147 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-04-e03",
+      "source": "sms",
+      "ts": "2026-06-12T11:19:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "OTP for transaction of INR 14,414.00 on your HDFC card XX4028 at AMAZON is 973011. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-04-e04",
+      "source": "sms",
+      "ts": "2026-06-12T20:18:00+05:30",
+      "sender": "JD-WHTSAP",
+      "text": "Your WhatsApp code: 089-331. Don't share this code with others.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-04-e05",
+      "source": "sms",
+      "ts": "2026-06-13T15:59:00+05:30",
+      "sender": "AD-MSFTAC",
+      "text": "Use 6098479 as Microsoft account security code.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-04-e06",
+      "source": "sms",
+      "ts": "2026-06-14T07:57:00+05:30",
+      "sender": "VM-GOOGLE",
+      "text": "G-605179 is your Google verification code.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-two-factor-04-e07",
+      "source": "sms",
+      "ts": "2026-06-14T15:28:00+05:30",
+      "sender": "AD-MSFTAC",
+      "text": "Use 3747109 as Microsoft account security code.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

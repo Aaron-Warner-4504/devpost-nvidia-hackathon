@@ -1,0 +1,81 @@
+{
+  "id": "benign-adversarial-benign-03",
+  "label": "benign",
+  "category": "adversarial_benign",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_adversarial",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-adversarial-benign-03-e00",
+      "source": "sms",
+      "ts": "2026-06-20T20:51:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "Your Axis account XX5262 was temporarily blocked after 3 wrong PIN attempts and is now unblocked. Visit the branch if this was not you.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-03-e01",
+      "source": "sms",
+      "ts": "2026-06-20T22:57:00+05:30",
+      "sender": "VM-PSKMEA",
+      "text": "Police verification for your passport application file BN8798790049 has been initiated. The officer from Pune police station may visit you. Keep your documents ready. -Passport Seva",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-03-e02",
+      "source": "sms",
+      "ts": "2026-06-21T19:43:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "Rs.2,286.00 debited from A/c XX9885 on 15-03-26 to VPA bigbasket@hdfcbank. UPI Ref 762809351631. Not you? Call 18002586161 -SBI",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-03-e03",
+      "source": "sms",
+      "ts": "2026-06-26T08:39:00+05:30",
+      "sender": "AD-BESCOM",
+      "text": "Dear consumer, your electricity bill of Rs 2,149 is due on 10-04-26. Pay via the BESCOM Mithra app to avoid late fee.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-03-e04",
+      "source": "sms",
+      "ts": "2026-06-26T10:04:00+05:30",
+      "sender": "VM-TRAIOR",
+      "text": "TRAI never calls to disconnect your number. Beware of fraud calls claiming to be from TRAI. Report suspicious calls on Sanchar Saathi.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-03-e05",
+      "source": "whatsapp",
+      "ts": "2026-06-26T15:59:00+05:30",
+      "sender": "Nani",
+      "text": "Reached home?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

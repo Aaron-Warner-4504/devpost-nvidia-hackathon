@@ -1,0 +1,111 @@
+{
+  "id": "benign-bank-otp-02",
+  "label": "benign",
+  "category": "bank_otp",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_bank_otp",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-bank-otp-02-e00",
+      "source": "sms",
+      "ts": "2026-04-12T14:30:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "897974 आपके एचडीएफसी बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-otp-02-e01",
+      "source": "sms",
+      "ts": "2026-04-13T08:30:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "201057 आपके एचडीएफसी बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-otp-02-e02",
+      "source": "sms",
+      "ts": "2026-04-13T10:30:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "790866 आपके एचडीएफसी बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-otp-02-e03",
+      "source": "sms",
+      "ts": "2026-04-14T21:30:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "337463 आपके एचडीएफसी बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-otp-02-e04",
+      "source": "sms",
+      "ts": "2026-04-15T10:30:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "370540 आपके एचडीएफसी बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-otp-02-e05",
+      "source": "sms",
+      "ts": "2026-04-16T15:30:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "989242 आपके एचडीएफसी बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-otp-02-e06",
+      "source": "sms",
+      "ts": "2026-04-17T16:30:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "297865 आपके एचडीएफसी बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-otp-02-e07",
+      "source": "sms",
+      "ts": "2026-04-17T17:30:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "839734 आपके एचडीएफसी बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-bank-otp-02-e08",
+      "source": "sms",
+      "ts": "2026-04-18T16:30:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "390392 आपके एचडीएफसी बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

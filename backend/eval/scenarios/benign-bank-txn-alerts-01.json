@@ -1,0 +1,91 @@
+{
+  "id": "benign-bank-txn-alerts-01",
+  "label": "benign",
+  "category": "bank_txn_alerts",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_bank_txn",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-bank-txn-alerts-01-e00",
+      "source": "sms",
+      "ts": "2026-04-19T16:56:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "Your a/c XX2414 is credited with INR 15,124.00 via UPI from Arjun. Ref 210085504625. -HDFC",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-01-e01",
+      "source": "sms",
+      "ts": "2026-04-19T19:02:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "Your A/c XX4873 is debited for INR 5,218.00 on account of ATM withdrawal. Available balance INR 34,992.00 -HDFC",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-01-e02",
+      "source": "sms",
+      "ts": "2026-04-20T09:33:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "Your A/c XX1507 is debited for INR 4,164.00 on account of ATM withdrawal. Available balance INR 76,736.00 -HDFC",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-01-e03",
+      "source": "sms",
+      "ts": "2026-04-21T13:42:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "INR 655.00 spent on HDFC Credit Card XX8108 at DMART on 13-Mar-26. Avl limit INR 66,129.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-01-e04",
+      "source": "sms",
+      "ts": "2026-04-21T17:37:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "Dear Customer, Rs.5,149.00 credited to your A/c XX5390 on 25-03-26 by NEFT from SNEHA KUMAR. -HDFC",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-01-e05",
+      "source": "sms",
+      "ts": "2026-04-21T18:02:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "Rs.3,514.00 debited from A/c XX4405 on 12-03-26 to VPA zomato@hdfcbank. UPI Ref 827144436215. Not you? Call 18002586161 -HDFC",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-01-e06",
+      "source": "sms",
+      "ts": "2026-04-22T18:55:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "INR 3,129.00 spent on HDFC Credit Card XX2408 at BOOKMYSHOW on 13-Mar-26. Avl limit INR 1,58,167.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

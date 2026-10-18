@@ -1,0 +1,56 @@
+{
+  "id": "scam-remote-access-01",
+  "label": "scam",
+  "category": "remote_access",
+  "lang": "en",
+  "shape": "slow_burn",
+  "template": "ra_en_amazon_refund",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-remote-access-01-e00",
+      "source": "sms",
+      "ts": "2026-03-30T08:04:00+05:30",
+      "sender": "+91 61904 58531",
+      "text": "Amazon: your refund of Rs 5,208 for order 403-4079648 has failed. Call our refund desk +916190458531 to receive it.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-remote-access-01-e01",
+      "source": "call",
+      "ts": "2026-03-30T10:08:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+916190458531",
+        "duration_s": 540,
+        "is_contact": false,
+        "direction": "in"
+      },
+      "triage_score": 0.3,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-remote-access-01-e02",
+      "source": "whatsapp",
+      "ts": "2026-03-30T10:18:00+05:30",
+      "sender": "+916190458531",
+      "text": "To process your refund, install AnyDesk from Play Store and share the 9-digit code shown on the screen with me. Keep the app open.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

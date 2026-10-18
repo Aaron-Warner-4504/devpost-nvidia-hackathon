@@ -1,0 +1,91 @@
+{
+  "id": "benign-legit-kyc-reminder-01",
+  "label": "benign",
+  "category": "legit_kyc_reminder",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_legit_kyc",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-legit-kyc-reminder-01-e00",
+      "source": "sms",
+      "ts": "2026-06-09T11:00:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "Dear Customer, as per RBI guidelines your KYC is due for periodic update. Please visit your nearest Axis Bank branch or update it via NetBanking. Axis never asks for your OTP or password. -Axis",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-01-e01",
+      "source": "whatsapp",
+      "ts": "2026-06-10T18:08:00+05:30",
+      "sender": "Nani",
+      "text": "Reached home?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-01-e02",
+      "source": "sms",
+      "ts": "2026-06-12T20:09:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "491890 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-01-e03",
+      "source": "sms",
+      "ts": "2026-06-13T08:36:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "INR 2,600.00 spent on ICICI Credit Card XX1458 at BOOKMYSHOW on 25-Mar-26. Avl limit INR 97,206.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-01-e04",
+      "source": "sms",
+      "ts": "2026-06-13T11:00:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "Dear Customer, as per RBI guidelines your KYC is due for periodic update. Please visit your nearest Axis Bank branch or update it via NetBanking. Axis never asks for your OTP or password. -Axis",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-01-e05",
+      "source": "whatsapp",
+      "ts": "2026-06-13T16:27:00+05:30",
+      "sender": "Didi",
+      "text": "Khana kha liya?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-01-e06",
+      "source": "sms",
+      "ts": "2026-06-15T16:51:00+05:30",
+      "sender": "VM-ZOMATO",
+      "text": "901307 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

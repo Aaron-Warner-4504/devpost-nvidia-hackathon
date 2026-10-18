@@ -1,0 +1,71 @@
+{
+  "id": "benign-adversarial-benign-08",
+  "label": "benign",
+  "category": "adversarial_benign",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_adversarial",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-adversarial-benign-08-e00",
+      "source": "sms",
+      "ts": "2026-06-25T19:24:00+05:30",
+      "sender": "VM-PSKMEA",
+      "text": "आपके पासपोर्ट आवेदन के लिए पुलिस सत्यापन शुरू हो गया है। मुंबई पुलिस अधिकारी आपसे संपर्क कर सकते हैं।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-08-e01",
+      "source": "sms",
+      "ts": "2026-06-26T14:01:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "664723 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-08-e02",
+      "source": "sms",
+      "ts": "2026-06-26T14:30:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "आपके एसबीआई खाते XX9735 से ₹1,286 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹84,697। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-08-e03",
+      "source": "sms",
+      "ts": "2026-06-28T07:45:00+05:30",
+      "sender": "VM-RBISAY",
+      "text": "आरबीआई कहता है: डिजिटल अरेस्ट जैसी कोई प्रक्रिया नहीं होती। ऐसी कॉल आने पर 1930 पर शिकायत करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-08-e04",
+      "source": "sms",
+      "ts": "2026-07-01T21:05:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "केवाईसी अपडेट अनुस्मारक: कृपया 31-03-26 से पहले अपनी नज़दीकी कोटक बैंक शाखा में केवाईसी अपडेट करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

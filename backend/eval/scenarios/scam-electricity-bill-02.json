@@ -1,0 +1,74 @@
+{
+  "id": "scam-electricity-bill-02",
+  "label": "scam",
+  "category": "electricity_bill",
+  "lang": "en",
+  "shape": "slow_burn",
+  "template": "elec_en_apk_slow",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-electricity-bill-02-e00",
+      "source": "sms",
+      "ts": "2026-03-27T11:44:00+05:30",
+      "sender": "+91 89831 01970",
+      "text": "Dear Customer, your electricity connection will be cut tonight due to pending bill update. Call 7965420057 immediately.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-electricity-bill-02-e01",
+      "source": "call",
+      "ts": "2026-03-27T12:22:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+917965420057",
+        "duration_s": 360,
+        "is_contact": false,
+        "direction": "in"
+      },
+      "triage_score": 0.3,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-electricity-bill-02-e02",
+      "source": "whatsapp",
+      "ts": "2026-03-27T12:34:00+05:30",
+      "sender": "+91 79654 20057",
+      "text": "Install this bill update app and enter your consumer number and card details to avoid disconnection: http://mseb-update.in/BillUpdate.apk",
+      "call": null,
+      "triage_score": 0.7,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {
+      "mseb-update.in": {
+        "age_days": 7
+      }
+    },
+    "link_reports": {
+      "http://mseb-update.in/BillUpdate.apk": {
+        "final_url": "http://mseb-update.in/BillUpdate.apk",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": true,
+        "triggers_download": true,
+        "threat_feed_hits": [
+          "urlhaus:phishing"
+        ],
+        "title": null,
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

@@ -1,0 +1,81 @@
+{
+  "id": "benign-marketing-eligible-02",
+  "label": "benign",
+  "category": "marketing_eligible",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_marketing",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-marketing-eligible-02-e00",
+      "source": "sms",
+      "ts": "2026-06-14T18:38:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "खुशखबरी! आप एक्सिस बैंक से ₹9,00,000 तक के प्री-अप्रूव्ड पर्सनल लोन के लिए पात्र हैं। ऐप पर आवेदन करें। नियम व शर्तें लागू।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-02-e01",
+      "source": "sms",
+      "ts": "2026-06-15T07:13:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "026918 आपके एचडीएफसी बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-02-e02",
+      "source": "sms",
+      "ts": "2026-06-15T13:00:00+05:30",
+      "sender": "VM-CREDCL",
+      "text": "Your CRED rewards are waiting! Pay your credit card bill on CRED and win cashback up to ₹1,000.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-02-e03",
+      "source": "whatsapp",
+      "ts": "2026-06-16T07:31:00+05:30",
+      "sender": "Mummy",
+      "text": "घर कब आ रहे हो?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-02-e04",
+      "source": "whatsapp",
+      "ts": "2026-06-18T10:53:00+05:30",
+      "sender": "Chachu",
+      "text": "Ok 👍",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-02-e05",
+      "source": "sms",
+      "ts": "2026-06-18T15:28:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "खुशखबरी! आप एक्सिस बैंक से ₹9,00,000 तक के प्री-अप्रूव्ड पर्सनल लोन के लिए पात्र हैं। ऐप पर आवेदन करें। नियम व शर्तें लागू।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

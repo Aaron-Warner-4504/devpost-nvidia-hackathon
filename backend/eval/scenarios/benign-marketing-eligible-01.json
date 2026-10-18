@@ -1,0 +1,91 @@
+{
+  "id": "benign-marketing-eligible-01",
+  "label": "benign",
+  "category": "marketing_eligible",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_marketing",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-marketing-eligible-01-e00",
+      "source": "sms",
+      "ts": "2026-06-13T13:00:00+05:30",
+      "sender": "VM-CREDCL",
+      "text": "Your CRED rewards are waiting! Pay your credit card bill on CRED and win cashback up to ₹1,000.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-01-e01",
+      "source": "sms",
+      "ts": "2026-06-13T13:19:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "Congratulations! You are now eligible for a ICICI Platinum Credit Card with lifetime free benefits. Apply on the app in 2 minutes.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-01-e02",
+      "source": "sms",
+      "ts": "2026-06-15T09:36:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "Dear Customer, 504559 is the OTP to add a beneficiary in SBI NetBanking. Never share your OTP. If not done by you, call the number on the back of your card.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-01-e03",
+      "source": "sms",
+      "ts": "2026-06-16T17:31:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "Rs.1,308.00 debited from A/c XX3843 on 22-03-26 to VPA bigbasket@icici. UPI Ref 532751243451. Not you? Call 18002586161 -SBI",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-01-e04",
+      "source": "sms",
+      "ts": "2026-06-16T22:14:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "You are now eligible for an instant top-up loan. Get funds in your account in minutes. Apply via ICICI Bank NetBanking. T&C apply.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-01-e05",
+      "source": "sms",
+      "ts": "2026-06-19T13:43:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "Congratulations! You are now eligible for a ICICI Platinum Credit Card with lifetime free benefits. Apply on the app in 2 minutes.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-marketing-eligible-01-e06",
+      "source": "sms",
+      "ts": "2026-06-19T16:55:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "Your A/c XX4976 is debited for INR 1,315.00 on account of ATM withdrawal. Available balance INR 31,311.00 -SBI",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

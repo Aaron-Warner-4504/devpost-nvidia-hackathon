@@ -1,0 +1,31 @@
+{
+  "id": "scam-digital-arrest-05",
+  "label": "scam",
+  "category": "digital_arrest",
+  "lang": "en",
+  "shape": "single",
+  "template": "da_en_single",
+  "harm_index": 0,
+  "events": [
+    {
+      "device_event_id": "scam-digital-arrest-05-e00",
+      "source": "sms",
+      "ts": "2026-03-06T08:36:00+05:30",
+      "sender": "+91 68774 38575",
+      "text": "NOTICE from Narcotics Control Bureau: a parcel with MDMA booked on your Aadhaar was seized. An arrest warrant will be issued within 2 hours. To settle the case pay the fine of Rs 22,500 immediately via UPI to ncb.settlement@ybl.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 0,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

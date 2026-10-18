@@ -1,0 +1,91 @@
+{
+  "id": "benign-legit-kyc-reminder-02",
+  "label": "benign",
+  "category": "legit_kyc_reminder",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_legit_kyc",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-legit-kyc-reminder-02-e00",
+      "source": "sms",
+      "ts": "2026-06-10T11:00:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "प्रिय ग्राहक, आपके खाते का केवाईसी आवधिक अपडेट देय है। कृपया अपनी नज़दीकी शाखा पर जाएँ या नेटबैंकिंग से अपडेट करें। बैंक कभी भी ओटीपी या पासवर्ड नहीं मांगता। - एक्सिस बैंक",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-02-e01",
+      "source": "sms",
+      "ts": "2026-06-11T14:07:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "आपके एक्सिस बैंक खाते XX2013 से ₹5,800 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹72,575। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-02-e02",
+      "source": "sms",
+      "ts": "2026-06-14T11:00:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "प्रिय ग्राहक, आपके खाते का केवाईसी आवधिक अपडेट देय है। कृपया अपनी नज़दीकी शाखा पर जाएँ या नेटबैंकिंग से अपडेट करें। बैंक कभी भी ओटीपी या पासवर्ड नहीं मांगता। - एक्सिस बैंक",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-02-e03",
+      "source": "sms",
+      "ts": "2026-06-15T20:13:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "291892 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-02-e04",
+      "source": "sms",
+      "ts": "2026-06-16T07:04:00+05:30",
+      "sender": "VM-ZOMATO",
+      "text": "585665 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-02-e05",
+      "source": "sms",
+      "ts": "2026-06-16T08:06:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "744476 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-02-e06",
+      "source": "sms",
+      "ts": "2026-06-16T20:26:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "369625 आपके एक्सिस बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

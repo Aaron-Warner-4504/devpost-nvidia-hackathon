@@ -1,0 +1,90 @@
+{
+  "id": "benign-gov-tax-notices-03",
+  "label": "benign",
+  "category": "gov_tax_notices",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_gov",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-gov-tax-notices-03-e00",
+      "source": "sms",
+      "ts": "2026-06-03T07:56:00+05:30",
+      "sender": "JD-EPFOHO",
+      "text": "Dear taxpayer, your ITR for AY 2025-26 has been processed under section 143(1). Login to https://www.incometax.gov.in/iec/foportal/ to view the intimation.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-gov-tax-notices-03-e01",
+      "source": "sms",
+      "ts": "2026-06-03T09:54:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "Dear Customer, 582844 is the OTP to add a beneficiary in ICICI Bank NetBanking. Never share your OTP. If not done by you, call the number on the back of your card.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-gov-tax-notices-03-e02",
+      "source": "sms",
+      "ts": "2026-06-05T14:13:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "Rs.3,750.00 debited from A/c XX7903 on 17-03-26 to VPA bigbasket@hdfcbank. UPI Ref 951837062689. Not you? Call 18002586161 -ICICI",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-gov-tax-notices-03-e03",
+      "source": "sms",
+      "ts": "2026-06-05T16:47:00+05:30",
+      "sender": "JD-EPFOHO",
+      "text": "Dear taxpayer, your ITR for AY 2025-26 has been processed under section 143(1). Login to https://www.incometax.gov.in/iec/foportal/ to view the intimation.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-gov-tax-notices-03-e04",
+      "source": "sms",
+      "ts": "2026-06-09T16:43:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "OTP for transaction of INR 19,251.00 on your ICICI card XX2893 at AMAZON is 336610. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "incometax.gov.in": {
+        "age_days": 4000
+      },
+      "epfindia.gov.in": {
+        "age_days": 6000
+      }
+    },
+    "link_reports": {
+      "https://www.incometax.gov.in/iec/foportal/": {
+        "final_url": "https://www.incometax.gov.in/iec/foportal/",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "e-Filing Home Page, Income Tax Department",
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

@@ -1,0 +1,91 @@
+{
+  "id": "benign-card-statement-01",
+  "label": "benign",
+  "category": "card_statement",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_card_statement",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-card-statement-01-e00",
+      "source": "sms",
+      "ts": "2026-06-26T12:33:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "063004 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-01-e01",
+      "source": "whatsapp",
+      "ts": "2026-06-28T10:57:00+05:30",
+      "sender": "Didi",
+      "text": "Ok 👍",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-01-e02",
+      "source": "sms",
+      "ts": "2026-06-29T10:56:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "ICICI Credit Card XX1234 statement: total due Rs 42,966, minimum due Rs 2,148, due date 05-04-26. Pay via NetBanking or the app.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-01-e03",
+      "source": "sms",
+      "ts": "2026-06-29T12:18:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "ICICI Credit Card XX1234 statement: total due Rs 42,966, minimum due Rs 2,148, due date 05-04-26. Pay via NetBanking or the app.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-01-e04",
+      "source": "sms",
+      "ts": "2026-06-29T18:04:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "438211 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-01-e05",
+      "source": "email",
+      "ts": "2026-07-01T09:00:00+05:30",
+      "sender": "statements@hdfcbank.net",
+      "text": "Your credit card e-statement for March 2026 is attached. Total amount due Rs 42,966.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-01-e06",
+      "source": "sms",
+      "ts": "2026-07-01T17:00:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "Payment of Rs 42,966 received towards your ICICI Credit Card XX5616. Thank you.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

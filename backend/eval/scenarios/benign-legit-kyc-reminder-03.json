@@ -1,0 +1,81 @@
+{
+  "id": "benign-legit-kyc-reminder-03",
+  "label": "benign",
+  "category": "legit_kyc_reminder",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_legit_kyc",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-legit-kyc-reminder-03-e00",
+      "source": "sms",
+      "ts": "2026-06-11T11:00:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "Dear customer, aapka KYC periodic update due hai. Nearest branch visit karein ya NetBanking se update karein. Bank kabhi OTP nahi maangta. -ICICI",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-03-e01",
+      "source": "sms",
+      "ts": "2026-06-13T10:53:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "896817 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-03-e02",
+      "source": "sms",
+      "ts": "2026-06-13T19:06:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "668276 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-03-e03",
+      "source": "sms",
+      "ts": "2026-06-14T16:17:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "Rs.1,792.00 debited from A/c XX4613 on 10-03-26 to VPA irctc@icici. UPI Ref 410404067503. Not you? Call 18002586161 -Kotak",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-03-e04",
+      "source": "sms",
+      "ts": "2026-06-15T11:00:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "Dear customer, aapka KYC periodic update due hai. Nearest branch visit karein ya NetBanking se update karein. Bank kabhi OTP nahi maangta. -ICICI",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-legit-kyc-reminder-03-e05",
+      "source": "sms",
+      "ts": "2026-06-15T15:20:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "OTP for transaction of INR 3,360.00 on your Kotak card XX1820 at AMAZON is 902452. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

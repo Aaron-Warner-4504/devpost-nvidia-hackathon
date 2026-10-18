@@ -1,0 +1,51 @@
+{
+  "id": "scam-investment-group-03",
+  "label": "scam",
+  "category": "investment_group",
+  "lang": "hinglish",
+  "shape": "slow_burn",
+  "template": "inv_hinglish_crypto",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-investment-group-03-e00",
+      "source": "whatsapp",
+      "ts": "2026-04-09T19:20:00+05:30",
+      "sender": "+91 79609 40623",
+      "text": "Bhai mere group mein aa jao, crypto trading se daily 5% return, guaranteed. Screenshot dekho members ke.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-investment-group-03-e01",
+      "source": "whatsapp",
+      "ts": "2026-04-11T11:23:00+05:30",
+      "sender": "+917960940623",
+      "text": "Kal ke signal pe sabko 22% profit hua 🔥 aap kab start kar rahe ho?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-investment-group-03-e02",
+      "source": "whatsapp",
+      "ts": "2026-04-12T11:26:00+05:30",
+      "sender": "+917960940623",
+      "text": "Minimum 76,000 invest karna hai, cryptofund868@ybl pe bhej do, main aapka account bana deta hoon.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

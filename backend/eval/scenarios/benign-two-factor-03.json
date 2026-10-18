@@ -1,0 +1,101 @@
+{
+  "id": "benign-two-factor-03",
+  "label": "benign",
+  "category": "two_factor",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_2fa",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-two-factor-03-e00",
+      "source": "sms",
+      "ts": "2026-06-07T08:30:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "001542 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-two-factor-03-e01",
+      "source": "sms",
+      "ts": "2026-06-09T11:20:00+05:30",
+      "sender": "VK-INSTAG",
+      "text": "072898 is your Instagram code. Don't share it.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-two-factor-03-e02",
+      "source": "sms",
+      "ts": "2026-06-09T14:10:00+05:30",
+      "sender": "VM-GOOGLE",
+      "text": "G-805039 is your Google verification code.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-two-factor-03-e03",
+      "source": "sms",
+      "ts": "2026-06-09T19:36:00+05:30",
+      "sender": "VM-GOOGLE",
+      "text": "G-149536 is your Google verification code.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-two-factor-03-e04",
+      "source": "sms",
+      "ts": "2026-06-10T17:30:00+05:30",
+      "sender": "VM-GOOGLE",
+      "text": "G-566394 is your Google verification code.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-two-factor-03-e05",
+      "source": "sms",
+      "ts": "2026-06-10T17:41:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "956790 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-two-factor-03-e06",
+      "source": "sms",
+      "ts": "2026-06-11T09:13:00+05:30",
+      "sender": "VM-GOOGLE",
+      "text": "G-599024 is your Google verification code.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-two-factor-03-e07",
+      "source": "sms",
+      "ts": "2026-06-12T20:02:00+05:30",
+      "sender": "VK-INSTAG",
+      "text": "600826 is your Instagram code. Don't share it.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

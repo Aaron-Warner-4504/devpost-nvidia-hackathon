@@ -1,0 +1,71 @@
+{
+  "id": "benign-salary-credit-04",
+  "label": "benign",
+  "category": "salary_credit",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_salary",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-salary-credit-04-e00",
+      "source": "sms",
+      "ts": "2026-05-13T10:00:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "Your A/c XX1227 has been credited with INR 79,627.00 on 01-03-26 towards SALARY from INFOSYS LTD. Avl Bal INR 87,357.00 -ICICI",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-salary-credit-04-e01",
+      "source": "sms",
+      "ts": "2026-05-14T09:00:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "EMI of Rs 5,827 for loan XX2953 has been debited. -ICICI",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-salary-credit-04-e02",
+      "source": "sms",
+      "ts": "2026-05-15T11:00:00+05:30",
+      "sender": "AD-SIPMFD",
+      "text": "Your SIP of Rs 3,000 in Parag Parikh Flexi Cap is processed.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-salary-credit-04-e03",
+      "source": "sms",
+      "ts": "2026-05-15T22:32:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "059911 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-salary-credit-04-e04",
+      "source": "sms",
+      "ts": "2026-05-19T12:59:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "382010 is your OTP for login to SBI NetBanking. Valid for 5 mins. Do not share it with anyone. -SBI",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

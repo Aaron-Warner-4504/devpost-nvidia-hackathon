@@ -1,0 +1,97 @@
+{
+  "id": "benign-telecom-offers-03",
+  "label": "benign",
+  "category": "telecom_offers",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_telecom",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-telecom-offers-03-e00",
+      "source": "sms",
+      "ts": "2026-05-29T09:53:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "Dear Customer, 377908 is the OTP to add a beneficiary in Kotak Bank NetBanking. Never share your OTP. If not done by you, call the number on the back of your card.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-03-e01",
+      "source": "sms",
+      "ts": "2026-05-29T10:51:00+05:30",
+      "sender": "JD-JIOINF",
+      "text": "Aapka Jio plan 2 din mein khatam ho raha hai. Abhi recharge karein ₹299 mein: https://www.jio.com/recharge",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-03-e02",
+      "source": "sms",
+      "ts": "2026-05-30T15:16:00+05:30",
+      "sender": "JD-JIOINF",
+      "text": "90% daily data use ho gaya hai. - Jio",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-03-e03",
+      "source": "sms",
+      "ts": "2026-05-31T13:32:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "073240 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-03-e04",
+      "source": "sms",
+      "ts": "2026-06-01T13:42:00+05:30",
+      "sender": "JD-JIOINF",
+      "text": "Aapka Jio plan 2 din mein khatam ho raha hai. Abhi recharge karein ₹299 mein: https://www.jio.com/recharge",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-03-e05",
+      "source": "sms",
+      "ts": "2026-06-03T15:06:00+05:30",
+      "sender": "JD-JIOINF",
+      "text": "Aapka Jio plan 2 din mein khatam ho raha hai. Abhi recharge karein ₹299 mein: https://www.jio.com/recharge",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "jio.com": {
+        "age_days": 6521
+      }
+    },
+    "link_reports": {
+      "https://www.jio.com/recharge": {
+        "final_url": "https://www.jio.com/recharge",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Jio recharge",
+        "status": 200
+      }
+    }
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

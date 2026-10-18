@@ -1,0 +1,126 @@
+{
+  "id": "benign-family-chat-03",
+  "label": "benign",
+  "category": "family_chat",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_family",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-family-chat-03-e00",
+      "source": "whatsapp",
+      "ts": "2026-05-04T07:40:00+05:30",
+      "sender": "Nani",
+      "text": "Bijli ka bill bhar diya kya?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-03-e01",
+      "source": "call",
+      "ts": "2026-05-04T20:00:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "9681783592",
+        "duration_s": 626,
+        "is_contact": true,
+        "direction": "in"
+      },
+      "triage_score": 0.1,
+      "lang": null
+    },
+    {
+      "device_event_id": "benign-family-chat-03-e02",
+      "source": "whatsapp",
+      "ts": "2026-05-05T16:35:00+05:30",
+      "sender": "Nani",
+      "text": "Aaj dinner pe kya banau?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-03-e03",
+      "source": "whatsapp",
+      "ts": "2026-05-05T20:15:00+05:30",
+      "sender": "Nani",
+      "text": "Kahan ho? Call karo",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-03-e04",
+      "source": "whatsapp",
+      "ts": "2026-05-07T16:10:00+05:30",
+      "sender": "Nani",
+      "text": "Beta paise bhej do ₹500, kal wapas kar dungi",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-03-e05",
+      "source": "whatsapp",
+      "ts": "2026-05-08T07:19:00+05:30",
+      "sender": "Nani",
+      "text": "Beta paise bhej do ₹500, kal wapas kar dungi",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-03-e06",
+      "source": "whatsapp",
+      "ts": "2026-05-08T17:17:00+05:30",
+      "sender": "Nani",
+      "text": "Haan theek hai, kal milte hain",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-03-e07",
+      "source": "whatsapp",
+      "ts": "2026-05-09T10:28:00+05:30",
+      "sender": "Nani",
+      "text": "Beta paise bhej do ₹500, kal wapas kar dungi",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-03-e08",
+      "source": "whatsapp",
+      "ts": "2026-05-09T18:25:00+05:30",
+      "sender": "Nani",
+      "text": "Haan theek hai, kal milte hain",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-family-chat-03-e09",
+      "source": "whatsapp",
+      "ts": "2026-05-10T18:30:00+05:30",
+      "sender": "Chachu",
+      "text": "Gas cylinder book kar dena",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

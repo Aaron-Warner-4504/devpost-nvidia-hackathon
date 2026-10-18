@@ -1,0 +1,77 @@
+{
+  "id": "scam-job-task-03",
+  "label": "scam",
+  "category": "job_task",
+  "lang": "hinglish",
+  "shape": "slow_burn",
+  "template": "job_hinglish_slow",
+  "harm_index": 3,
+  "events": [
+    {
+      "device_event_id": "scam-job-task-03-e00",
+      "source": "whatsapp",
+      "ts": "2026-03-23T14:47:00+05:30",
+      "sender": "+919767606243",
+      "text": "Hello ji, part time job hai, ghar baithe mobile se roz 3000 tak kamao. Interested ho?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-job-task-03-e01",
+      "source": "whatsapp",
+      "ts": "2026-03-23T16:54:00+05:30",
+      "sender": "+91 97676 06243",
+      "text": "Is website pe apna account bana lo, wahin tasks milenge: https://taskhub-india.club/register",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-job-task-03-e02",
+      "source": "whatsapp",
+      "ts": "2026-03-24T18:58:00+05:30",
+      "sender": "+91 97676 06243",
+      "text": "Aapka level 1 complete, 480 rupees aapke wallet mein dikh rahe honge.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-job-task-03-e03",
+      "source": "whatsapp",
+      "ts": "2026-03-24T22:59:00+05:30",
+      "sender": "9767606243",
+      "text": "Withdrawal unlock karne ke liye 19,000 rupees ka recharge karo, phir poora paisa withdraw ho jayega. Aaj hi karna hoga.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 3,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {
+      "taskhub-india.club": {
+        "age_days": 36
+      }
+    },
+    "link_reports": {
+      "https://taskhub-india.club/register": {
+        "final_url": "https://taskhub-india.club/register",
+        "fetched_ok": false,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": null,
+        "status": null
+      }
+    }
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

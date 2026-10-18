@@ -1,0 +1,107 @@
+{
+  "id": "benign-appointments-01",
+  "label": "benign",
+  "category": "appointments",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_appointments",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-appointments-01-e00",
+      "source": "sms",
+      "ts": "2026-05-23T09:00:00+05:30",
+      "sender": "VM-PRACTO",
+      "text": "Your appointment with Dr. Iyer is confirmed for tomorrow 11:00 AM. Details: https://www.practo.com/a/521235",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-appointments-01-e01",
+      "source": "whatsapp",
+      "ts": "2026-05-24T10:05:00+05:30",
+      "sender": "Rohan (cousin)",
+      "text": "Reached home?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-appointments-01-e02",
+      "source": "sms",
+      "ts": "2026-05-25T18:00:00+05:30",
+      "sender": "AD-IRCTCi",
+      "text": "PNR 3074520685, Train 12951, CNF/B2/45. Happy journey. -IRCTC",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-appointments-01-e03",
+      "source": "sms",
+      "ts": "2026-05-26T08:00:00+05:30",
+      "sender": "AD-IRCTCi",
+      "text": "PNR 3074520685: chart prepared. Your berth B2/26 is confirmed.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-appointments-01-e04",
+      "source": "sms",
+      "ts": "2026-05-26T16:32:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "OTP for transaction of INR 15,078.00 on your Axis card XX6829 at AMAZON is 889911. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-appointments-01-e05",
+      "source": "sms",
+      "ts": "2026-05-27T19:00:00+05:30",
+      "sender": "JM-BMSHOW",
+      "text": "Booking confirmed: 2 tickets for Jawan 2, PVR, Screen 4, 7:15 PM. Booking ID 24607740.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-appointments-01-e06",
+      "source": "sms",
+      "ts": "2026-05-28T10:00:00+05:30",
+      "sender": "VM-APOLLO",
+      "text": "Reminder: your lab test at Apollo Diagnostics is due tomorrow at 8 AM. Please come fasting.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "practo.com": {
+        "age_days": 5000
+      }
+    },
+    "link_reports": {
+      "https://www.practo.com/a/521235": {
+        "final_url": "https://www.practo.com/a/521235",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Practo appointment",
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

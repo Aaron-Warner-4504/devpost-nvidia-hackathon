@@ -1,0 +1,185 @@
+{
+  "id": "benign-delivery-updates-01",
+  "label": "benign",
+  "category": "delivery_updates",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_delivery",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-delivery-updates-01-e00",
+      "source": "sms",
+      "ts": "2026-04-28T12:15:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Delivered: your Amazon package with USB-C charger was delivered. Rate your experience: https://amazon.in/track/924113",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-01-e01",
+      "source": "sms",
+      "ts": "2026-04-28T12:43:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Delivered: your Amazon package with USB-C charger was delivered. Rate your experience: https://www.amazon.in/o/511880",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-01-e02",
+      "source": "sms",
+      "ts": "2026-04-30T15:16:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "Your Swiggy order of Chicken Biryani is out for delivery. Track live: https://swiggy.com/o/684015",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-01-e03",
+      "source": "sms",
+      "ts": "2026-04-30T16:42:00+05:30",
+      "sender": "VM-ZOMATO",
+      "text": "Your Zomato order is on the way! Sneha is your delivery partner. Track: https://zomato.com/o/120981",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-01-e04",
+      "source": "sms",
+      "ts": "2026-04-30T22:43:00+05:30",
+      "sender": "VK-FLPKRT",
+      "text": "Your Flipkart order for Bournvita 1kg has been shipped and will be delivered by Monday. Track: https://flipkart.com/o/830891",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-01-e05",
+      "source": "sms",
+      "ts": "2026-05-01T20:01:00+05:30",
+      "sender": "JD-AMAZON",
+      "text": "Arriving today: Prestige pressure cooker. Share OTP 4891 with the delivery agent only at the time of delivery. Track: https://www.amzn.in/d/616865",
+      "call": null,
+      "triage_score": 0.7,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-01-e06",
+      "source": "sms",
+      "ts": "2026-05-02T19:48:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "Your Swiggy order of Masala Dosa is out for delivery. Track live: https://swiggy.com/o/307911",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "amazon.in": {
+        "age_days": 6125
+      },
+      "swiggy.com": {
+        "age_days": 8982
+      },
+      "zomato.com": {
+        "age_days": 6994
+      },
+      "flipkart.com": {
+        "age_days": 8996
+      },
+      "amzn.in": {
+        "age_days": 8694
+      }
+    },
+    "link_reports": {
+      "https://amazon.in/track/924113": {
+        "final_url": "https://amazon.in/track/924113",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://www.amazon.in/o/511880": {
+        "final_url": "https://www.amazon.in/o/511880",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://swiggy.com/o/684015": {
+        "final_url": "https://swiggy.com/o/684015",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://zomato.com/o/120981": {
+        "final_url": "https://zomato.com/o/120981",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://flipkart.com/o/830891": {
+        "final_url": "https://flipkart.com/o/830891",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://www.amzn.in/d/616865": {
+        "final_url": "https://www.amzn.in/d/616865",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://swiggy.com/o/307911": {
+        "final_url": "https://swiggy.com/o/307911",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

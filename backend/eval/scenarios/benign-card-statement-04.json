@@ -1,0 +1,91 @@
+{
+  "id": "benign-card-statement-04",
+  "label": "benign",
+  "category": "card_statement",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_card_statement",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-card-statement-04-e00",
+      "source": "email",
+      "ts": "2026-07-03T09:00:00+05:30",
+      "sender": "statements@hdfcbank.net",
+      "text": "Your credit card e-statement for March 2026 is attached. Total amount due Rs 6,237.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-04-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-03T20:27:00+05:30",
+      "sender": "Papa",
+      "text": "Khana kha liya?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-04-e02",
+      "source": "sms",
+      "ts": "2026-07-04T16:45:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "Kotak Credit Card XX3904 statement: total due Rs 6,237, minimum due Rs 311, due date 05-04-26. Pay via NetBanking or the app.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-04-e03",
+      "source": "sms",
+      "ts": "2026-07-05T10:24:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "Reminder: your Kotak Credit Card payment of Rs 6,237 is due in 3 days. Ignore if already paid.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-04-e04",
+      "source": "sms",
+      "ts": "2026-07-05T13:50:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "266454 is your OTP for login to SBI NetBanking. Valid for 5 mins. Do not share it with anyone. -SBI",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-04-e05",
+      "source": "sms",
+      "ts": "2026-07-05T17:05:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "OTP for transaction of INR 2,615.00 on your SBI card XX2113 at AMAZON is 744024. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-04-e06",
+      "source": "sms",
+      "ts": "2026-07-05T17:35:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "Kotak Credit Card XX3904 statement: total due Rs 6,237, minimum due Rs 311, due date 05-04-26. Pay via NetBanking or the app.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

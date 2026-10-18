@@ -1,0 +1,31 @@
+{
+  "id": "scam-job-task-04",
+  "label": "scam",
+  "category": "job_task",
+  "lang": "en",
+  "shape": "single",
+  "template": "job_en_single_fee",
+  "harm_index": 0,
+  "events": [
+    {
+      "device_event_id": "scam-job-task-04-e00",
+      "source": "sms",
+      "ts": "2026-03-24T10:00:00+05:30",
+      "sender": "+917344874333",
+      "text": "Congratulations! You are selected for Amazon work from home job, salary Rs 32,000/month. Pay registration fee of Rs 999 to confirm your joining today: amazonhr504@paytm",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 0,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

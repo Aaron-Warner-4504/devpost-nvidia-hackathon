@@ -1,0 +1,131 @@
+{
+  "id": "benign-bank-otp-04",
+  "label": "benign",
+  "category": "bank_otp",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_bank_otp",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-bank-otp-04-e00",
+      "source": "sms",
+      "ts": "2026-04-14T15:30:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "047347 is your OTP for login to Kotak Bank NetBanking. Valid for 5 mins. Do not share it with anyone. -Kotak",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-otp-04-e01",
+      "source": "sms",
+      "ts": "2026-04-15T12:30:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "Dear Customer, 827589 is the OTP to add a beneficiary in Kotak Bank NetBanking. Never share your OTP. If not done by you, call the number on the back of your card.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-otp-04-e02",
+      "source": "sms",
+      "ts": "2026-04-15T20:30:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "242187 is your OTP for login to Kotak Bank NetBanking. Valid for 5 mins. Do not share it with anyone. -Kotak",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-otp-04-e03",
+      "source": "sms",
+      "ts": "2026-04-16T08:30:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "OTP for transaction of INR 17,609.00 on your Kotak card XX8156 at AMAZON is 550157. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-otp-04-e04",
+      "source": "sms",
+      "ts": "2026-04-16T09:30:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "136298 is your OTP for login to Kotak Bank NetBanking. Valid for 5 mins. Do not share it with anyone. -Kotak",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-otp-04-e05",
+      "source": "sms",
+      "ts": "2026-04-17T08:30:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "OTP for transaction of INR 740.00 on your Kotak card XX6616 at AMAZON is 322752. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-otp-04-e06",
+      "source": "sms",
+      "ts": "2026-04-17T15:30:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "OTP for transaction of INR 19,805.00 on your Kotak card XX2698 at AMAZON is 755825. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-otp-04-e07",
+      "source": "sms",
+      "ts": "2026-04-18T10:30:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "OTP for transaction of INR 12,852.00 on your Kotak card XX8329 at AMAZON is 833527. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-otp-04-e08",
+      "source": "sms",
+      "ts": "2026-04-18T16:30:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "Dear Customer, 532602 is the OTP to add a beneficiary in Kotak Bank NetBanking. Never share your OTP. If not done by you, call the number on the back of your card.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-otp-04-e09",
+      "source": "sms",
+      "ts": "2026-04-19T16:30:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "OTP for transaction of INR 18,301.00 on your Kotak card XX0665 at AMAZON is 796750. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-bank-otp-04-e10",
+      "source": "sms",
+      "ts": "2026-04-20T09:30:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "OTP for transaction of INR 339.00 on your Kotak card XX2822 at AMAZON is 438286. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

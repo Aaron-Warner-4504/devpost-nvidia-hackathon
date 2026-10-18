@@ -1,0 +1,126 @@
+{
+  "id": "benign-family-chat-02",
+  "label": "benign",
+  "category": "family_chat",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_family",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-family-chat-02-e00",
+      "source": "whatsapp",
+      "ts": "2026-05-03T16:49:00+05:30",
+      "sender": "Bhaiya",
+      "text": "ठीक है, ध्यान रखना",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-02-e01",
+      "source": "whatsapp",
+      "ts": "2026-05-03T18:10:00+05:30",
+      "sender": "Bhaiya",
+      "text": "शाम को फ़ोन करना",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-02-e02",
+      "source": "whatsapp",
+      "ts": "2026-05-04T07:14:00+05:30",
+      "sender": "Bhaiya",
+      "text": "बेटा खाना खा लिया?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-02-e03",
+      "source": "call",
+      "ts": "2026-05-04T20:00:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+91 69169 00621",
+        "duration_s": 313,
+        "is_contact": true,
+        "direction": "in"
+      },
+      "triage_score": 0.1,
+      "lang": null
+    },
+    {
+      "device_event_id": "benign-family-chat-02-e04",
+      "source": "whatsapp",
+      "ts": "2026-05-05T10:05:00+05:30",
+      "sender": "Bhaiya",
+      "text": "दवाई ले आना मेरे लिए",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-02-e05",
+      "source": "whatsapp",
+      "ts": "2026-05-05T15:55:00+05:30",
+      "sender": "Bhaiya",
+      "text": "शाम को फ़ोन करना",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-02-e06",
+      "source": "whatsapp",
+      "ts": "2026-05-07T09:31:00+05:30",
+      "sender": "Bhaiya",
+      "text": "शाम को फ़ोन करना",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-02-e07",
+      "source": "whatsapp",
+      "ts": "2026-05-08T14:07:00+05:30",
+      "sender": "Bhaiya",
+      "text": "₹1,000 भेज देना, सब्ज़ी वाले को देने हैं",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-02-e08",
+      "source": "whatsapp",
+      "ts": "2026-05-09T07:33:00+05:30",
+      "sender": "Bhaiya",
+      "text": "बेटा खाना खा लिया?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-02-e09",
+      "source": "whatsapp",
+      "ts": "2026-05-09T18:30:00+05:30",
+      "sender": "Nani",
+      "text": "ठीक है, ध्यान रखना",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

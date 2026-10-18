@@ -1,0 +1,81 @@
+{
+  "id": "benign-app-otp-02",
+  "label": "benign",
+  "category": "app_otp",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_app_otp",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-app-otp-02-e00",
+      "source": "sms",
+      "ts": "2026-05-19T11:19:00+05:30",
+      "sender": "BZ-MEESHO",
+      "text": "Meesho लॉगिन के लिए आपका ओटीपी 271432 है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-app-otp-02-e01",
+      "source": "sms",
+      "ts": "2026-05-21T11:58:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "Ola लॉगिन के लिए आपका ओटीपी 544718 है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-app-otp-02-e02",
+      "source": "sms",
+      "ts": "2026-05-23T10:17:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "Uber लॉगिन के लिए आपका ओटीपी 699088 है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-app-otp-02-e03",
+      "source": "sms",
+      "ts": "2026-05-24T07:45:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "Uber लॉगिन के लिए आपका ओटीपी 252470 है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-app-otp-02-e04",
+      "source": "sms",
+      "ts": "2026-05-24T18:45:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "Ola लॉगिन के लिए आपका ओटीपी 163679 है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-app-otp-02-e05",
+      "source": "sms",
+      "ts": "2026-05-25T16:47:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "Uber लॉगिन के लिए आपका ओटीपी 486549 है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

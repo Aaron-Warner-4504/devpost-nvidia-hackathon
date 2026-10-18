@@ -1,0 +1,71 @@
+{
+  "id": "benign-adversarial-benign-01",
+  "label": "benign",
+  "category": "adversarial_benign",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_adversarial",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-adversarial-benign-01-e00",
+      "source": "sms",
+      "ts": "2026-06-18T21:38:00+05:30",
+      "sender": "VM-TRAIOR",
+      "text": "TRAI never calls to disconnect your number. Beware of fraud calls claiming to be from TRAI. Report suspicious calls on Sanchar Saathi.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-01-e01",
+      "source": "sms",
+      "ts": "2026-06-20T15:17:00+05:30",
+      "sender": "VM-RBISAY",
+      "text": "RBI Kehta Hai: be aware of fake calls claiming digital arrest. No government agency arrests anyone over video call. Report at 1930.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-01-e02",
+      "source": "sms",
+      "ts": "2026-06-23T12:55:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "INR 1,053.00 spent on HDFC Credit Card XX4720 at DMART on 05-Mar-26. Avl limit INR 1,45,542.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-01-e03",
+      "source": "sms",
+      "ts": "2026-06-24T18:00:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "Dear Customer, 474523 is the OTP to add a beneficiary in HDFC Bank NetBanking. Never share your OTP. If not done by you, call the number on the back of your card.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-01-e04",
+      "source": "sms",
+      "ts": "2026-06-24T20:29:00+05:30",
+      "sender": "VM-PSKMEA",
+      "text": "Police verification for your passport application file BN9760686775 has been initiated. The officer from Hyderabad police station may visit you. Keep your documents ready. -Passport Seva",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

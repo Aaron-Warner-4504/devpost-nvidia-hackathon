@@ -1,0 +1,71 @@
+{
+  "id": "benign-bank-txn-alerts-03",
+  "label": "benign",
+  "category": "bank_txn_alerts",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "b_bank_txn",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-bank-txn-alerts-03-e00",
+      "source": "sms",
+      "ts": "2026-04-18T21:56:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "Rs.3,164.00 debited from A/c XX8902 on 02-03-26 to VPA swiggy@icici. UPI Ref 736859265412. Not you? Call 18002586161 -Kotak",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-03-e01",
+      "source": "sms",
+      "ts": "2026-04-18T22:13:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "INR 116.00 spent on Kotak Credit Card XX1671 at UBER on 21-Mar-26. Avl limit INR 68,040.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-03-e02",
+      "source": "sms",
+      "ts": "2026-04-21T19:34:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "Your A/c XX1322 is debited for INR 1,720.00 on account of ATM withdrawal. Available balance INR 70,680.00 -Kotak",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-03-e03",
+      "source": "sms",
+      "ts": "2026-04-23T11:37:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "Your A/c XX0832 is debited for INR 3,095.00 on account of ATM withdrawal. Available balance INR 70,425.00 -Kotak",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-bank-txn-alerts-03-e04",
+      "source": "sms",
+      "ts": "2026-04-23T12:17:00+05:30",
+      "sender": "VK-KOTAKB",
+      "text": "Dear Customer, Rs.17,530.00 credited to your A/c XX6563 on 19-03-26 by NEFT from PRIYA KUMAR. -Kotak",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

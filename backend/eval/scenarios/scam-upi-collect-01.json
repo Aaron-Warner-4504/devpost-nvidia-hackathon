@@ -1,0 +1,61 @@
+{
+  "id": "scam-upi-collect-01",
+  "label": "scam",
+  "category": "upi_collect",
+  "lang": "en",
+  "shape": "slow_burn",
+  "template": "upi_en_olx",
+  "harm_index": 3,
+  "events": [
+    {
+      "device_event_id": "scam-upi-collect-01-e00",
+      "source": "whatsapp",
+      "ts": "2026-03-17T14:14:00+05:30",
+      "sender": "+916315612655",
+      "text": "Hi, I saw your Activa scooter on OLX. I am in the Army, posted in Pune cantonment. I will take it at your price, my jawan will pick it up tomorrow.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-upi-collect-01-e01",
+      "source": "whatsapp",
+      "ts": "2026-03-17T15:19:00+05:30",
+      "sender": "6315612655",
+      "text": "Army rules we can't do normal transfer, I will send money through PhonePe request. Just check it and approve.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-upi-collect-01-e02",
+      "source": "notification",
+      "ts": "2026-03-17T15:33:00+05:30",
+      "sender": "PhonePe",
+      "text": "Payment request of ₹31,000 from armycanteen308@paytm. Tap to pay.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-upi-collect-01-e03",
+      "source": "whatsapp",
+      "ts": "2026-03-17T15:38:00+05:30",
+      "sender": "6315612655",
+      "text": "I have sent request of Rs 31,000. Approve the request and enter your UPI PIN to receive the money in your account.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 3,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

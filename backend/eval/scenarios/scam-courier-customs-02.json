@@ -1,0 +1,47 @@
+{
+  "id": "scam-courier-customs-02",
+  "label": "scam",
+  "category": "courier_customs",
+  "lang": "hi",
+  "shape": "single",
+  "template": "cc_hi_single_link",
+  "harm_index": 0,
+  "events": [
+    {
+      "device_event_id": "scam-courier-customs-02-e00",
+      "source": "sms",
+      "ts": "2026-03-08T18:48:00+05:30",
+      "sender": "+91 90476 02068",
+      "text": "इंडिया पोस्ट: आपका पार्सल गलत पते के कारण गोदाम में रुका हुआ है। ₹25 शुल्क देकर 48 घंटे में पता अपडेट करें, अन्यथा पार्सल वापस भेज दिया जाएगा: http://dak-parcel.top/track",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 0,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {
+      "dak-parcel.top": {
+        "age_days": 3
+      }
+    },
+    "link_reports": {
+      "http://dak-parcel.top/track": {
+        "final_url": "http://dak-parcel.top/track",
+        "fetched_ok": false,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": null,
+        "status": null
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

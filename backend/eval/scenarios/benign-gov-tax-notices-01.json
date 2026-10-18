@@ -1,0 +1,90 @@
+{
+  "id": "benign-gov-tax-notices-01",
+  "label": "benign",
+  "category": "gov_tax_notices",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_gov",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-gov-tax-notices-01-e00",
+      "source": "whatsapp",
+      "ts": "2026-06-02T14:09:00+05:30",
+      "sender": "Mummy",
+      "text": "Reached home?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-gov-tax-notices-01-e01",
+      "source": "whatsapp",
+      "ts": "2026-06-04T16:32:00+05:30",
+      "sender": "Rohan (cousin)",
+      "text": "Khana kha liya?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-gov-tax-notices-01-e02",
+      "source": "sms",
+      "ts": "2026-06-05T20:06:00+05:30",
+      "sender": "AD-ITDEFL",
+      "text": "Refund of Rs 35,895 for AY 2025-26 has been credited to your bank account XX9835. -Income Tax Department",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-gov-tax-notices-01-e03",
+      "source": "sms",
+      "ts": "2026-06-06T15:23:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "796693 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-gov-tax-notices-01-e04",
+      "source": "sms",
+      "ts": "2026-06-07T17:54:00+05:30",
+      "sender": "AD-ITDEFL",
+      "text": "EPFO: Rs 14,476 contribution for Feb-26 credited to your UAN XXXX7843. Check passbook at https://passbook.epfindia.gov.in",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "incometax.gov.in": {
+        "age_days": 4000
+      },
+      "epfindia.gov.in": {
+        "age_days": 6000
+      }
+    },
+    "link_reports": {
+      "https://www.incometax.gov.in/iec/foportal/": {
+        "final_url": "https://www.incometax.gov.in/iec/foportal/",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "e-Filing Home Page, Income Tax Department",
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

@@ -1,0 +1,81 @@
+{
+  "id": "benign-app-otp-04",
+  "label": "benign",
+  "category": "app_otp",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_app_otp",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-app-otp-04-e00",
+      "source": "sms",
+      "ts": "2026-05-22T15:20:00+05:30",
+      "sender": "VM-ZOMATO",
+      "text": "Your Zomato OTP is 196472. Please do not share this OTP with anyone for security reasons.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-app-otp-04-e01",
+      "source": "sms",
+      "ts": "2026-05-24T18:42:00+05:30",
+      "sender": "VK-DREAMS",
+      "text": "Your Dream11 OTP is 707775. Please do not share this OTP with anyone for security reasons.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-app-otp-04-e02",
+      "source": "sms",
+      "ts": "2026-05-25T11:39:00+05:30",
+      "sender": "VK-DREAMS",
+      "text": "Use OTP 073556 to log in to Dream11. Valid for 10 minutes. Never share your OTP.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-app-otp-04-e03",
+      "source": "sms",
+      "ts": "2026-05-26T07:12:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "Use OTP 796329 to log in to Ola. Valid for 10 minutes. Never share your OTP.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-app-otp-04-e04",
+      "source": "sms",
+      "ts": "2026-05-27T10:31:00+05:30",
+      "sender": "JD-PHONPE",
+      "text": "Your PhonePe OTP is 401284. Please do not share this OTP with anyone for security reasons.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-app-otp-04-e05",
+      "source": "sms",
+      "ts": "2026-05-27T19:01:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "Use OTP 535292 to log in to Uber. Valid for 10 minutes. Never share your OTP.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

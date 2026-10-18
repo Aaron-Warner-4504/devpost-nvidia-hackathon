@@ -1,0 +1,140 @@
+{
+  "id": "benign-delivery-updates-05",
+  "label": "benign",
+  "category": "delivery_updates",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_delivery",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-delivery-updates-05-e00",
+      "source": "sms",
+      "ts": "2026-05-01T12:26:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "Your Swiggy order of Pizza is out for delivery. Track live: https://www.swiggy.com/t/234143",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-05-e01",
+      "source": "sms",
+      "ts": "2026-05-02T12:27:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "Your Swiggy order of Veg Thali is out for delivery. Track live: https://swiggy.com/d/347656",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-05-e02",
+      "source": "sms",
+      "ts": "2026-05-02T14:02:00+05:30",
+      "sender": "VM-ZOMATO",
+      "text": "Your Zomato order is on the way! Sneha is your delivery partner. Track: https://zomato.com/d/235310",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-05-e03",
+      "source": "sms",
+      "ts": "2026-05-03T20:33:00+05:30",
+      "sender": "BZ-MYNTRA",
+      "text": "Out for delivery: your Myntra order. Pay on delivery amount Rs 2,275. Details: https://myntra.com/o/690231",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-delivery-updates-05-e04",
+      "source": "sms",
+      "ts": "2026-05-03T22:35:00+05:30",
+      "sender": "VK-FLPKRT",
+      "text": "Your Flipkart order for Bedsheet double has been shipped and will be delivered by Saturday. Track: https://flipkart.com/track/912071",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "swiggy.com": {
+        "age_days": 7242
+      },
+      "zomato.com": {
+        "age_days": 8703
+      },
+      "myntra.com": {
+        "age_days": 5264
+      },
+      "flipkart.com": {
+        "age_days": 3353
+      }
+    },
+    "link_reports": {
+      "https://www.swiggy.com/t/234143": {
+        "final_url": "https://www.swiggy.com/t/234143",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://swiggy.com/d/347656": {
+        "final_url": "https://swiggy.com/d/347656",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://zomato.com/d/235310": {
+        "final_url": "https://zomato.com/d/235310",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://myntra.com/o/690231": {
+        "final_url": "https://myntra.com/o/690231",
+        "fetched_ok": true,
+        "has_password_field": true,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      },
+      "https://flipkart.com/track/912071": {
+        "final_url": "https://flipkart.com/track/912071",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Track your order",
+        "status": 200
+      }
+    }
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

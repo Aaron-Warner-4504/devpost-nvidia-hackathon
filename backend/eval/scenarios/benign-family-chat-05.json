@@ -1,0 +1,116 @@
+{
+  "id": "benign-family-chat-05",
+  "label": "benign",
+  "category": "family_chat",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_family",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-family-chat-05-e00",
+      "source": "whatsapp",
+      "ts": "2026-05-06T10:11:00+05:30",
+      "sender": "Bhaiya",
+      "text": "₹500 भेज देना, सब्ज़ी वाले को देने हैं",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-05-e01",
+      "source": "whatsapp",
+      "ts": "2026-05-06T12:11:00+05:30",
+      "sender": "Bhaiya",
+      "text": "₹500 भेज देना, सब्ज़ी वाले को देने हैं",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-05-e02",
+      "source": "whatsapp",
+      "ts": "2026-05-06T18:30:00+05:30",
+      "sender": "Priya Office",
+      "text": "ठीक है, ध्यान रखना",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-05-e03",
+      "source": "whatsapp",
+      "ts": "2026-05-07T14:58:00+05:30",
+      "sender": "Bhaiya",
+      "text": "ठीक है, ध्यान रखना",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-05-e04",
+      "source": "whatsapp",
+      "ts": "2026-05-07T15:50:00+05:30",
+      "sender": "Bhaiya",
+      "text": "दवाई ले आना मेरे लिए",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-05-e05",
+      "source": "call",
+      "ts": "2026-05-07T20:00:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+916851974164",
+        "duration_s": 610,
+        "is_contact": true,
+        "direction": "in"
+      },
+      "triage_score": 0.1,
+      "lang": null
+    },
+    {
+      "device_event_id": "benign-family-chat-05-e06",
+      "source": "whatsapp",
+      "ts": "2026-05-08T17:27:00+05:30",
+      "sender": "Bhaiya",
+      "text": "₹500 भेज देना, सब्ज़ी वाले को देने हैं",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-05-e07",
+      "source": "whatsapp",
+      "ts": "2026-05-09T09:00:00+05:30",
+      "sender": "Bhaiya",
+      "text": "₹500 भेज देना, सब्ज़ी वाले को देने हैं",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-family-chat-05-e08",
+      "source": "whatsapp",
+      "ts": "2026-05-12T19:06:00+05:30",
+      "sender": "Bhaiya",
+      "text": "₹500 भेज देना, सब्ज़ी वाले को देने हैं",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

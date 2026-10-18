@@ -1,0 +1,81 @@
+{
+  "id": "benign-emi-reminder-04",
+  "label": "benign",
+  "category": "emi_reminder",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_emi",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-emi-reminder-04-e00",
+      "source": "sms",
+      "ts": "2026-05-17T10:00:00+05:30",
+      "sender": "AD-HDFCBK",
+      "text": "Dear Customer, EMI of Rs 23,232 for loan a/c XX2554 is due on 05-Apr-26. Please maintain sufficient balance to avoid charges. -HDFC Bank",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-emi-reminder-04-e01",
+      "source": "sms",
+      "ts": "2026-05-19T12:48:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "546173 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-emi-reminder-04-e02",
+      "source": "sms",
+      "ts": "2026-05-20T10:00:00+05:30",
+      "sender": "AD-HDFCBK",
+      "text": "Dear Customer, EMI of Rs 23,232 for loan a/c XX2554 is due on 05-Apr-26. Please maintain sufficient balance to avoid charges. -HDFC Bank",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-emi-reminder-04-e03",
+      "source": "sms",
+      "ts": "2026-05-22T12:00:00+05:30",
+      "sender": "AD-HDFCBK",
+      "text": "Your EMI of Rs 23,232 has been successfully paid. Thank you. -HDFC Bank",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-emi-reminder-04-e04",
+      "source": "sms",
+      "ts": "2026-05-22T21:41:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "904196 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-emi-reminder-04-e05",
+      "source": "sms",
+      "ts": "2026-05-23T13:10:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "INR 990.00 spent on HDFC Credit Card XX0991 at BOOKMYSHOW on 07-Mar-26. Avl limit INR 40,857.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

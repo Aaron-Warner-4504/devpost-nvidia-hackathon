@@ -1,0 +1,91 @@
+{
+  "id": "benign-emi-reminder-01",
+  "label": "benign",
+  "category": "emi_reminder",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_emi",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-emi-reminder-01-e00",
+      "source": "sms",
+      "ts": "2026-05-14T10:00:00+05:30",
+      "sender": "VM-BAJAJF",
+      "text": "Dear Customer, EMI of Rs 6,638 for loan a/c XX7708 is due on 05-Apr-26. Please maintain sufficient balance to avoid charges. -Bajaj Finance",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-emi-reminder-01-e01",
+      "source": "sms",
+      "ts": "2026-05-17T07:23:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "980136 is your OTP for login to Axis Bank NetBanking. Valid for 5 mins. Do not share it with anyone. -Axis",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-emi-reminder-01-e02",
+      "source": "sms",
+      "ts": "2026-05-17T10:00:00+05:30",
+      "sender": "VM-BAJAJF",
+      "text": "Dear Customer, EMI of Rs 6,638 for loan a/c XX7708 is due on 05-Apr-26. Please maintain sufficient balance to avoid charges. -Bajaj Finance",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-emi-reminder-01-e03",
+      "source": "sms",
+      "ts": "2026-05-17T11:26:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "826760 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-emi-reminder-01-e04",
+      "source": "sms",
+      "ts": "2026-05-18T11:43:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "Rs.590.00 debited from A/c XX0978 on 13-03-26 to VPA bigbasket@hdfcbank. UPI Ref 841590285094. Not you? Call 18002586161 -Axis",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-emi-reminder-01-e05",
+      "source": "sms",
+      "ts": "2026-05-19T12:00:00+05:30",
+      "sender": "VM-BAJAJF",
+      "text": "Your EMI of Rs 6,638 has been successfully paid. Thank you. -Bajaj Finance",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-emi-reminder-01-e06",
+      "source": "whatsapp",
+      "ts": "2026-05-20T09:30:00+05:30",
+      "sender": "Bhaiya",
+      "text": "Khana kha liya?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

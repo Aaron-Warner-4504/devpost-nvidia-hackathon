@@ -1,0 +1,56 @@
+{
+  "id": "scam-remote-access-03",
+  "label": "scam",
+  "category": "remote_access",
+  "lang": "hinglish",
+  "shape": "slow_burn",
+  "template": "ra_hinglish_card",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-remote-access-03-e00",
+      "source": "sms",
+      "ts": "2026-04-01T11:26:00+05:30",
+      "sender": "+916404021589",
+      "text": "Aapke credit card pe Rs 48,534 ka transaction hua hai. Agar aapne nahi kiya to turant +91 64040 21589 pe call karein.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-remote-access-03-e01",
+      "source": "call",
+      "ts": "2026-04-01T11:45:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+916404021589",
+        "duration_s": 480,
+        "is_contact": false,
+        "direction": "in"
+      },
+      "triage_score": 0.3,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-remote-access-03-e02",
+      "source": "whatsapp",
+      "ts": "2026-04-01T11:49:00+05:30",
+      "sender": "6404021589",
+      "text": "Transaction cancel karne ke liye RustDesk app download karo aur screen share on rakho, OTP mat batana bas screen open rakhna.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

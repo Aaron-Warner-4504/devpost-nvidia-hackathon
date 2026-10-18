@@ -1,0 +1,31 @@
+{
+  "id": "scam-electricity-bill-03",
+  "label": "scam",
+  "category": "electricity_bill",
+  "lang": "hi",
+  "shape": "single",
+  "template": "elec_hi_single",
+  "harm_index": 0,
+  "events": [
+    {
+      "device_event_id": "scam-electricity-bill-03-e00",
+      "source": "sms",
+      "ts": "2026-03-28T15:04:00+05:30",
+      "sender": "+919435808380",
+      "text": "प्रिय उपभोक्ता, आपका पिछले महीने का बिल अपडेट नहीं हुआ है, आज रात 9:30 बजे आपकी बिजली काट दी जाएगी। कृपया तुरंत बिजली अधिकारी से 8469590991 पर संपर्क करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 0,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

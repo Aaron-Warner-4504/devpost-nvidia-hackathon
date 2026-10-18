@@ -1,0 +1,56 @@
+{
+  "id": "scam-sextortion-01",
+  "label": "scam",
+  "category": "sextortion",
+  "lang": "en",
+  "shape": "slow_burn",
+  "template": "sx_en_video",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-sextortion-01-e00",
+      "source": "whatsapp",
+      "ts": "2026-04-03T11:06:00+05:30",
+      "sender": "+918401587939",
+      "text": "hi dear, I am Riya from Jaipur. Can we be friends? 😊",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-sextortion-01-e01",
+      "source": "call",
+      "ts": "2026-04-03T11:43:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+918401587939",
+        "duration_s": 40,
+        "is_contact": false,
+        "direction": "in"
+      },
+      "triage_score": 0.1,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-sextortion-01-e02",
+      "source": "whatsapp",
+      "ts": "2026-04-03T11:50:00+05:30",
+      "sender": "8401587939",
+      "text": "I have recorded your video call. Pay Rs 33,000 to settle101@ibl in 1 hour or I will send it to all your Facebook friends and family and upload it on YouTube.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

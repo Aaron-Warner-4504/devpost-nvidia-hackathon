@@ -1,0 +1,31 @@
+{
+  "id": "scam-electricity-bill-01",
+  "label": "scam",
+  "category": "electricity_bill",
+  "lang": "en",
+  "shape": "single",
+  "template": "elec_en_single",
+  "harm_index": 0,
+  "events": [
+    {
+      "device_event_id": "scam-electricity-bill-01-e00",
+      "source": "sms",
+      "ts": "2026-03-26T19:06:00+05:30",
+      "sender": "+91 63259 95469",
+      "text": "Dear Consumer, your electricity power will be disconnected tonight at 9.30 pm from the electricity office because your previous month bill was not updated. Please immediately contact our electricity officer +91 97636 13885. Thank you.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 0,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

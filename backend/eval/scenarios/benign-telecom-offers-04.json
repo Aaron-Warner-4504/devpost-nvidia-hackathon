@@ -1,0 +1,87 @@
+{
+  "id": "benign-telecom-offers-04",
+  "label": "benign",
+  "category": "telecom_offers",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_telecom",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-telecom-offers-04-e00",
+      "source": "sms",
+      "ts": "2026-05-30T14:45:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "Your A/c XX6893 is debited for INR 5,520.00 on account of ATM withdrawal. Available balance INR 30,544.00 -Axis",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-04-e01",
+      "source": "sms",
+      "ts": "2026-06-01T20:55:00+05:30",
+      "sender": "JD-JIOINF",
+      "text": "You have used 90% of your daily data quota. -Jio",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-04-e02",
+      "source": "sms",
+      "ts": "2026-06-01T22:07:00+05:30",
+      "sender": "JD-JIOINF",
+      "text": "You have used 90% of your daily data quota. -Jio",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-04-e03",
+      "source": "sms",
+      "ts": "2026-06-02T08:15:00+05:30",
+      "sender": "JD-JIOINF",
+      "text": "Your Jio plan expires in 2 days. Recharge now with ₹299 for 2GB/day and unlimited calls: https://www.jio.com/recharge",
+      "call": null,
+      "triage_score": 0.7,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-telecom-offers-04-e04",
+      "source": "sms",
+      "ts": "2026-06-05T07:20:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "152492 is your OTP for login to Axis Bank NetBanking. Valid for 5 mins. Do not share it with anyone. -Axis",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {
+      "jio.com": {
+        "age_days": 4884
+      }
+    },
+    "link_reports": {
+      "https://www.jio.com/recharge": {
+        "final_url": "https://www.jio.com/recharge",
+        "fetched_ok": true,
+        "has_password_field": false,
+        "has_otp_or_upi_or_card_field": false,
+        "apk_download": false,
+        "triggers_download": false,
+        "threat_feed_hits": [],
+        "title": "Jio recharge",
+        "status": 200
+      }
+    }
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

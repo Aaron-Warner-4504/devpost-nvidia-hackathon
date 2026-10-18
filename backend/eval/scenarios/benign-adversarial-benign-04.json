@@ -1,0 +1,71 @@
+{
+  "id": "benign-adversarial-benign-04",
+  "label": "benign",
+  "category": "adversarial_benign",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "b_adversarial",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-adversarial-benign-04-e00",
+      "source": "sms",
+      "ts": "2026-06-21T21:14:00+05:30",
+      "sender": "VM-PSKMEA",
+      "text": "Police verification for your passport application file MU9744951489 has been initiated. The officer from Bengaluru police station may visit you. Keep your documents ready. -Passport Seva",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-04-e01",
+      "source": "sms",
+      "ts": "2026-06-22T07:50:00+05:30",
+      "sender": "AD-BESCOM",
+      "text": "Dear consumer, your electricity bill of Rs 784 is due on 10-04-26. Pay via the BESCOM Mithra app to avoid late fee.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-04-e02",
+      "source": "whatsapp",
+      "ts": "2026-06-24T07:53:00+05:30",
+      "sender": "Nani",
+      "text": "Khana kha liya?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-04-e03",
+      "source": "sms",
+      "ts": "2026-06-24T13:22:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "189772 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-adversarial-benign-04-e04",
+      "source": "sms",
+      "ts": "2026-06-25T22:58:00+05:30",
+      "sender": "AD-BESCOM",
+      "text": "Dear consumer, your electricity bill of Rs 784 is due on 10-04-26. Pay via the BESCOM Mithra app to avoid late fee.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

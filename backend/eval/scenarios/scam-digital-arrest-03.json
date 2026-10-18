@@ -1,0 +1,66 @@
+{
+  "id": "scam-digital-arrest-03",
+  "label": "scam",
+  "category": "digital_arrest",
+  "lang": "hinglish",
+  "shape": "slow_burn",
+  "template": "da_hinglish_slow",
+  "harm_index": 3,
+  "events": [
+    {
+      "device_event_id": "scam-digital-arrest-03-e00",
+      "source": "whatsapp",
+      "ts": "2026-03-04T19:26:00+05:30",
+      "sender": "6477521162",
+      "text": "Namaste, main FedEx se bol raha hoon. Aapke naam ka ek parcel Taiwan bheja ja raha tha.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-digital-arrest-03-e01",
+      "source": "call",
+      "ts": "2026-03-04T19:46:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+916477521162",
+        "duration_s": 600,
+        "is_contact": false,
+        "direction": "in"
+      },
+      "triage_score": 0.3,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-digital-arrest-03-e02",
+      "source": "whatsapp",
+      "ts": "2026-03-04T20:07:00+05:30",
+      "sender": "6477521162",
+      "text": "Main Kolkata Police se bol raha hoon. Aapke Aadhaar se juda parcel mein drugs mile hain, aap pe case bana hai. Video call pe raho aur kisi ko mat batana.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-digital-arrest-03-e03",
+      "source": "whatsapp",
+      "ts": "2026-03-04T20:38:00+05:30",
+      "sender": "6477521162",
+      "text": "Case close karne ke liye verification amount 48,500 rupees abhi delhipolice.case676@ibl pe bhejo, jaanch ke baad wapas mil jayega.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 3,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

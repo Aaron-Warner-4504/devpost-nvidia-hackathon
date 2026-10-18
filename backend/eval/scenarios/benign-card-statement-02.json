@@ -1,0 +1,91 @@
+{
+  "id": "benign-card-statement-02",
+  "label": "benign",
+  "category": "card_statement",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "b_card_statement",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-card-statement-02-e00",
+      "source": "sms",
+      "ts": "2026-06-29T21:55:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "Reminder: your Axis Credit Card payment of Rs 34,360 is due in 3 days. Ignore if already paid.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-02-e01",
+      "source": "sms",
+      "ts": "2026-07-01T13:53:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "Payment of Rs 34,360 received towards your Axis Credit Card XX8187. Thank you.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-02-e02",
+      "source": "sms",
+      "ts": "2026-07-02T17:30:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "आपके एक्सिस बैंक खाते XX3260 से ₹660 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹18,674। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-card-statement-02-e03",
+      "source": "email",
+      "ts": "2026-07-03T09:00:00+05:30",
+      "sender": "statements@sbicard.com",
+      "text": "Your credit card e-statement for March 2026 is attached. Total amount due Rs 34,360.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-02-e04",
+      "source": "whatsapp",
+      "ts": "2026-07-03T09:41:00+05:30",
+      "sender": "Didi",
+      "text": "Kal milte hain",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-02-e05",
+      "source": "sms",
+      "ts": "2026-07-03T14:37:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "971117 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-card-statement-02-e06",
+      "source": "sms",
+      "ts": "2026-07-03T19:27:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "Payment of Rs 34,360 received towards your Axis Credit Card XX8187. Thank you.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

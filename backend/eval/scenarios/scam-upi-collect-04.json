@@ -1,0 +1,41 @@
+{
+  "id": "scam-upi-collect-04",
+  "label": "scam",
+  "category": "upi_collect",
+  "lang": "en",
+  "shape": "slow_burn",
+  "template": "upi_en_reward_collect",
+  "harm_index": 1,
+  "events": [
+    {
+      "device_event_id": "scam-upi-collect-04-e00",
+      "source": "whatsapp",
+      "ts": "2026-03-20T09:06:00+05:30",
+      "sender": "9703348255",
+      "text": "Congratulations! You are selected for Google Pay Diwali reward of Rs 4,338. Our team will send a collect request now.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-upi-collect-04-e01",
+      "source": "whatsapp",
+      "ts": "2026-03-20T09:15:00+05:30",
+      "sender": "+919703348255",
+      "text": "Approve the collect request and enter UPI PIN to claim the reward. Offer valid for 10 minutes only.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 1,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

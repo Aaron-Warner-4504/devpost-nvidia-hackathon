@@ -1,0 +1,57 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sentinel}
+      POSTGRES_DB: ${POSTGRES_DB:-sentinel}
+    ports:
+      - "127.0.0.1:5440:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 3s
+      retries: 20
+  api:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-sentinel}:${POSTGRES_PASSWORD:-sentinel}@db:5432/${POSTGRES_DB:-sentinel}
+      INSPECTOR_URL: http://inspector:8080
+      INSPECTOR_SECRET: ${INSPECTOR_SECRET:-}
+    ports:
+      - "8000:8000"
+    networks: [default, inspector_net]
+    depends_on:
+      db:
+        condition: service_healthy
+  # Sandboxed link inspector: fetches attacker-supplied URLs. Not published to the host; only the
+  # api can reach it (inspector_net is internal). It gets internet egress via its own network and
+  # is NOT on `default`, so it cannot reach db. See ../inspector/README.md for the limits.
+  inspector:
+    build: ../inspector
+    environment:
+      INSPECTOR_SECRET: ${INSPECTOR_SECRET:-}          # required, >= 16 chars; the app refuses to start otherwise
+      SAFE_BROWSING_API_KEY: ${SAFE_BROWSING_API_KEY:-}
+      URLHAUS_AUTH_KEY: ${URLHAUS_AUTH_KEY:-}         # URLhaus API now requires an Auth-Key
+    expose: ["8080"]
+    networks: [inspector_net, inspector_egress]
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777,nosuid,nodev
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1g
+    memswap_limit: 1g
+    cpus: 1.0
+    pids_limit: 256
+    restart: unless-stopped
+networks:
+  inspector_net:
+    internal: true
+  inspector_egress: {}
+volumes:
+  pgdata:
