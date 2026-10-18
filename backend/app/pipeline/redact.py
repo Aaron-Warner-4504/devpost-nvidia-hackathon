@@ -17,11 +17,11 @@ _ACCT_CTX = re.compile(
     re.IGNORECASE,
 )
 _AADHAAR_CTX = re.compile(
-    r"((?<![A-Za-z])(?:aadhaar|aadhar|आधार|uid)[^\d]{0,20}?)(\d(?:[ -]?\d){11})(?!\d)",
+    r"((?<![A-Za-z\[])(?:aadhaar|aadhar|आधार|uid)[^\d]{0,20}?)(\d(?:[ -]?\d){11})(?!\d)",
     re.IGNORECASE,
 )
 _PHONE_KW = re.compile(
-    r"call|phone|mob|whatsapp|contact|संपर्क|कॉल|फोन|मोबाइल", re.IGNORECASE
+    r"\b(?:call|phone|mob|mobile|whatsapp|contact)\b|संपर्क|कॉल|फोन|मोबाइल", re.IGNORECASE
 )
 _RUN = re.compile(r"(?<!\d)\d(?:[ -]?\d){8,18}(?!\d)")
 _KW = (
@@ -73,6 +73,8 @@ def _is_phone12(raw, norm, start):
         return True
     if re.match(r"(?:91|0091)[ -]", raw):
         return True
+    if re.fullmatch(r"\d{4}([ -])\d{4}\1\d{4}", raw):
+        return False  # 4-4-4 grouping is Aadhaar formatting; keywords can't override
     return bool(_PHONE_KW.search(norm, max(0, start - 20), start))
 
 

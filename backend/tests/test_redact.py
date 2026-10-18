@@ -147,3 +147,26 @@ def test_otp_variants(s):
 def test_split_otp_single_token():
     assert redact("OTP 1234 5678") == "OTP [OTP]"
     assert redact("OTP 123-456") == "OTP [OTP]"
+
+
+@pytest.mark.parametrize("s", [
+    "contact 9162 3456 7890",
+    "mobile 9162-3456-7890",
+    "call 9162 3456 7890",
+])
+def test_grouped_aadhaar_not_exempted_by_phone_keyword(s):
+    out = redact(s)
+    assert "[AADHAAR]" in out and "9162" not in out
+
+
+@pytest.mark.parametrize("s", ["recall 916234567890", "decontact 916234567890"])
+def test_phone_keyword_word_boundary(s):
+    out = redact(s)
+    assert "[AADHAAR]" in out and "916234567890" not in out
+
+
+def test_idempotent_aadhaar_with_phone():
+    s = "aadhaar number 9162 3456 7890 call +91 9876543210"
+    out = redact(s)
+    assert "+91 9876543210" in out and "[AADHAAR]" in out
+    assert redact(out) == out
