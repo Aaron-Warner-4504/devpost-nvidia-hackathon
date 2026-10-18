@@ -886,3 +886,24 @@ def test_tier_for_ignores_negatives_with_link_verdict():
     assert tier_for(sigs) == "high"  # 5, not 5-2-2=1
     assert tier_for([Signal("apk_download", 4, "x"), Signal("user_marked_safe", -2, "y")]) == "high"
     assert tier_for([Signal("new_domain", 2, "x"), Signal("user_marked_safe", -2, "y")]) == "info"  # unchanged
+
+
+# ---------------------------------------------------------------- Task 10: memory-linked caller hop
+def test_call_from_number_linked_to_claim_in_memory_is_channel_hop():
+    """Day-2 call from a number that an earlier SMS tied to a courier claim: the call itself carries no
+    org/claim, but memory links the number to the claim, so it is a channel hop (sms -> call)."""
+    phone, claim = Entity("phone", SCAMMER), Entity("claim", "parcel_held")
+    sms = hi("sms", 24, "Your parcel is held. Call 9876543210", 1)
+    call = CallMeta(number=SCAMMER, duration_s=240, is_contact=False, direction="in")
+    e = ev(None, source="call", call=call)
+    ctx = HistoryCtx(now=NOW, events_by_entity={phone: [sms]}, related={phone: [claim]})
+    sigs, tier = run(e, ctx)
+    assert {"channel_hop", "unknown_sender"} <= names(sigs)
+    assert tier == "caution"
+    # without the memory link (no related claim) the call is just an unknown caller
+    sigs, tier = run(e, HistoryCtx(now=NOW, events_by_entity={phone: [sms]}))
+    assert "channel_hop" not in names(sigs) and tier == "info"
+    # a related org (not a claim) does not make a hop: bank numbers co-occur with bank names
+    sigs, _ = run(e, HistoryCtx(now=NOW, events_by_entity={phone: [sms]},
+                                related={phone: [Entity("org", "hdfc")]}))
+    assert "channel_hop" not in names(sigs)

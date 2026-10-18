@@ -53,14 +53,15 @@ def _entity_ids(db: Session, user: _HasId, entities: list[Entity]) -> dict[Entit
 
 
 def store_event(db: Session, user: _HasId, ev: EventIn, redacted: str,
-                entities: list[Entity]) -> StoredEvent:
+                entities: list[Entity], *, sender_key: str | None = None) -> StoredEvent:
     """Idempotently store an event. duplicate=True means it was already stored: callers must
-    skip alerting. A naive `ev.ts` is assumed to be UTC."""
+    skip alerting. A naive `ev.ts` is assumed to be UTC. `sender_key` is an opaque (hashed)
+    sender identity used for "seen this sender before" lookups."""
     ts = ev.ts if ev.ts.tzinfo else ev.ts.replace(tzinfo=timezone.utc)
     digest = hashlib.sha256(redacted.encode()).hexdigest()
     stmt = (pg_insert(Event)
             .values(user_id=user.id, device_event_id=ev.device_event_id, source=ev.source,
-                    ts=ts, redacted_text=redacted, hash=digest)
+                    ts=ts, redacted_text=redacted, hash=digest, sender_key=sender_key)
             .on_conflict_do_nothing(index_elements=["user_id", "device_event_id"])
             .returning(Event.id))
     new_id = db.execute(stmt).scalar_one_or_none()

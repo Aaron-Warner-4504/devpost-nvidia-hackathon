@@ -584,6 +584,11 @@ def _hop_keys(ents: set[Entity], ctx: HistoryCtx) -> set[Entity]:
     for e in ents:  # current phone/domain explicitly linked to a base entity
         if e.type in ("phone", "domain") and any(e in ctx.related.get(b, []) for b in base):
             keys.add(e)
+        # ... or tied to a claim by memory (an earlier "parcel held, call 98..." SMS, now this number
+        # calls): the event itself names no claim, but the number/site carries one across channels.
+        # Orgs alone do not count (bank numbers co-occur with bank names all the time).
+        if e.type in ("phone", "domain") and any(r.type == "claim" for r in ctx.related.get(e, [])):
+            keys.add(e)
     return keys
 
 

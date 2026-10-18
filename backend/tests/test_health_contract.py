@@ -35,6 +35,12 @@ def test_events_requires_auth(client):
 def test_events_with_token_returns_result(client, auth_headers):
     r = client.post("/v1/events", json=EVENT, headers=auth_headers)
     assert r.status_code == 200
+    body = r.json()
+    assert set(body) == {"event_id", "duplicate", "alert"} and body["duplicate"] is False
+    assert body["alert"] is None or body["alert"]["tier"] in ("info", "caution", "high", "critical")
+    # /v1/check always returns an alert
+    r = client.post("/v1/check", json={**EVENT, "device_event_id": "dev-2"}, headers=auth_headers)
+    assert r.status_code == 200
     assert r.json()["alert"]["tier"] in ("info", "caution", "high", "critical")
 
 

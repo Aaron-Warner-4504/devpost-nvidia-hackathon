@@ -18,8 +18,40 @@ from sqlalchemy import create_engine, text  # noqa: E402
 from sqlalchemy.engine import make_url  # noqa: E402
 from sqlalchemy.orm import sessionmaker  # noqa: E402
 
+import httpx  # noqa: E402
+
 from app.db import Base, get_session  # noqa: E402
+from app.llm import LLMUnavailable, get_llm  # noqa: E402
 from app.main import app  # noqa: E402
+from app.pipeline.orchestrator import PipelineDeps  # noqa: E402
+from app.pipeline.signals import DomainInfo  # noqa: E402
+from app.pipeline.tools import SHORTENERS, lookalike_of  # noqa: E402
+from app.routes.events import get_pipeline_deps  # noqa: E402
+
+
+class DownLLM:
+    """Token Factory unreachable: every call fails like a timeout / 5xx would."""
+
+    def __init__(self):
+        self.calls = []
+
+    def chat(self, *a, **kw):
+        self.calls.append((a, kw))
+        raise LLMUnavailable("down")
+
+    def embed(self, texts):
+        raise LLMUnavailable("down")
+
+
+def offline_deps() -> PipelineDeps:
+    """Pipeline dependencies with no network: local-only domain info, RDAP/web clients that 404."""
+    def domain_info(ctx, d):
+        return DomainInfo(lookalike_of=lookalike_of(d), shortener=d in SHORTENERS)
+
+    def http(timeout):
+        return httpx.Client(transport=httpx.MockTransport(lambda req: httpx.Response(404)))
+
+    return PipelineDeps(domain_info=domain_info, http_client_factory=http)
 
 
 def _test_url():
@@ -65,6 +97,9 @@ def client(test_engine):
             yield s
 
     app.dependency_overrides[get_session] = override
+    # tests never reach Token Factory, RDAP or the web: override per test for scripted behaviour
+    app.dependency_overrides[get_llm] = DownLLM
+    app.dependency_overrides[get_pipeline_deps] = offline_deps
     yield TestClient(app)
     app.dependency_overrides.clear()
 

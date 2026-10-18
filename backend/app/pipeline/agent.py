@@ -102,6 +102,9 @@ class AgentVerdict:
     used_tools: list[str]
     degraded: bool = False
     raised_by: list[str] = field(default_factory=list)
+    # tools that actually ran (successful, allowlisted calls only) with their capped results; the
+    # orchestrator feeds inspect_link reports back into the rules engine. Kept on degraded verdicts.
+    tool_results: list[ToolRecord] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -563,14 +566,23 @@ def _template(tier: Tier, signals: list[Signal], history: list[HistoryItem], hin
     return head[:HEADLINE_MAX], _NEXT[tier][li][:NEXT_STEP_MAX]
 
 
-def _template_verdict(tier: Tier, signals, history, event, used_tools, degraded: bool) -> AgentVerdict:
+def _template_verdict(tier: Tier, signals, history, event, used_tools, degraded: bool,
+                      records: list[ToolRecord] | None = None) -> AgentVerdict:
     try:
         head, nxt = _template(tier, signals, history, _is_hindi(event))
         why = _template_why(history)
     except Exception:  # never raise from the fallback path
         head, nxt, why = _PREFIX[tier][0], _NEXT[tier][0], []
     return AgentVerdict(tier=tier, headline=head, next_step=nxt, why=why, used_tools=list(used_tools),
-                        degraded=degraded)
+                        degraded=degraded, tool_results=list(records or []))
+
+
+def rules_verdict(tier: Tier, signals: list[Signal], history: list[HistoryItem], event: EventIn,
+                  degraded: bool = False) -> AgentVerdict:
+    """Deterministic template verdict (no LLM, never raises): the rules-only / fallback wording."""
+    if tier not in TIER_ORDER:
+        tier = "caution"
+    return _template_verdict(tier, signals, list(history or []), event, [], degraded)
 
 
 # ---------------------------------------------------------------- tool execution
@@ -624,15 +636,16 @@ def investigate(llm: LLM, event: EventIn, entities: list[Entity], signals: list[
     if mode == "rules":
         return _template_verdict(base_tier, signals, history, event, [], degraded=False)
     used: list[str] = []
+    records: list[ToolRecord] = []
     try:
         return _investigate(llm, event, entities, signals, base_tier, ctx, history, mode, related or [],
-                            event_id, used)
+                            event_id, used, records)
     except Exception:  # LLMUnavailable, malformed client shapes, bad JSON, budget, rounds...
-        return _template_verdict(base_tier, signals, history, event, used, degraded=True)
+        return _template_verdict(base_tier, signals, history, event, used, degraded=True, records=records)
 
 
 def _investigate(llm, event, entities, signals, base_tier, ctx, history, mode, related, event_id,
-                 used: list[str]) -> AgentVerdict:
+                 used: list[str], records: list[ToolRecord]) -> AgentVerdict:
     deadline = time.monotonic() + BUDGET_S
     min_call = min(1.0, BUDGET_S * 0.1)
     text = _neutral(event.text, 10000)
@@ -642,7 +655,6 @@ def _investigate(llm, event, entities, signals, base_tier, ctx, history, mode, r
                             {"role": "user", "content": _user_message(event, entities, signals, base_tier,
                                                                       history, nonce)}]
     specs = openai_tool_specs()
-    records: list[ToolRecord] = []
     total_calls = 0
     answer: dict | None = None
     for rnd in range(MAX_ROUNDS + 1):
@@ -732,4 +744,4 @@ def _verdict(answer: dict, event, signals, base_tier: Tier, history, mode, recor
     if not why:
         why = _template_why(history)
     return AgentVerdict(tier=tier, headline=headline, next_step=next_step, why=why, used_tools=list(used),
-                        degraded=False, raised_by=raised_by)
+                        degraded=False, raised_by=raised_by, tool_results=list(records))

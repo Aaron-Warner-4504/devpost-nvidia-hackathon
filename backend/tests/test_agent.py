@@ -754,3 +754,24 @@ def test_non_string_tool_name_rejected_cleanly(spy, name):
     v = run(llm)
     assert not v.degraded and spy.calls == []
     assert tool_json(tool_msgs(llm, 1)[0]["content"]) == {"error": "unknown tool"}
+
+
+# ---------------------------------------------------------------- Task 10: tool_results for the orchestrator
+def test_verdict_carries_tool_results(spy):
+    spy.results["check_url"] = {"age_days": 3, "lookalike_of": None, "shortener": False}
+    v = run(FakeLLM([tc("check_url", {"domain": DOMAIN}), tc("check_url", {"domain": "evil.com"}, id="c2"),
+                     final()]))
+    assert [(r.tool, r.arguments) for r in v.tool_results] == [("check_url", {"domain": DOMAIN})]
+    assert v.tool_results[0].result["age_days"] == 3  # disallowed / errored calls are not recorded
+
+
+def test_degraded_verdict_keeps_tool_results(spy):
+    spy.results["inspect_link"] = {"final_url": f"https://{DOMAIN}/login", "fetched_ok": True}
+    v = run(FakeLLM([tc("inspect_link", {"url": f"https://{DOMAIN}/login"}), LLMUnavailable("down")]))
+    assert v.degraded
+    assert [r.tool for r in v.tool_results] == ["inspect_link"]
+
+
+def test_rules_mode_has_no_tool_results(spy):
+    v = run(FakeLLM([]), mode="rules")
+    assert v.tool_results == []

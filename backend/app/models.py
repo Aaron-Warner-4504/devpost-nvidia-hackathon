@@ -4,7 +4,7 @@ from datetime import datetime
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (Boolean, CheckConstraint, DateTime, Float, ForeignKey,
                         String, Text, UniqueConstraint, func)
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.config import settings
@@ -61,6 +61,7 @@ class Event(Base):
     ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     redacted_text: Mapped[str | None] = mapped_column(Text, nullable=True)  # only redacted form is stored
     hash: Mapped[str] = mapped_column(String)
+    sender_key: Mapped[str | None] = mapped_column(String, nullable=True)  # sha256 of normalised sender
     created_at: Mapped[datetime] = _now()
 
 
@@ -97,6 +98,7 @@ class Assessment(Base):
     model: Mapped[str] = mapped_column(String, default="")
     latency: Mapped[float] = mapped_column(Float, default=0.0)
     degraded: Mapped[bool] = mapped_column(Boolean, default=False)
+    payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # headline, next_step, why, ...
     created_at: Mapped[datetime] = _now()
 
 
@@ -109,6 +111,9 @@ class Alert(Base):
     shown_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     action: Mapped[str | None] = mapped_column(String, nullable=True)
     user_label: Mapped[str | None] = mapped_column(String, nullable=True)
+    dedupe_key: Mapped[str | None] = mapped_column(String, nullable=True)
+    interrupt: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    reason: Mapped[str | None] = mapped_column(String, nullable=True)  # policy decision reason
     created_at: Mapped[datetime] = _now()
 
 

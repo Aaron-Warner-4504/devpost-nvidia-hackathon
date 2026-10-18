@@ -66,20 +66,36 @@ Response 200 (`EventResult`):
       {"event_id": "evt_120", "ts": "2026-10-17T10:00:00Z", "text": "Same sender asked for an OTP yesterday"}
     ],
     "next_step": "Do not click the link or share any OTP. Call your bank on the number printed on your card.",
-    "signals": ["urgency", "lookalike_domain", "otp_request"],
+    "signals": ["urgency", "lookalike_domain", "credential_or_otp_ask"],
     "created_at": "2026-10-17T10:00:00Z"
   }
 }
 ```
-`alert` is `null` when nothing is worth surfacing.
+`alert` is `null` when nothing is worth surfacing. Precisely:
+- `info` is never returned from `/v1/events` (it is logged server-side only).
+- `caution` is returned but is **non-interrupting** (show it in the feed, no notification).
+- `high` / `critical` are returned and should interrupt the user.
+- Alert fatigue control: an alert for the same set of entities (sender, links, orgs, claims) at the same or a
+  lower tier within 6 h of one already shown is not returned again (a tier increase is); at most 5 `high`
+  alerts are returned per rolling 24 h. `critical` is never held back. Timing uses the event `ts`.
+- Duplicate delivery (a `device_event_id` already seen for this device's user) returns
+  `{"event_id": "<the original event_id>", "duplicate": true, "alert": null}` and is not re-processed. Retrying
+  after a timeout is therefore safe.
+- Naive `ts` values (no offset) are treated as UTC.
+- Only auth (401) and validation (422, e.g. `text` > 10000 chars, `sender` > 200 chars) errors are expected:
+  if the AI service is down or slow the server still answers with the rules-only verdict (within ~2 s of the
+  AI budget running out).
 
 ## POST /v1/check
-Same request body and response as `/v1/events`, but always runs the full agent (user-initiated "is this a scam?").
+Same request body and response as `/v1/events`, but always runs the full agent (user-initiated "is this a scam?")
+and **always returns an alert**, of any tier including `info`. If the same `device_event_id` was already
+processed, the response has `duplicate: true` and the alert stored for it.
 
 ## GET /v1/alerts?since=<ISO-8601>
-Response 200: list of `AlertOut` (shape as above), newest first.
+Response 200: list of `AlertOut` (shape as above) that were shown to this user (returned by `/v1/events` or
+`/v1/check`), newest first, at most 100. With `since`, only alerts shown after that instant.
 ```json
-[{"id": "alr_123", "event_id": "evt_123", "tier": "high", "headline": "Likely bank-impersonation scam", "why": [], "next_step": "Call your bank.", "signals": ["otp_request"], "created_at": "2026-10-17T10:00:00Z"}]
+[{"id": "alr_123", "event_id": "evt_123", "tier": "high", "headline": "Likely bank-impersonation scam", "why": [], "next_step": "Call your bank.", "signals": ["credential_or_otp_ask"], "created_at": "2026-10-17T10:00:00Z"}]
 ```
 
 ## POST /v1/alerts/{id}/feedback
@@ -91,4 +107,4 @@ Request: `{"name": "Asha", "phone": "+919876543210"}`. Response 200: `{"ok": tru
 ## DELETE /v1/me
 Deletes the device and all its data. Response 204, no body.
 
-_Note: stub phase: handlers return fixed example payloads and accept any non-empty bearer token; real behavior lands in later tasks with the same shapes._
+_Note: `/v1/events`, `/v1/check` and `/v1/alerts` are live. `/v1/alerts/{id}/feedback` and `/v1/family/contacts` are still stubs returning fixed payloads (real behaviour lands in a later task with the same shapes)._
