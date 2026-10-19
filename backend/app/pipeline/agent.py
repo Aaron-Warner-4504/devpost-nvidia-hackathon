@@ -424,6 +424,9 @@ _EMAIL_OUT = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 _UPI_OUT = re.compile(r"[\w.-]{2,}@[A-Za-z][A-Za-z0-9]+\b")
 _IPV4 = re.compile(r"(?<![\d.])\d{1,3}(?:\.\d{1,3}){3}(?![\d.])")
 _PHONE_OUT = re.compile(r"(?<![\w])\+?\(?\d(?:[\s\-().]{0,2}\d){6,}(?!\w)")
+# bare 5+ digit runs (OTPs, reference / account fragments the model may echo from the message); money
+# amounts ("Rs 50000", "₹ 50000", "INR 50000") are kept
+_LONG_DIGITS = re.compile(r"(?<![\w.,])(?<!₹)(?<!₹ )(?<!rs )(?<!rs\. )(?<!rs.)(?<!inr )\d{5,}(?![\w])", re.IGNORECASE)
 _DATE = re.compile(r"\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4}")
 _DEV_DIGITS = str.maketrans("०१२३४५६७८९", "0123456789")
 LINK_REMOVED, CONTACT_REMOVED, NUMBER_REMOVED = "(link removed)", "(contact removed)", "(number removed)"
@@ -470,6 +473,7 @@ def _clean_text(s: Any, n: int, domains: set[str]) -> str:
     s = _BARE.sub(bare, s)
     s = _sub_digits(_IPV4, s, lambda m: CONTACT_REMOVED)
     s = _sub_digits(_PHONE_OUT, s, lambda m: None if _DATE.fullmatch(m.group(0)) else NUMBER_REMOVED)
+    s = _sub_digits(_LONG_DIGITS, s, lambda m: NUMBER_REMOVED)
     s = redact(" ".join(s.split()))
     return s if len(s) <= n else s[: n - 1].rstrip() + "…"
 
