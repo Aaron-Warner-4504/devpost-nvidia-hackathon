@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app import ratelimit
-from app.auth import current_user, hash_token, new_token
+from app.auth import current_device, current_user, hash_token, new_token
 from app.config import settings
 from app.db import get_session
 from app.models import Consent, Device, User
@@ -18,6 +18,10 @@ router = APIRouter()
 class ConsentIn(BaseModel):
     source: Source
     granted: bool
+
+
+class FcmIn(BaseModel):
+    token: str = Field(min_length=1, max_length=4096)
 
 
 def _consents(session: Session, user_id: str) -> dict[str, bool]:
@@ -39,6 +43,15 @@ def register_device(request: Request, session: Session = Depends(get_session)):
     session.add(device)
     session.commit()
     return DeviceRegistered(device_id=device.id, token=token)
+
+
+@router.post("/v1/devices/fcm")
+def set_fcm_token(body: FcmIn, device: Device = Depends(current_device), session: Session = Depends(get_session)):
+    """Store (or replace) this device's own push token; re-posting also clears an earlier invalid mark."""
+    device.fcm_token = body.token
+    device.fcm_invalid_at = None
+    session.commit()
+    return {"ok": True}
 
 
 @router.get("/v1/me")

@@ -39,6 +39,8 @@ class Device(Base):
     user_id: Mapped[str] = _uid()
     token_hash: Mapped[str] = mapped_column(String, unique=True)  # sha256 hex; raw token never stored
     created_at: Mapped[datetime] = _now()
+    fcm_token: Mapped[str | None] = mapped_column(String, nullable=True)  # this device's own push token; never returned
+    fcm_invalid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class Consent(Base):

@@ -37,6 +37,19 @@ Request: empty body. Response 200:
 At most 20 registrations per client IP (IPv6: per /64 network) per rolling hour; beyond that `429 {"detail": "too many requests, try
 again later"}`. Register once per install and keep the token.
 
+## POST /v1/devices/fcm
+Registers this device's own FCM registration token so Sentinel can push your own `high` / `critical` alerts.
+Request (device bearer token): `{"token": "<FCM registration token>"}` (1-4096 chars, else `422`). Response 200:
+`{"ok": true}`. Re-posting replaces the token for this device (and re-enables pushes if FCM had reported the old
+one unregistered). Tokens are never returned or logged.
+
+Push to your own devices: when an alert of tier `high` or `critical` is shown **and interrupts** (see `/v1/events`),
+every device of the user with a token gets one FCM push: `notification.title` = `"Sentinel alert"`,
+`notification.body` = the alert headline only (numbers, links and ids masked, at most 140 chars), `data` =
+`{"kind": "own_alert", "alert_tier": "high" | "critical"}`. Never the message text. No push for
+`caution`/`info`, for `/v1/check` results, for duplicates, or for alerts the server did not interrupt for
+(suppressed, daily cap, critical ceiling). Push failures never affect the API response.
+
 ## POST /v1/events
 Ingest a device event; the server triages and may return an alert. `duplicate: true` if `device_event_id` was already seen.
 Request:

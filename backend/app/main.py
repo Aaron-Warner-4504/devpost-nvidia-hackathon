@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app import family
+from app import family, push
 from app.pipeline import orchestrator
 from app.routes import alerts, events, me
 from app.routes import family as family_routes
@@ -15,11 +15,13 @@ async def lifespan(_: FastAPI):
     family.check_pepper()  # fail fast in prod without a pairing-code pepper
     # alert hooks are registered at startup (not import time) so tests can inject their own
     orchestrator.register_alert_hook(family.family_alert_hook)
+    orchestrator.register_alert_hook(push.push_alert_hook)
     try:
         yield
     finally:
-        if family.family_alert_hook in orchestrator.alert_hooks:
-            orchestrator.alert_hooks.remove(family.family_alert_hook)
+        for hook in (family.family_alert_hook, push.push_alert_hook):
+            if hook in orchestrator.alert_hooks:
+                orchestrator.alert_hooks.remove(hook)
 
 
 app = FastAPI(title="Sentinel API", version="0.1.0", lifespan=lifespan)
