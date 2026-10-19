@@ -122,6 +122,17 @@ and **always returns an alert**, of any tier including `info`. If the same `devi
 processed, the response has `duplicate: true` and the alert stored for it. A check never suppresses a later
 alert from `/v1/events` for the same message.
 
+### POST /v1/check with a screenshot (`multipart/form-data`)
+The same endpoint also accepts `multipart/form-data` (dispatch is on `Content-Type`; JSON behaviour is unchanged).
+Fields: `image` (**required** file part: PNG, JPEG, WEBP or GIF, at most 5 MB), optional form fields
+`device_event_id` (default: generated), `ts` (ISO-8601, default: now), `lang`, `triage_score` (default `0.5`).
+The server reads the visible text with a vision model and processes it exactly like a `share` event
+(redaction, agent, always returns an alert). The image is never stored; only the redacted text is, as for any event.
+Response: same `EventResult` as the JSON form. Errors: `401`; `413` image over 5 MB; `415` not a PNG/JPEG/WEBP/GIF
+(checked by content, not file name); `422` no `image` part, bad `ts` / `triage_score`, or no text found in the
+image (`{"detail": "no text could be found in the image"}`); `502`
+`{"detail": "could not read the image, please try again or paste the text"}` if the vision model fails.
+
 ## GET /v1/alerts?since=<ISO-8601>
 Response 200: list of `AlertOut` (shape as above) that were shown to this user (returned by `/v1/events` or
 `/v1/check`), newest first, at most 100. With `since`, only alerts shown after that instant. `info` results
