@@ -4,3 +4,5 @@ __pycache__/
 .venv/
 *.pyc
 .pytest_cache/
+
+.demo_token
