@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Sentinel dashboard</title>
+  <link rel="stylesheet" href="/dashboard/dashboard.css">
+</head>
+<body>
+  <header>
+    <h1>Sentinel</h1>
+    <form id="token-form" autocomplete="off">
+      <label for="token">Bearer token</label>
+      <input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="paste the demo user token">
+      <button type="submit">Load</button>
+      <label class="inline"><input id="auto" type="checkbox"> auto-refresh</label>
+    </form>
+  </header>
+  <p id="status" role="status"></p>
+  <main id="content" hidden>
+    <section id="current" aria-labelledby="current-h">
+      <h2 id="current-h">Current risk</h2>
+      <div id="badge" class="badge tier-info">info</div>
+      <p id="headline"></p>
+      <h3>Why</h3>
+      <ul id="why"></ul>
+    </section>
+    <section aria-labelledby="graph-h">
+      <h2 id="graph-h">Linked entities</h2>
+      <div id="graph"></div>
+    </section>
+    <section aria-labelledby="events-h">
+      <h2 id="events-h">Event timeline</h2>
+      <ol id="events"></ol>
+    </section>
+  </main>
+  <script src="/dashboard/dashboard.js"></script>
+</body>
+</html>

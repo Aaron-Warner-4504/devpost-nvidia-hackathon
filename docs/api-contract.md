@@ -41,7 +41,8 @@ again later"}`. Register once per install and keep the token.
 Registers this device's own FCM registration token so Sentinel can push your own `high` / `critical` alerts.
 Request (device bearer token): `{"token": "<FCM registration token>"}` (1-4096 chars, else `422`). Response 200:
 `{"ok": true}`. Re-posting replaces the token for this device (and re-enables pushes if FCM had reported the old
-one unregistered). Tokens are never returned or logged.
+one unregistered). Tokens are never returned or logged. A push token belongs to one device at a time: posting a token that is
+already registered on another device (any user) moves it here and clears it there.
 
 Push to your own devices: when an alert of tier `high` or `critical` is shown **and interrupts** (see `/v1/events`),
 every device of the user with a token gets one FCM push: `notification.title` = `"Sentinel alert"`,
@@ -208,6 +209,22 @@ The caller's links in both roles. Response 200:
 ### DELETE /v1/family/contacts/{id}
 Either the protected user or the guardian removes the link; pushes stop immediately. Response 204.
 `404 {"detail": "not found"}` if the caller is not part of that link (or it does not exist).
+
+## Demo dashboard (`DEMO_ENABLED=true` only)
+Off by default: with `DEMO_ENABLED` unset/false every path below returns `404 {"detail": "not found"}`, with or
+without a token.
+- `GET /dashboard` (+ `/dashboard/dashboard.js`, `/dashboard/dashboard.css`): a static, offline page (no CDN, no
+  inline script; CSP `default-src 'self'`, `frame-ancestors 'none'`, `nosniff`). It asks for a bearer token
+  (kept in memory / sessionStorage), calls the endpoint below and renders the event timeline, a linked-entities
+  graph and the current tier with its "why" list. Message text is rendered with `textContent` only.
+- `GET /v1/dashboard/timeline` (bearer token; `401` otherwise). No `user` parameter: it returns only the CALLER's
+  data, so showing the demo user needs the demo user's token (`uv run python -m sim.inject --user demo`, token in
+  `backend/.demo_token`). Response 200:
+  `{"events": [{"id", "ts", "source", "redacted_text", "entities": [entity id]}]` (oldest first, newest 200),
+  `"entities": [{"id", "type", "canonical"}], "edges": [{"a", "b", "relation", "evidence_event_ids"}],
+  "alerts": [{"id", "event_id", "tier", "headline", "why": [{"event_id", "ts", "text"}], "signals",
+  "created_at"}]` (shown alerts, newest first, max 100), `"latest": {"tier", "why": [text]}` (`info` / `[]` when
+  there are no alerts)`}`.
 
 ## DELETE /v1/me
 Deletes the device and all its data, including family links in both roles and pending invites. Response 204,

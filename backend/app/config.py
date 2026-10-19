@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     # Number of trusted proxies appending to X-Forwarded-For: the client is the entry this many positions
     # from the RIGHT (1 = the entry our Caddy appended). Entries further left are client-controlled.
     trusted_proxy_count: int = 1
+    # Demo web dashboard (/dashboard and GET /v1/dashboard/timeline). Off by default: both return 404.
+    demo_enabled: bool = False
 
 
 settings = Settings()

@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 from app import family, push
 from app.pipeline import orchestrator
-from app.routes import alerts, events, me
+from app.routes import alerts, dashboard, events, me
 from app.routes import family as family_routes
 
 
@@ -29,6 +29,7 @@ app.include_router(me.router)
 app.include_router(events.router)
 app.include_router(alerts.router)
 app.include_router(family_routes.router)
+app.include_router(dashboard.router)
 log = logging.getLogger("app")
 
 
