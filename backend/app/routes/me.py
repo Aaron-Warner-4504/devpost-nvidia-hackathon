@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from app import ratelimit
@@ -47,7 +47,10 @@ def register_device(request: Request, session: Session = Depends(get_session)):
 
 @router.post("/v1/devices/fcm")
 def set_fcm_token(body: FcmIn, device: Device = Depends(current_device), session: Session = Depends(get_session)):
-    """Store (or replace) this device's own push token; re-posting also clears an earlier invalid mark."""
+    """Store (or replace) this device's own push token; re-posting also clears an earlier invalid mark.
+    A token belongs to ONE device: it is cleared on every other device (any user) in the same transaction."""
+    session.execute(update(Device).where(Device.fcm_token == body.token, Device.id != device.id)
+                    .values(fcm_token=None, fcm_invalid_at=None))
     device.fcm_token = body.token
     device.fcm_invalid_at = None
     session.commit()

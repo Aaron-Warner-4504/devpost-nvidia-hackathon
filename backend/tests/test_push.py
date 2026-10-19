@@ -171,3 +171,48 @@ def test_unregistered_token_marks_invalid_and_stops(client, register, db, fake):
     set_token(client, h, "fresh")  # re-registering clears the invalid mark
     db.expire_all()
     assert db.get(Device, d).fcm_invalid_at is None
+
+
+# ---- a push token belongs to exactly one device at a time
+def test_token_moves_to_latest_registrant(client, register, db, fake):
+    d1, h1 = register()
+    d2, h2 = register()
+    set_token(client, h1, "shared-tok")
+    set_token(client, h2, "shared-tok")
+    db.expire_all()
+    assert db.get(Device, d1).fcm_token is None
+    assert db.get(Device, d2).fcm_token == "shared-tok"
+    # user A's alert no longer reaches the token now owned by B
+    ev(client, h1, HIGH)
+    assert fake.sent == []
+
+
+def test_same_device_reposting_same_token(client, register, db):
+    d1, h1 = register()
+    set_token(client, h1, "t-same")
+    set_token(client, h1, "t-same")
+    db.expire_all()
+    assert db.get(Device, d1).fcm_token == "t-same"
+
+
+def test_unique_index_rejects_duplicate_tokens(client, register, db):
+    from sqlalchemy.exc import IntegrityError
+    d1, h1 = register()
+    d2, h2 = register()
+    set_token(client, h1, "u1")
+    with pytest.raises(IntegrityError):
+        d = db.get(Device, d2)
+        d.fcm_token = "u1"
+        db.commit()
+    db.rollback()
+
+
+def test_deleting_user_frees_token(client, register, db):
+    d1, h1 = register()
+    d2, h2 = register()
+    set_token(client, h1, "gone")
+    assert client.delete("/v1/me", headers=h1).status_code == 204
+    set_token(client, h2, "gone")
+    db.expire_all()
+    assert db.get(Device, d2).fcm_token == "gone"
+    assert db.get(Device, d1) is None
