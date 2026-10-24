@@ -64,10 +64,10 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) : AppSettings
         }
     }
 
-    override val useDynamicColor: Flow<Boolean> = dataStore.data.map { it[DYNAMIC_COLOR] ?: false }
+    override val useTrueBlack: Flow<Boolean> = dataStore.data.map { it[TRUE_BLACK] ?: false }
 
-    override suspend fun setUseDynamicColor(enabled: Boolean) {
-        dataStore.edit { it[DYNAMIC_COLOR] = enabled }
+    override suspend fun setUseTrueBlack(enabled: Boolean) {
+        dataStore.edit { it[TRUE_BLACK] = enabled }
     }
 
     override suspend fun installId(): String {
@@ -89,7 +89,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) : AppSettings
         val REACTIONS = stringSetPreferencesKey("reactions")
         val NOTIFIED = stringSetPreferencesKey("notified_alert_ids")
         val NOTIFIED_BASELINE = booleanPreferencesKey("notified_baseline")
-        val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val TRUE_BLACK = booleanPreferencesKey("true_black")
         val INSTALL_ID = stringPreferencesKey("install_id")
     }
 }

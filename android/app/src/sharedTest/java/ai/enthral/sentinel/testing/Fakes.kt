@@ -64,7 +64,7 @@ class FakeSettings : AppSettings {
     val paused = MutableStateFlow(false)
     val reactionMap = MutableStateFlow<Map<String, FeedbackLabel>>(emptyMap())
     val notified = MutableStateFlow<Set<String>?>(null)
-    val dynamic = MutableStateFlow(false)
+    val trueBlack = MutableStateFlow(false)
     var cleared = 0
 
     override val onboardingDone: Flow<Boolean> = done
@@ -81,8 +81,8 @@ class FakeSettings : AppSettings {
     }
     override val notifiedAlertIds: Flow<Set<String>?> = notified
     override suspend fun markNotified(ids: Set<String>) { notified.update { (it ?: emptySet()) + ids } }
-    override val useDynamicColor: Flow<Boolean> = dynamic
-    override suspend fun setUseDynamicColor(enabled: Boolean) { dynamic.value = enabled }
+    override val useTrueBlack: Flow<Boolean> = trueBlack
+    override suspend fun setUseTrueBlack(enabled: Boolean) { trueBlack.value = enabled }
     override suspend fun installId() = "install-1"
     override suspend fun clearAll() {
         cleared++

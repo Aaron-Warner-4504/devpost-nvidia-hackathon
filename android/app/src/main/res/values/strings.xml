@@ -244,8 +244,8 @@
     <string name="notification_title">Sentinel alert · %1$s</string>
     <string name="notification_public_title">Sentinel alert</string>
     <string name="settings_appearance">Appearance</string>
-    <string name="settings_dynamic_title">Use device colours</string>
-    <string name="settings_dynamic_body">Match your wallpaper. Alert colours stay the same.</string>
+    <string name="settings_true_black_title">True black in dark mode</string>
+    <string name="settings_true_black_body">A pure black background saves power on OLED screens.</string>
     <string name="settings_demo">Demo mode</string>
     <string name="settings_demo_body">Replays a three-day scam story with sample messages so you can see how Sentinel reacts.</string>
     <string name="settings_demo_open">Open the demo</string>

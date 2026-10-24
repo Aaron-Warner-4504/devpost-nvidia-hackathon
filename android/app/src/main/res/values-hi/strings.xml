@@ -244,8 +244,8 @@
     <string name="notification_title">सेंटिनल अलर्ट · %1$s</string>
     <string name="notification_public_title">सेंटिनल अलर्ट</string>
     <string name="settings_appearance">रूप-रंग</string>
-    <string name="settings_dynamic_title">डिवाइस के रंग इस्तेमाल करें</string>
-    <string name="settings_dynamic_body">आपके वॉलपेपर से मेल खाएँ। अलर्ट के रंग वही रहते हैं।</string>
+    <string name="settings_true_black_title">डार्क मोड में पूरा काला</string>
+    <string name="settings_true_black_body">पूरी तरह काली पृष्ठभूमि OLED स्क्रीन पर बैटरी बचाती है।</string>
     <string name="settings_demo">डेमो मोड</string>
     <string name="settings_demo_body">नमूना संदेशों के साथ तीन दिन की धोखाधड़ी की कहानी दोहराता है ताकि आप देख सकें कि सेंटिनल कैसे प्रतिक्रिया देता है।</string>
     <string name="settings_demo_open">डेमो खोलें</string>

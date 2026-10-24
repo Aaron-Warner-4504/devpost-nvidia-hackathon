@@ -31,7 +31,7 @@ fun isDeleteConfirmed(typed: String) = typed.trim().equals(DELETE_CONFIRM_WORD, 
 data class SettingsUiState(
     val sources: SourcesState = SourcesState(),
     val paused: Boolean = false,
-    val dynamicColor: Boolean = false,
+    val trueBlack: Boolean = false,
     val language: String = "en",
     val deleting: Boolean = false,
     val deleteFailure: ApiResult<Nothing>? = null,
@@ -63,7 +63,7 @@ class SettingsViewModel(
                              val syncFailed: Boolean = false)
 
     val state: StateFlow<SettingsUiState> = combine(
-        sources.state, settings.monitoringPaused, settings.useDynamicColor, extra,
+        sources.state, settings.monitoringPaused, settings.useTrueBlack, extra,
     ) { s, paused, dyn, e ->
         SettingsUiState(s, paused, dyn, locale.current(), e.deleting, e.failure, e.syncFailed, debugInfo, demoEnabled)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SettingsUiState(debugInfo = debugInfo, demoEnabled = demoEnabled))
@@ -122,8 +122,8 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setMonitoringPaused(paused) }
     }
 
-    fun setDynamicColor(on: Boolean) {
-        viewModelScope.launch { settings.setUseDynamicColor(on) }
+    fun setTrueBlack(on: Boolean) {
+        viewModelScope.launch { settings.setUseTrueBlack(on) }
     }
 
     fun setLanguage(tag: String) = locale.set(tag)

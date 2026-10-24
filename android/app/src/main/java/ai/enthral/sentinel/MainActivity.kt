@@ -33,8 +33,8 @@ class MainActivity : AppCompatActivity() {
             // Hold the splash until we know which screen to start on (a few ms from DataStore).
             startOnboarded = graph.settings.onboardingDone.first()
             setContent {
-                val dynamic by graph.settings.useDynamicColor.collectAsState(initial = false)
-                SentinelTheme(darkTheme = isSystemInDarkTheme(), dynamicColor = dynamic) {
+                val trueBlack by graph.settings.useTrueBlack.collectAsState(initial = false)
+                SentinelTheme(darkTheme = isSystemInDarkTheme(), trueBlack = trueBlack) {
                     SentinelRoot(graph, startOnboarded == true)
                 }
             }

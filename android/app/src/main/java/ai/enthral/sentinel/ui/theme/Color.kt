@@ -8,85 +8,171 @@ import ai.enthral.sentinel.domain.Tier
 
 /**
  * Tier colour pair as raw ARGB so it can be contrast-checked in plain unit tests.
- * Every pair is >= 4.5:1 (see TierPaletteTest). Colour is never the only signal: TierBadge adds icon + label.
+ * Every pair is >= 4.5:1 (see TierTest / PaletteContrastTest). Colour is never the only signal: tier glyphs have
+ * their own shape and a text label.
  */
 data class TierColorPair(val content: Long, val container: Long)
 
 object TierPalette {
     val light = mapOf(
-        Tier.Info to TierColorPair(0xFF0B4F7A, 0xFFE3F1FA),
-        Tier.Caution to TierColorPair(0xFF6B4200, 0xFFFFF0CF),
-        Tier.High to TierColorPair(0xFF9A3412, 0xFFFFE6D9),
-        Tier.Critical to TierColorPair(0xFFA0001C, 0xFFFFDADF),
+        Tier.Info to TierColorPair(0xFF2B6A4C, 0xFFE5F1EA),
+        Tier.Caution to TierColorPair(0xFF7A5100, 0xFFF9EFD9),
+        Tier.High to TierColorPair(0xFF9A3B12, 0xFFFAE8DF),
+        Tier.Critical to TierColorPair(0xFFA8172F, 0xFFFBE3E6),
     )
     val dark = mapOf(
-        Tier.Info to TierColorPair(0xFFA8D4F2, 0xFF12344A),
-        Tier.Caution to TierColorPair(0xFFF6CC6F, 0xFF4A3500),
-        Tier.High to TierColorPair(0xFFFFB899, 0xFF5A2400),
-        Tier.Critical to TierColorPair(0xFFFFB4BF, 0xFF5E0A1B),
+        Tier.Info to TierColorPair(0xFF8DD0AE, 0xFF14281E),
+        Tier.Caution to TierColorPair(0xFFEDC36C, 0xFF2C2311),
+        Tier.High to TierColorPair(0xFFF4A684, 0xFF33190E),
+        Tier.Critical to TierColorPair(0xFFFF9DAA, 0xFF3A1219),
     )
 }
 
-internal val LightColors: ColorScheme = lightColorScheme(
-    primary = Color(0xFF0F5C78),
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFCDEBF7),
-    onPrimaryContainer = Color(0xFF00323F),
-    secondary = Color(0xFF496270),
-    onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFD0E4F0),
-    onSecondaryContainer = Color(0xFF04202C),
-    tertiary = Color(0xFF3F6653),
-    onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFFC1ECD3),
-    onTertiaryContainer = Color(0xFF002114),
-    background = Color(0xFFF6FAFC),
-    onBackground = Color(0xFF12191D),
-    surface = Color(0xFFF6FAFC),
-    onSurface = Color(0xFF12191D),
-    surfaceVariant = Color(0xFFDCE4E9),
-    onSurfaceVariant = Color(0xFF40484C),
-    outline = Color(0xFF70787D),
-    outlineVariant = Color(0xFFC0C8CD),
-    error = Color(0xFFBA1A1A),
-    onError = Color(0xFFFFFFFF),
-    errorContainer = Color(0xFFFFDAD6),
-    onErrorContainer = Color(0xFF410002),
-    surfaceContainerLowest = Color(0xFFFFFFFF),
-    surfaceContainerLow = Color(0xFFF0F4F7),
-    surfaceContainer = Color(0xFFEAEFF2),
-    surfaceContainerHigh = Color(0xFFE4E9EC),
-    surfaceContainerHighest = Color(0xFFDEE3E6),
+/**
+ * The neutral + accent system (see docs/design.md). Raw ARGB so `PaletteContrastTest` can check every
+ * text/background pair without Android.
+ */
+data class Palette(
+    val isDark: Boolean,
+    val groupedBackground: Long,
+    val background: Long,
+    val elevated: Long,
+    val elevatedSecondary: Long,
+    val label: Long,
+    val secondaryLabel: Long,
+    val tertiaryLabel: Long,
+    val separator: Long,
+    val accent: Long,
+    val onAccent: Long,
+    val accentSoft: Long,
+    val tiers: Map<Tier, TierColorPair>,
+) {
+    /** Every background text can sit on. */
+    val textBackgrounds: List<Long> get() = listOf(groupedBackground, background, elevated, elevatedSecondary)
+
+    /** Every text colour used on [textBackgrounds]. Tier content is used as text in badges and the timeline. */
+    val textColors: List<Long> get() = listOf(label, secondaryLabel, tertiaryLabel, accent) + tiers.values.map { it.content }
+}
+
+object Palettes {
+    val light = Palette(
+        isDark = false,
+        groupedBackground = 0xFFF2F3F5,
+        background = 0xFFFBFBFC,
+        elevated = 0xFFFFFFFF,
+        elevatedSecondary = 0xFFF6F7F9,
+        label = 0xFF101216,
+        secondaryLabel = 0xFF565C66,
+        tertiaryLabel = 0xFF676D77,
+        separator = 0xFFE3E5E9,
+        accent = 0xFF0C5A73,
+        onAccent = 0xFFFFFFFF,
+        accentSoft = 0xFFE4EFF3,
+        tiers = TierPalette.light,
+    )
+    val dark = Palette(
+        isDark = true,
+        groupedBackground = 0xFF0B0C0E,
+        background = 0xFF0B0C0E,
+        elevated = 0xFF1A1C1F,
+        elevatedSecondary = 0xFF24272B,
+        label = 0xFFF2F3F5,
+        secondaryLabel = 0xFFA3A9B2,
+        tertiaryLabel = 0xFF8C929B,
+        separator = 0xFF2B2E33,
+        accent = 0xFF71C4DA,
+        onAccent = 0xFF062530,
+        accentSoft = 0xFF12303A,
+        tiers = TierPalette.dark,
+    )
+
+    /** OLED option: pure black canvas, slightly darker lifted layers. Same text colours as [dark]. */
+    val trueBlack = dark.copy(
+        groupedBackground = 0xFF000000,
+        background = 0xFF000000,
+        elevated = 0xFF131416,
+        elevatedSecondary = 0xFF1E2023,
+        separator = 0xFF222427,
+        accentSoft = 0xFF0F2A33,
+    )
+}
+
+/** Compose-side view of a [Palette]. */
+data class SentinelPalette(
+    val isDark: Boolean,
+    val groupedBackground: Color,
+    val background: Color,
+    val elevated: Color,
+    val elevatedSecondary: Color,
+    val label: Color,
+    val secondaryLabel: Color,
+    val tertiaryLabel: Color,
+    val separator: Color,
+    val accent: Color,
+    val onAccent: Color,
+    val accentSoft: Color,
+    /** Ink used for the one soft diffuse shadow (never a hard Material shadow). */
+    val shadow: Color,
 )
 
-internal val DarkColors: ColorScheme = darkColorScheme(
-    primary = Color(0xFF8FD0EC),
-    onPrimary = Color(0xFF003545),
-    primaryContainer = Color(0xFF0B4A60),
-    onPrimaryContainer = Color(0xFFCDEBF7),
-    secondary = Color(0xFFB4CAD6),
-    onSecondary = Color(0xFF0E2A36),
-    secondaryContainer = Color(0xFF2F4A57),
-    onSecondaryContainer = Color(0xFFD0E4F0),
-    tertiary = Color(0xFFA5D0B8),
-    onTertiary = Color(0xFF0B3724),
-    tertiaryContainer = Color(0xFF254E3A),
-    onTertiaryContainer = Color(0xFFC1ECD3),
-    background = Color(0xFF0F1417),
-    onBackground = Color(0xFFDFE3E7),
-    surface = Color(0xFF0F1417),
-    onSurface = Color(0xFFDFE3E7),
-    surfaceVariant = Color(0xFF40484C),
-    onSurfaceVariant = Color(0xFFC0C8CD),
-    outline = Color(0xFF8A9296),
-    outlineVariant = Color(0xFF40484C),
-    error = Color(0xFFFFB4AB),
-    onError = Color(0xFF690005),
-    errorContainer = Color(0xFF93000A),
-    onErrorContainer = Color(0xFFFFDAD6),
-    surfaceContainerLowest = Color(0xFF0A0F11),
-    surfaceContainerLow = Color(0xFF171C1F),
-    surfaceContainer = Color(0xFF1B2023),
-    surfaceContainerHigh = Color(0xFF262B2E),
-    surfaceContainerHighest = Color(0xFF313639),
+fun Palette.toCompose() = SentinelPalette(
+    isDark = isDark,
+    groupedBackground = Color(groupedBackground),
+    background = Color(background),
+    elevated = Color(elevated),
+    elevatedSecondary = Color(elevatedSecondary),
+    label = Color(label),
+    secondaryLabel = Color(secondaryLabel),
+    tertiaryLabel = Color(tertiaryLabel),
+    separator = Color(separator),
+    accent = Color(accent),
+    onAccent = Color(onAccent),
+    accentSoft = Color(accentSoft),
+    shadow = if (isDark) Color.Black.copy(alpha = 0.5f) else Color(0xFF101216).copy(alpha = 0.10f),
 )
+
+/** Material slots derived from the palette, so stock components (switches, fields, snackbars) match. */
+fun Palette.toColorScheme(): ColorScheme {
+    val p = toCompose()
+    val critical = Color(tiers.getValue(Tier.Critical).content)
+    val criticalContainer = Color(tiers.getValue(Tier.Critical).container)
+    val base = if (isDark) darkColorScheme() else lightColorScheme()
+    return base.copy(
+        primary = p.accent,
+        onPrimary = p.onAccent,
+        primaryContainer = p.accentSoft,
+        onPrimaryContainer = p.label,
+        inversePrimary = p.accent,
+        secondary = p.secondaryLabel,
+        onSecondary = p.elevated,
+        secondaryContainer = p.accentSoft,
+        onSecondaryContainer = p.label,
+        tertiary = p.accent,
+        onTertiary = p.onAccent,
+        tertiaryContainer = p.accentSoft,
+        onTertiaryContainer = p.label,
+        background = p.groupedBackground,
+        onBackground = p.label,
+        surface = p.groupedBackground,
+        onSurface = p.label,
+        surfaceVariant = p.elevatedSecondary,
+        onSurfaceVariant = p.secondaryLabel,
+        surfaceTint = Color.Transparent,
+        inverseSurface = p.label,
+        inverseOnSurface = p.groupedBackground,
+        outline = p.tertiaryLabel,
+        outlineVariant = p.separator,
+        error = critical,
+        onError = p.elevated,
+        errorContainer = criticalContainer,
+        onErrorContainer = critical,
+        scrim = Color.Black,
+        surfaceBright = p.elevated,
+        surfaceDim = p.groupedBackground,
+        surfaceContainerLowest = p.elevated,
+        surfaceContainerLow = p.elevated,
+        surfaceContainer = p.elevated,
+        surfaceContainerHigh = p.elevated,
+        surfaceContainerHighest = p.elevatedSecondary,
+    )
+}

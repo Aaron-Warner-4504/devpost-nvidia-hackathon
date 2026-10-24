@@ -24,8 +24,9 @@ interface AppSettings {
     val notifiedAlertIds: Flow<Set<String>?>
     suspend fun markNotified(ids: Set<String>)
 
-    val useDynamicColor: Flow<Boolean>
-    suspend fun setUseDynamicColor(enabled: Boolean)
+    /** Dark mode on a pure black canvas (OLED). */
+    val useTrueBlack: Flow<Boolean>
+    suspend fun setUseTrueBlack(enabled: Boolean)
 
     /** Random per-install id (used for the placeholder push token until Firebase is wired). */
     suspend fun installId(): String
