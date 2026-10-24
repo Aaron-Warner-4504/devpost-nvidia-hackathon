@@ -120,7 +120,8 @@ fun AlertRow(alert: Alert, onClick: () -> Unit, modifier: Modifier = Modifier) {
                 )
                 Text(formatTime(alert.createdAt), style = SentinelTheme.type.footnote, color = p.secondaryLabel)
             }
-            Text(alert.headline, style = SentinelTheme.type.headline, color = p.label, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            // Never truncate the verdict: at large font sizes it simply wraps.
+            Text(alert.headline, style = SentinelTheme.type.headline, color = p.label)
             Text(why, style = SentinelTheme.type.subhead, color = p.secondaryLabel, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
