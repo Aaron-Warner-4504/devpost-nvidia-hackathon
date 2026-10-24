@@ -515,8 +515,8 @@ def print_summary(report: dict) -> None:
 
 # ---------------------------------------------------------------- database
 @contextmanager
-def eval_database():
-    """A dedicated `<db>_eval` database created from the migrations, dropped afterwards."""
+def eval_database(suffix: str = "_eval"):
+    """A dedicated `<db><suffix>` database (default `<db>_eval`) created from the migrations, dropped afterwards."""
     from alembic import command
     from alembic.config import Config
     from sqlalchemy import create_engine, text
@@ -524,7 +524,7 @@ def eval_database():
     from sqlalchemy.orm import sessionmaker
 
     admin_url = make_url(default_settings.database_url)
-    url = admin_url.set(database=f"{admin_url.database}_eval")
+    url = admin_url.set(database=f"{admin_url.database}{suffix}")
     admin = create_engine(admin_url, isolation_level="AUTOCOMMIT")
 
     def drop():

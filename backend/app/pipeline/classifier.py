@@ -174,6 +174,14 @@ _cache: dict[tuple, Classifier] = {}
 _cache_lock = threading.Lock()
 
 
+def _warm(clf: LayaClassifier) -> None:
+    """Load the checkpoint in the background so the first real messages are not skipped while it loads."""
+    try:
+        clf.warmup()
+    except Exception:
+        log.warning("classifier %s warm-up failed (classifier will be skipped)", type(clf).__name__)
+
+
 def get_classifier(settings) -> Classifier | None:
     """The classifier for `settings.classifier`: "rules" -> None (off: no extra trigger), "laya" -> a
     cached LayaClassifier (nothing is imported or loaded until its first use). Unknown value -> None."""
@@ -184,7 +192,8 @@ def get_classifier(settings) -> Classifier | None:
         key = ("laya", settings.laya_model)
         with _cache_lock:
             if key not in _cache:
-                _cache[key] = LayaClassifier(model=settings.laya_model)
+                _cache[key] = inst = LayaClassifier(model=settings.laya_model)
+                threading.Thread(target=_warm, args=(inst,), name="classifier-warmup", daemon=True).start()
             return _cache[key]
     log.warning("unknown CLASSIFIER type %r, classifier disabled", kind)
     return None

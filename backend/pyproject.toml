@@ -19,6 +19,8 @@ dependencies = [
 
 [project.optional-dependencies]
 search = ["tavily-python>=0.5"]
+# Self-hosted first-pass classifier (CLASSIFIER=laya). CPU-only torch wheels (see [tool.uv.sources]).
+laya = ["laya>=0.4.14", "torch>=2.0"]
 
 [dependency-groups]
 dev = ["pytest>=8", "pytest-asyncio>=0.24", "respx>=0.21"]
@@ -30,3 +32,11 @@ pythonpath = ["."]
 
 [tool.uv]
 package = false
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu", extra = "laya" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
