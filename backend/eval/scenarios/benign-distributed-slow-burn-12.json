@@ -1,0 +1,81 @@
+{
+  "id": "benign-distributed-slow-burn-12",
+  "label": "benign",
+  "category": "distributed_slow_burn",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "dsb_b_local_service",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-distributed-slow-burn-12-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-26T10:00:00+05:30",
+      "sender": "+91 73015 77341",
+      "text": "Hello ji, aapka number reception se mila, Fit Zone gym ke liye.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-12-e01",
+      "source": "sms",
+      "ts": "2026-07-26T20:08:00+05:30",
+      "sender": "VM-ZOMATO",
+      "text": "325617 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-12-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-27T17:00:00+05:30",
+      "sender": "+91 73015 77341",
+      "text": "Is hafte joining pe 20% off hai.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-12-e03",
+      "source": "whatsapp",
+      "ts": "2026-07-29T12:00:00+05:30",
+      "sender": "+91 73015 77341",
+      "text": "Monthly charge 2,500 hai, cash ya UPI dono chalega.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-12-e04",
+      "source": "sms",
+      "ts": "2026-07-29T16:36:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "OTP for transaction of INR 19,770.00 on your Axis card XX8882 at AMAZON is 755576. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-12-e05",
+      "source": "sms",
+      "ts": "2026-07-31T13:36:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "Rs.977.00 debited from A/c XX3295 on 01-03-26 to VPA zomato@hdfcbank. UPI Ref 562715446295. Not you? Call 18002586161 -Axis",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "benign-distributed-slow-burn-10",
+  "label": "benign",
+  "category": "distributed_slow_burn",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "dsb_b_recruiter",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-distributed-slow-burn-10-e00",
+      "source": "sms",
+      "ts": "2026-07-24T10:00:00+05:30",
+      "sender": "VM-NAUKRI",
+      "text": "Your profile was shortlisted by Wipro for a developer role. All the best ji!",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-10-e01",
+      "source": "sms",
+      "ts": "2026-07-26T12:00:00+05:30",
+      "sender": "JD-HRMAIL",
+      "text": "Your interview is scheduled for Tuesday 11 AM; the HR team will share the meeting link. All the best ji!",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-10-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-27T15:58:00+05:30",
+      "sender": "Priya Office",
+      "text": "Reached home?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-10-e03",
+      "source": "sms",
+      "ts": "2026-07-27T18:03:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "011881 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-10-e04",
+      "source": "sms",
+      "ts": "2026-07-27T18:35:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "884583 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-10-e05",
+      "source": "sms",
+      "ts": "2026-07-29T16:00:00+05:30",
+      "sender": "JD-HRMAIL",
+      "text": "Congratulations! Your offer letter is released. Complete onboarding documents on the portal. All the best ji!",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

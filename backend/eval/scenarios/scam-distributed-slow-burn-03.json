@@ -1,0 +1,51 @@
+{
+  "id": "scam-distributed-slow-burn-03",
+  "label": "scam",
+  "category": "distributed_slow_burn",
+  "lang": "hinglish",
+  "shape": "distributed",
+  "template": "dsb_inv_hinglish",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-distributed-slow-burn-03-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-05T17:54:00+05:30",
+      "sender": "7052671490",
+      "text": "Hello ji, aapka number Hyderabad investors group se mila. Main market updates share karta hoon kabhi kabhi.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-03-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-06T23:59:00+05:30",
+      "sender": "6181396354",
+      "text": "Is mahine members ko 31% munafa hua, expert tips guaranteed hai. Aapko add karu?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-03-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-08T17:02:00+05:30",
+      "sender": "9479428633",
+      "text": "Premium batch mein sirf 5 seat bachi hai. Seat pakki karne ke liye 2,999 membership fees bharni hogi.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

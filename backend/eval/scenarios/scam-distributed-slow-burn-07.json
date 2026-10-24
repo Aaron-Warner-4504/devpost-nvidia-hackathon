@@ -1,0 +1,66 @@
+{
+  "id": "scam-distributed-slow-burn-07",
+  "label": "scam",
+  "category": "distributed_slow_burn",
+  "lang": "en",
+  "shape": "distributed",
+  "template": "dsb_relative_en",
+  "harm_index": 3,
+  "events": [
+    {
+      "device_event_id": "scam-distributed-slow-burn-07-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-09T10:43:00+05:30",
+      "sender": "+91 79646 04953",
+      "text": "Hi beta, this is Mama. My phone fell in water, this is my new number. Save it.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-07-e01",
+      "source": "call",
+      "ts": "2026-07-10T12:50:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+916519868073",
+        "duration_s": 86,
+        "is_contact": false,
+        "direction": "in"
+      },
+      "triage_score": 0.3,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-07-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-11T00:58:00+05:30",
+      "sender": "8944971783",
+      "text": "I am Dr. Mehta's assistant at City Hospital. Your mama is admitted and asked me to message you.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-07-e03",
+      "source": "whatsapp",
+      "ts": "2026-07-11T03:01:00+05:30",
+      "sender": "+918044169404",
+      "text": "The advance deposit of Rs 15,000 is required before the procedure. Please arrange it, he will return it.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 3,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

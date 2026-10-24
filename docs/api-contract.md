@@ -144,6 +144,17 @@ image (`{"detail": "no text could be found in the image"}`); `502`
 Response 200: list of `AlertOut` (shape as above) that were shown to this user (returned by `/v1/events` or
 `/v1/check`), newest first, at most 100. With `since`, only alerts shown after that instant. `info` results
 of `/v1/check` are not listed (they are a direct answer, not alert history).
+
+**Upgrades from the background review (behaviour note, no schema change).** When the server's stage-2 review
+is enabled (semantic memory or `AGENT_REVIEW=all`; see docs/memory.md), every event is re-assessed a few
+seconds after `/v1/events` returned, with its linked history. If that review finds a HIGHER tier (e.g. the
+third message of a scam told by three different numbers), a NEW alert is created for the same `event_id`
+with the higher `tier` (its `signals` usually include `story_progression`, its `why` cites the linked earlier
+events). It appears here like any other alert (newest first) and, when `high`/`critical` and interrupting,
+is also pushed to the user's own device (and `critical` to guardians) by the existing push rules. Alerts
+are never downgraded or retracted: the earlier alert for the event stays in the list. Clients should poll
+`GET /v1/alerts?since=...` (or rely on the push) and may show two alerts with the same `event_id`; the
+newest one is the current assessment.
 ```json
 [{"id": "alr_123", "event_id": "evt_123", "tier": "high", "headline": "Likely bank-impersonation scam", "why": [], "next_step": "Call your bank.", "signals": ["credential_or_otp_ask"], "created_at": "2026-10-17T10:00:00Z"}]
 ```
@@ -228,12 +239,15 @@ without a token.
   `backend/.demo_token`). Response 200:
   `{"events": [{"id", "ts", "source", "redacted_text", "entities": [entity id]}]` (oldest first, newest 200),
   `"entities": [{"id", "type", "canonical"}], "edges": [{"a", "b", "relation", "evidence_event_ids"}],
+  (semantic links between two events appear as an edge `relation: "similar"` between two entities of
+  `type: "event"` whose `canonical` is the event id; `evidence_event_ids` are both event ids)
   "alerts": [{"id", "event_id", "tier", "headline", "why": [{"event_id", "ts", "text"}], "signals",
   "created_at"}]` (shown alerts, newest first, max 100), `"latest": {"tier", "why": [text]}` (`info` / `[]` when
   there are no alerts)`}`.
 
 ## DELETE /v1/me
-Deletes the device and all its data, including family links in both roles and pending invites. Response 204,
+Deletes the device and all its data, including family links in both roles, pending invites, stored
+embeddings and queued background review jobs. Response 204,
 no body.
 
 ## Errors

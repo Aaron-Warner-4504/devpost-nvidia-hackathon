@@ -1,0 +1,81 @@
+{
+  "id": "benign-distributed-slow-burn-04",
+  "label": "benign",
+  "category": "distributed_slow_burn",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "dsb_b_local_service",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-distributed-slow-burn-04-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-18T10:00:00+05:30",
+      "sender": "+917410795265",
+      "text": "Hi, I got your number from Mrs Sharma. I teach maths for class 8, she said your son needs help.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-04-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-19T17:00:00+05:30",
+      "sender": "+917410795265",
+      "text": "Classes start Monday at 5 pm.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-04-e02",
+      "source": "sms",
+      "ts": "2026-07-20T21:16:00+05:30",
+      "sender": "VM-ZOMATO",
+      "text": "209513 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-04-e03",
+      "source": "whatsapp",
+      "ts": "2026-07-21T12:00:00+05:30",
+      "sender": "+917410795265",
+      "text": "The monthly charge is Rs 2,000, you can pay after the first class.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-04-e04",
+      "source": "sms",
+      "ts": "2026-07-21T12:52:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "343004 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-04-e05",
+      "source": "sms",
+      "ts": "2026-07-22T22:10:00+05:30",
+      "sender": "AX-SWIGGY",
+      "text": "870546 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

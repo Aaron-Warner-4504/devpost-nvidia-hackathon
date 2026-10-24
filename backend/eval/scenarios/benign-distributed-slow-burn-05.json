@@ -1,0 +1,84 @@
+{
+  "id": "benign-distributed-slow-burn-05",
+  "label": "benign",
+  "category": "distributed_slow_burn",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "dsb_b_society",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-distributed-slow-burn-05-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-19T11:00:00+05:30",
+      "sender": "Mrs Kapoor (Society)",
+      "text": "दिवाली की तैयारी के लिए आपको सोसाइटी ग्रुप में जोड़ रही हूँ।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-05-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-21T19:00:00+05:30",
+      "sender": "Mr Iyer (Society)",
+      "text": "शनिवार शाम 7 बजे दिवाली पार्टी, सब आइए।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-05-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-23T10:00:00+05:30",
+      "sender": "Treasurer Green Park",
+      "text": "अक्टूबर का रखरखाव शुल्क ₹4,000 देय है, सोसाइटी खाते में जमा करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-05-e03",
+      "source": "sms",
+      "ts": "2026-07-24T07:45:00+05:30",
+      "sender": "JD-UBERIN",
+      "text": "697001 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-05-e04",
+      "source": "sms",
+      "ts": "2026-07-24T10:16:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "आपके एक्सिस बैंक खाते XX2622 से ₹454 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹55,826। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-05-e05",
+      "source": "sms",
+      "ts": "2026-07-24T18:43:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "523870 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

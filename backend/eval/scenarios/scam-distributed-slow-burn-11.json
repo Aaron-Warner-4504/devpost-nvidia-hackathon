@@ -1,0 +1,61 @@
+{
+  "id": "scam-distributed-slow-burn-11",
+  "label": "scam",
+  "category": "distributed_slow_burn",
+  "lang": "hi",
+  "shape": "distributed",
+  "template": "dsb_crypto_hi",
+  "harm_index": 3,
+  "events": [
+    {
+      "device_event_id": "scam-distributed-slow-burn-11-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-13T10:02:00+05:30",
+      "sender": "+91 89725 89037",
+      "text": "माफ़ कीजिए, गलत नंबर लग गया। वैसे आपसे बात करके अच्छा लगा।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-11-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-14T15:05:00+05:30",
+      "sender": "6988850442",
+      "text": "मेरे भैया क्रिप्टो सिखाते हैं, उनके छात्र हर हफ्ते अच्छी कमाई करते हैं।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-11-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-16T11:13:00+05:30",
+      "sender": "+919142031070",
+      "text": "आपका ट्रेडिंग खाता तैयार है, पहली राशि के बाद निकासी शुरू होगी।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-11-e03",
+      "source": "whatsapp",
+      "ts": "2026-07-17T07:15:00+05:30",
+      "sender": "+91 65201 94529",
+      "text": "निकासी के लिए ₹10,500 सत्यापन शुल्क आज ही भरना होगा।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 3,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

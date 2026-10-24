@@ -1,0 +1,764 @@
+{
+ "model": "multilingual",
+ "caveat": "synthetic data, optimistic, small sample",
+ "models": {
+  "multilingual": {
+   "variant": "choice",
+   "threshold": 0.9,
+   "variants_tune": {
+    "noul": {
+     "threshold": null,
+     "auc": 0.5670460491889063
+    },
+    "choice": {
+     "threshold": 0.9,
+     "auc": 0.5479024943310657,
+     "scam_event_recall": 0.25396825396825395,
+     "timeline_recall": 0.3793103448275862,
+     "benign_rate": 0.12087912087912088,
+     "precision": 0.26666666666666666
+    }
+   },
+   "by": {
+    "tune/en": {
+     "n_scam_events": 36,
+     "n_benign_events": 128,
+     "n_scam_timelines": 17,
+     "clf": {
+      "scam_event_recall": 0.16666666666666666,
+      "timeline_recall": 0.29411764705882354,
+      "benign_rate": 0.0625,
+      "precision": 0.42857142857142855
+     },
+     "gate": {
+      "scam_event_recall": 0.6944444444444444,
+      "timeline_recall": 1.0,
+      "benign_rate": 0.1171875
+     },
+     "union": {
+      "scam_event_recall": 0.6944444444444444,
+      "timeline_recall": 1.0,
+      "benign_rate": 0.1796875
+     }
+    },
+    "tune/hi": {
+     "n_scam_events": 14,
+     "n_benign_events": 120,
+     "n_scam_timelines": 7,
+     "clf": {
+      "scam_event_recall": 0.35714285714285715,
+      "timeline_recall": 0.42857142857142855,
+      "benign_rate": 0.13333333333333333,
+      "precision": 0.23809523809523808
+     },
+     "gate": {
+      "scam_event_recall": 0.5714285714285714,
+      "timeline_recall": 1.0,
+      "benign_rate": 0.025
+     },
+     "union": {
+      "scam_event_recall": 0.7142857142857143,
+      "timeline_recall": 1.0,
+      "benign_rate": 0.15833333333333333
+     }
+    },
+    "tune/hinglish": {
+     "n_scam_events": 13,
+     "n_benign_events": 116,
+     "n_scam_timelines": 5,
+     "clf": {
+      "scam_event_recall": 0.38461538461538464,
+      "timeline_recall": 0.6,
+      "benign_rate": 0.1724137931034483,
+      "precision": 0.2
+     },
+     "gate": {
+      "scam_event_recall": 0.5384615384615384,
+      "timeline_recall": 1.0,
+      "benign_rate": 0.10344827586206896
+     },
+     "union": {
+      "scam_event_recall": 0.6923076923076923,
+      "timeline_recall": 1.0,
+      "benign_rate": 0.22413793103448276
+     }
+    },
+    "tune/all": {
+     "n_scam_events": 63,
+     "n_benign_events": 364,
+     "n_scam_timelines": 29,
+     "clf": {
+      "scam_event_recall": 0.25396825396825395,
+      "timeline_recall": 0.3793103448275862,
+      "benign_rate": 0.12087912087912088,
+      "precision": 0.26666666666666666
+     },
+     "gate": {
+      "scam_event_recall": 0.6349206349206349,
+      "timeline_recall": 1.0,
+      "benign_rate": 0.08241758241758242
+     },
+     "union": {
+      "scam_event_recall": 0.6984126984126984,
+      "timeline_recall": 1.0,
+      "benign_rate": 0.18681318681318682
+     }
+    },
+    "holdout/en": {
+     "n_scam_events": 12,
+     "n_benign_events": 105,
+     "n_scam_timelines": 7,
+     "clf": {
+      "scam_event_recall": 0.16666666666666666,
+      "timeline_recall": 0.2857142857142857,
+      "benign_rate": 0.11428571428571428,
+      "precision": 0.14285714285714285
+     },
+     "gate": {
+      "scam_event_recall": 0.5833333333333334,
+      "timeline_recall": 1.0,
+      "benign_rate": 0.10476190476190476
+     },
+     "union": {
+      "scam_event_recall": 0.6666666666666666,
+      "timeline_recall": 1.0,
+      "benign_rate": 0.20952380952380953
+     }
+    },
+    "holdout/hi": {
+     "n_scam_events": 3,
+     "n_benign_events": 59,
+     "n_scam_timelines": 3,
+     "clf": {
+      "scam_event_recall": 0.3333333333333333,
+      "timeline_recall": 0.3333333333333333,
+      "benign_rate": 0.06779661016949153,
+      "precision": 0.2
+     },
+     "gate": {
+      "scam_event_recall": 0.6666666666666666,
+      "timeline_recall": 0.6666666666666666,
+      "benign_rate": 0.2033898305084746
+     },
+     "union": {
+      "scam_event_recall": 0.6666666666666666,
+      "timeline_recall": 0.6666666666666666,
+      "benign_rate": 0.2542372881355932
+     }
+    },
+    "holdout/hinglish": {
+     "n_scam_events": 9,
+     "n_benign_events": 6,
+     "n_scam_timelines": 4,
+     "clf": {
+      "scam_event_recall": 0.4444444444444444,
+      "timeline_recall": 0.75,
+      "benign_rate": 0.0,
+      "precision": 1.0
+     },
+     "gate": {
+      "scam_event_recall": 0.4444444444444444,
+      "timeline_recall": 0.75,
+      "benign_rate": 0.16666666666666666
+     },
+     "union": {
+      "scam_event_recall": 0.6666666666666666,
+      "timeline_recall": 1.0,
+      "benign_rate": 0.16666666666666666
+     }
+    },
+    "holdout/all": {
+     "n_scam_events": 24,
+     "n_benign_events": 170,
+     "n_scam_timelines": 14,
+     "clf": {
+      "scam_event_recall": 0.2916666666666667,
+      "timeline_recall": 0.42857142857142855,
+      "benign_rate": 0.09411764705882353,
+      "precision": 0.30434782608695654
+     },
+     "gate": {
+      "scam_event_recall": 0.5416666666666666,
+      "timeline_recall": 0.8571428571428571,
+      "benign_rate": 0.1411764705882353
+     },
+     "union": {
+      "scam_event_recall": 0.6666666666666666,
+      "timeline_recall": 0.9285714285714286,
+      "benign_rate": 0.2235294117647059
+     }
+    }
+   },
+   "auc": {
+    "tune/en": {
+     "noul": 0.5824652777777778,
+     "choice": 0.5640190972222222
+    },
+    "tune/hi": {
+     "noul": 0.4446428571428571,
+     "choice": 0.5303571428571429
+    },
+    "tune/hinglish": {
+     "noul": 0.7602785145888594,
+     "choice": 0.644893899204244
+    },
+    "tune/all": {
+     "noul": 0.5670460491889063,
+     "choice": 0.5479024943310657
+    },
+    "holdout/en": {
+     "noul": 0.5472222222222223,
+     "choice": 0.44603174603174606
+    },
+    "holdout/hi": {
+     "noul": 0.655367231638418,
+     "choice": 0.768361581920904
+    },
+    "holdout/hinglish": {
+     "noul": 0.7222222222222222,
+     "choice": 0.8518518518518519
+    },
+    "holdout/all": {
+     "noul": 0.6258578431372549,
+     "choice": 0.6153186274509804
+    }
+   },
+   "sweep": {
+    "0.05": {
+     "tune": {
+      "n_scam_events": 63,
+      "n_benign_events": 364,
+      "n_scam_timelines": 29,
+      "clf": {
+       "scam_event_recall": 0.9682539682539683,
+       "timeline_recall": 0.9655172413793104,
+       "benign_rate": 0.9340659340659341,
+       "precision": 0.15211970074812967
+      },
+      "gate": {
+       "scam_event_recall": 0.6349206349206349,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.08241758241758242
+      },
+      "union": {
+       "scam_event_recall": 0.9841269841269841,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.9395604395604396
+      }
+     },
+     "holdout": {
+      "n_scam_events": 24,
+      "n_benign_events": 170,
+      "n_scam_timelines": 14,
+      "clf": {
+       "scam_event_recall": 1.0,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.9411764705882353,
+       "precision": 0.13043478260869565
+      },
+      "gate": {
+       "scam_event_recall": 0.5416666666666666,
+       "timeline_recall": 0.8571428571428571,
+       "benign_rate": 0.1411764705882353
+      },
+      "union": {
+       "scam_event_recall": 1.0,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.9470588235294117
+      }
+     }
+    },
+    "0.1": {
+     "tune": {
+      "n_scam_events": 63,
+      "n_benign_events": 364,
+      "n_scam_timelines": 29,
+      "clf": {
+       "scam_event_recall": 0.9047619047619048,
+       "timeline_recall": 0.9655172413793104,
+       "benign_rate": 0.8571428571428571,
+       "precision": 0.15447154471544716
+      },
+      "gate": {
+       "scam_event_recall": 0.6349206349206349,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.08241758241758242
+      },
+      "union": {
+       "scam_event_recall": 0.9365079365079365,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.8653846153846154
+      }
+     },
+     "holdout": {
+      "n_scam_events": 24,
+      "n_benign_events": 170,
+      "n_scam_timelines": 14,
+      "clf": {
+       "scam_event_recall": 0.9583333333333334,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.8588235294117647,
+       "precision": 0.13609467455621302
+      },
+      "gate": {
+       "scam_event_recall": 0.5416666666666666,
+       "timeline_recall": 0.8571428571428571,
+       "benign_rate": 0.1411764705882353
+      },
+      "union": {
+       "scam_event_recall": 1.0,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.8823529411764706
+      }
+     }
+    },
+    "0.2": {
+     "tune": {
+      "n_scam_events": 63,
+      "n_benign_events": 364,
+      "n_scam_timelines": 29,
+      "clf": {
+       "scam_event_recall": 0.8412698412698413,
+       "timeline_recall": 0.896551724137931,
+       "benign_rate": 0.7362637362637363,
+       "precision": 0.16510903426791276
+      },
+      "gate": {
+       "scam_event_recall": 0.6349206349206349,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.08241758241758242
+      },
+      "union": {
+       "scam_event_recall": 0.9206349206349206,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.7582417582417582
+      }
+     },
+     "holdout": {
+      "n_scam_events": 24,
+      "n_benign_events": 170,
+      "n_scam_timelines": 14,
+      "clf": {
+       "scam_event_recall": 0.875,
+       "timeline_recall": 0.8571428571428571,
+       "benign_rate": 0.7352941176470589,
+       "precision": 0.14383561643835616
+      },
+      "gate": {
+       "scam_event_recall": 0.5416666666666666,
+       "timeline_recall": 0.8571428571428571,
+       "benign_rate": 0.1411764705882353
+      },
+      "union": {
+       "scam_event_recall": 1.0,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.7705882352941177
+      }
+     }
+    },
+    "0.3": {
+     "tune": {
+      "n_scam_events": 63,
+      "n_benign_events": 364,
+      "n_scam_timelines": 29,
+      "clf": {
+       "scam_event_recall": 0.7142857142857143,
+       "timeline_recall": 0.8620689655172413,
+       "benign_rate": 0.6593406593406593,
+       "precision": 0.15789473684210525
+      },
+      "gate": {
+       "scam_event_recall": 0.6349206349206349,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.08241758241758242
+      },
+      "union": {
+       "scam_event_recall": 0.8571428571428571,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.6840659340659341
+      }
+     },
+     "holdout": {
+      "n_scam_events": 24,
+      "n_benign_events": 170,
+      "n_scam_timelines": 14,
+      "clf": {
+       "scam_event_recall": 0.7916666666666666,
+       "timeline_recall": 0.7857142857142857,
+       "benign_rate": 0.6529411764705882,
+       "precision": 0.14615384615384616
+      },
+      "gate": {
+       "scam_event_recall": 0.5416666666666666,
+       "timeline_recall": 0.8571428571428571,
+       "benign_rate": 0.1411764705882353
+      },
+      "union": {
+       "scam_event_recall": 0.9166666666666666,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.6941176470588235
+      }
+     }
+    },
+    "0.4": {
+     "tune": {
+      "n_scam_events": 63,
+      "n_benign_events": 364,
+      "n_scam_timelines": 29,
+      "clf": {
+       "scam_event_recall": 0.6349206349206349,
+       "timeline_recall": 0.8620689655172413,
+       "benign_rate": 0.5769230769230769,
+       "precision": 0.16
+      },
+      "gate": {
+       "scam_event_recall": 0.6349206349206349,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.08241758241758242
+      },
+      "union": {
+       "scam_event_recall": 0.8412698412698413,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.6043956043956044
+      }
+     },
+     "holdout": {
+      "n_scam_events": 24,
+      "n_benign_events": 170,
+      "n_scam_timelines": 14,
+      "clf": {
+       "scam_event_recall": 0.7916666666666666,
+       "timeline_recall": 0.7857142857142857,
+       "benign_rate": 0.6058823529411764,
+       "precision": 0.1557377049180328
+      },
+      "gate": {
+       "scam_event_recall": 0.5416666666666666,
+       "timeline_recall": 0.8571428571428571,
+       "benign_rate": 0.1411764705882353
+      },
+      "union": {
+       "scam_event_recall": 0.9166666666666666,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.6588235294117647
+      }
+     }
+    },
+    "0.5": {
+     "tune": {
+      "n_scam_events": 63,
+      "n_benign_events": 364,
+      "n_scam_timelines": 29,
+      "clf": {
+       "scam_event_recall": 0.5555555555555556,
+       "timeline_recall": 0.7241379310344828,
+       "benign_rate": 0.5137362637362637,
+       "precision": 0.15765765765765766
+      },
+      "gate": {
+       "scam_event_recall": 0.6349206349206349,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.08241758241758242
+      },
+      "union": {
+       "scam_event_recall": 0.8253968253968254,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.554945054945055
+      }
+     },
+     "holdout": {
+      "n_scam_events": 24,
+      "n_benign_events": 170,
+      "n_scam_timelines": 14,
+      "clf": {
+       "scam_event_recall": 0.5833333333333334,
+       "timeline_recall": 0.7142857142857143,
+       "benign_rate": 0.5647058823529412,
+       "precision": 0.12727272727272726
+      },
+      "gate": {
+       "scam_event_recall": 0.5416666666666666,
+       "timeline_recall": 0.8571428571428571,
+       "benign_rate": 0.1411764705882353
+      },
+      "union": {
+       "scam_event_recall": 0.7916666666666666,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.6235294117647059
+      }
+     }
+    },
+    "0.6": {
+     "tune": {
+      "n_scam_events": 63,
+      "n_benign_events": 364,
+      "n_scam_timelines": 29,
+      "clf": {
+       "scam_event_recall": 0.5079365079365079,
+       "timeline_recall": 0.6551724137931034,
+       "benign_rate": 0.4478021978021978,
+       "precision": 0.1641025641025641
+      },
+      "gate": {
+       "scam_event_recall": 0.6349206349206349,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.08241758241758242
+      },
+      "union": {
+       "scam_event_recall": 0.7936507936507936,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.5082417582417582
+      }
+     },
+     "holdout": {
+      "n_scam_events": 24,
+      "n_benign_events": 170,
+      "n_scam_timelines": 14,
+      "clf": {
+       "scam_event_recall": 0.5,
+       "timeline_recall": 0.5714285714285714,
+       "benign_rate": 0.5,
+       "precision": 0.12371134020618557
+      },
+      "gate": {
+       "scam_event_recall": 0.5416666666666666,
+       "timeline_recall": 0.8571428571428571,
+       "benign_rate": 0.1411764705882353
+      },
+      "union": {
+       "scam_event_recall": 0.7916666666666666,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.5882352941176471
+      }
+     }
+    },
+    "0.7": {
+     "tune": {
+      "n_scam_events": 63,
+      "n_benign_events": 364,
+      "n_scam_timelines": 29,
+      "clf": {
+       "scam_event_recall": 0.36507936507936506,
+       "timeline_recall": 0.5172413793103449,
+       "benign_rate": 0.4065934065934066,
+       "precision": 0.13450292397660818
+      },
+      "gate": {
+       "scam_event_recall": 0.6349206349206349,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.08241758241758242
+      },
+      "union": {
+       "scam_event_recall": 0.746031746031746,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.46703296703296704
+      }
+     },
+     "holdout": {
+      "n_scam_events": 24,
+      "n_benign_events": 170,
+      "n_scam_timelines": 14,
+      "clf": {
+       "scam_event_recall": 0.4583333333333333,
+       "timeline_recall": 0.5714285714285714,
+       "benign_rate": 0.4588235294117647,
+       "precision": 0.12359550561797752
+      },
+      "gate": {
+       "scam_event_recall": 0.5416666666666666,
+       "timeline_recall": 0.8571428571428571,
+       "benign_rate": 0.1411764705882353
+      },
+      "union": {
+       "scam_event_recall": 0.75,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.5470588235294118
+      }
+     }
+    },
+    "0.8": {
+     "tune": {
+      "n_scam_events": 63,
+      "n_benign_events": 364,
+      "n_scam_timelines": 29,
+      "clf": {
+       "scam_event_recall": 0.30158730158730157,
+       "timeline_recall": 0.4827586206896552,
+       "benign_rate": 0.23626373626373626,
+       "precision": 0.18095238095238095
+      },
+      "gate": {
+       "scam_event_recall": 0.6349206349206349,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.08241758241758242
+      },
+      "union": {
+       "scam_event_recall": 0.7142857142857143,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.3021978021978022
+      }
+     },
+     "holdout": {
+      "n_scam_events": 24,
+      "n_benign_events": 170,
+      "n_scam_timelines": 14,
+      "clf": {
+       "scam_event_recall": 0.4166666666666667,
+       "timeline_recall": 0.5714285714285714,
+       "benign_rate": 0.20588235294117646,
+       "precision": 0.2222222222222222
+      },
+      "gate": {
+       "scam_event_recall": 0.5416666666666666,
+       "timeline_recall": 0.8571428571428571,
+       "benign_rate": 0.1411764705882353
+      },
+      "union": {
+       "scam_event_recall": 0.75,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.31176470588235294
+      }
+     }
+    },
+    "0.9": {
+     "tune": {
+      "n_scam_events": 63,
+      "n_benign_events": 364,
+      "n_scam_timelines": 29,
+      "clf": {
+       "scam_event_recall": 0.25396825396825395,
+       "timeline_recall": 0.3793103448275862,
+       "benign_rate": 0.12087912087912088,
+       "precision": 0.26666666666666666
+      },
+      "gate": {
+       "scam_event_recall": 0.6349206349206349,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.08241758241758242
+      },
+      "union": {
+       "scam_event_recall": 0.6984126984126984,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.18681318681318682
+      }
+     },
+     "holdout": {
+      "n_scam_events": 24,
+      "n_benign_events": 170,
+      "n_scam_timelines": 14,
+      "clf": {
+       "scam_event_recall": 0.2916666666666667,
+       "timeline_recall": 0.42857142857142855,
+       "benign_rate": 0.09411764705882353,
+       "precision": 0.30434782608695654
+      },
+      "gate": {
+       "scam_event_recall": 0.5416666666666666,
+       "timeline_recall": 0.8571428571428571,
+       "benign_rate": 0.1411764705882353
+      },
+      "union": {
+       "scam_event_recall": 0.6666666666666666,
+       "timeline_recall": 0.9285714285714286,
+       "benign_rate": 0.2235294117647059
+      }
+     }
+    },
+    "0.95": {
+     "tune": {
+      "n_scam_events": 63,
+      "n_benign_events": 364,
+      "n_scam_timelines": 29,
+      "clf": {
+       "scam_event_recall": 0.1746031746031746,
+       "timeline_recall": 0.3103448275862069,
+       "benign_rate": 0.10714285714285714,
+       "precision": 0.22
+      },
+      "gate": {
+       "scam_event_recall": 0.6349206349206349,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.08241758241758242
+      },
+      "union": {
+       "scam_event_recall": 0.6507936507936508,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.17307692307692307
+      }
+     },
+     "holdout": {
+      "n_scam_events": 24,
+      "n_benign_events": 170,
+      "n_scam_timelines": 14,
+      "clf": {
+       "scam_event_recall": 0.2916666666666667,
+       "timeline_recall": 0.42857142857142855,
+       "benign_rate": 0.07058823529411765,
+       "precision": 0.3684210526315789
+      },
+      "gate": {
+       "scam_event_recall": 0.5416666666666666,
+       "timeline_recall": 0.8571428571428571,
+       "benign_rate": 0.1411764705882353
+      },
+      "union": {
+       "scam_event_recall": 0.6666666666666666,
+       "timeline_recall": 0.9285714285714286,
+       "benign_rate": 0.20588235294117646
+      }
+     }
+    },
+    "0.98": {
+     "tune": {
+      "n_scam_events": 63,
+      "n_benign_events": 364,
+      "n_scam_timelines": 29,
+      "clf": {
+       "scam_event_recall": 0.14285714285714285,
+       "timeline_recall": 0.27586206896551724,
+       "benign_rate": 0.07967032967032966,
+       "precision": 0.23684210526315788
+      },
+      "gate": {
+       "scam_event_recall": 0.6349206349206349,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.08241758241758242
+      },
+      "union": {
+       "scam_event_recall": 0.6349206349206349,
+       "timeline_recall": 1.0,
+       "benign_rate": 0.1510989010989011
+      }
+     },
+     "holdout": {
+      "n_scam_events": 24,
+      "n_benign_events": 170,
+      "n_scam_timelines": 14,
+      "clf": {
+       "scam_event_recall": 0.2916666666666667,
+       "timeline_recall": 0.42857142857142855,
+       "benign_rate": 0.07058823529411765,
+       "precision": 0.3684210526315789
+      },
+      "gate": {
+       "scam_event_recall": 0.5416666666666666,
+       "timeline_recall": 0.8571428571428571,
+       "benign_rate": 0.1411764705882353
+      },
+      "union": {
+       "scam_event_recall": 0.6666666666666666,
+       "timeline_recall": 0.9285714285714286,
+       "benign_rate": 0.20588235294117646
+      }
+     }
+    }
+   },
+   "latency_ms": {
+    "n": 620,
+    "p50": 160.36865900059638,
+    "p95": 229.63446999892767,
+    "max": 277.40635000009206
+   }
+  }
+ }
+}

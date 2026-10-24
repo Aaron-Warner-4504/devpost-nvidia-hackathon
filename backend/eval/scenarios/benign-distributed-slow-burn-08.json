@@ -1,0 +1,82 @@
+{
+  "id": "benign-distributed-slow-burn-08",
+  "label": "benign",
+  "category": "distributed_slow_burn",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "dsb_b_local_service",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-distributed-slow-burn-08-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-22T10:00:00+05:30",
+      "sender": "+91 69400 39702",
+      "text": "नमस्ते, मुझे आपका नंबर शर्मा जी से मिला। मैं कक्षा 8 के लिए गणित पढ़ाता हूँ।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-08-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-23T17:00:00+05:30",
+      "sender": "+91 69400 39702",
+      "text": "कक्षाएँ सोमवार शाम 5 बजे से।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-08-e02",
+      "source": "sms",
+      "ts": "2026-07-23T18:14:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "479066 आपके एक्सिस बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-08-e03",
+      "source": "whatsapp",
+      "ts": "2026-07-25T12:00:00+05:30",
+      "sender": "+91 69400 39702",
+      "text": "मासिक फीस ₹2,000 है, पहली कक्षा के बाद दे सकते हैं।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-08-e04",
+      "source": "sms",
+      "ts": "2026-07-27T12:58:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "634480 आपके एक्सिस बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-08-e05",
+      "source": "whatsapp",
+      "ts": "2026-07-28T22:08:00+05:30",
+      "sender": "Mummy",
+      "text": "Khana kha liya?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en",
+      "is_contact": true
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}
