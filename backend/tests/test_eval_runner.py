@@ -112,7 +112,7 @@ def test_benign_must_not_have_harm_index():
 
 
 def test_all_committed_scenarios_validate_and_set_properties():
-    scs = ev.load_scenarios(SCEN_DIR)
+    scs = [s for s in ev.load_scenarios(SCEN_DIR) if s["category"] != gen.DSB_CATEGORY]  # the original 123
     n_scam = sum(gen.SCAM_COUNTS.values()) + sum(gen.EXTRA_SCAM_COUNTS.values())  # 40 + 3 (R34)
     assert len(scs) == n_scam + 80
     for s in scs:
@@ -152,7 +152,7 @@ def test_generator_is_deterministic_and_matches_committed_files(tmp_path):
     gen.write(a)
     gen.write(b)
     fa = sorted(p.name for p in a.glob("*.json"))
-    assert fa == sorted(p.name for p in b.glob("*.json")) and len(fa) == 123
+    assert fa == sorted(p.name for p in b.glob("*.json")) and len(fa) == 123 + gen.DSB_SCAMS + gen.DSB_BENIGN
     for name in fa:
         assert (a / name).read_bytes() == (b / name).read_bytes()
         assert (a / name).read_bytes() == (SCEN_DIR / name).read_bytes(), f"{name}: regenerate eval/scenarios"
@@ -334,3 +334,52 @@ def test_smoke_six_committed_scenarios(sf):
     assert len(res) == 6 and all(len(r["events"]) == len(s["events"]) for r, s in zip(res, pick))
     m = ev.compute_metrics(res)
     assert m["n_scam"] == 3 and m["n_benign"] == 3
+
+
+# ---------------------------------------------------------------- distributed slow burn (memory upgrade)
+def _dsb():
+    return [s for s in ev.load_scenarios(SCEN_DIR) if s["category"] == gen.DSB_CATEGORY]
+
+
+def test_dsb_category_shape():
+    from app.pipeline.extract import extract_entities
+    from app.pipeline.redact import redact
+    from app.pipeline.signals import HistoryCtx, detect_signals, tier_for
+    from app.schemas import EventIn
+
+    scs = _dsb()
+    scams = [s for s in scs if s["label"] == "scam"]
+    benign = [s for s in scs if s["label"] == "benign"]
+    assert len(scams) >= 10 and len(benign) >= 10
+    assert {s["lang"] for s in scams} == {"en", "hi", "hinglish"} == {s["lang"] for s in benign}
+    assert {s["split"] for s in scams} == {"tune", "holdout"}
+    for s in scams:
+        assert ev.validate_scenario(s) == [], s["id"]
+        assert 3 <= len(s["events"]) <= 5
+        senders = [e["sender"] or e["call"]["number"] for e in s["events"]]
+        assert len(set(senders)) == len(senders), s["id"]  # a different number every time
+        span = ev.parse_ts(s["events"][-1]["ts"]) - ev.parse_ts(s["events"][0]["ts"])
+        assert span.days >= 1, s["id"]  # across days
+        seen = {}
+        for i, raw in enumerate(s["events"]):
+            e = EventIn.model_validate(raw)
+            t = redact(e.text) if e.text else None
+            ents = extract_entities(t, e.sender, e.call)
+            for x in ents:
+                if x.type != "amount":
+                    assert x not in seen, (s["id"], x)  # no shared phone / domain / org / claim / upi
+                    seen[x] = i
+            sig = detect_signals(e.model_copy(update={"text": t}), ents, HistoryCtx(now=e.ts))
+            assert tier_for(sig) in ("info", "caution"), (s["id"], i)  # harmless alone
+
+
+def test_two_stage_runner_counts_upgrades(sf, monkeypatch):
+    scs = [s for s in _dsb() if s["id"] == "scam-distributed-slow-burn-03"]
+    ov = {"embedding_provider": "fake", "semantic_memory": True, "semantic_threshold": 0.05,
+          "story_progression": True, "agent_review": "escalated"}
+    off = ev.run_scenarios(scs, "rules", ev.ScriptedAgentLLM(), sf, review_mode="off")
+    on = ev.run_scenarios(scs, "rules", ev.ScriptedAgentLLM(), sf, review_mode="two-stage", overrides=ov)
+    assert ev.compute_metrics(off)["scam_recall"] == 0.0
+    last = on[0]["events"][-1]
+    assert last["upgraded"] and last["shown"] and last["tier"] in ("high", "critical")
+    assert ev.compute_metrics(on)["scam_recall"] == 1.0

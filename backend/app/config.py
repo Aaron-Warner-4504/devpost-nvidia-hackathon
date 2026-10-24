@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     local_embed_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     embed_timeout_s: float = 5.0
     # cosine similarity (1 - distance) needed to link two events as `similar`; tuned on the eval TUNE split
-    semantic_threshold: float = 0.55
+    semantic_threshold: float = 0.25
     semantic_k: int = 5
     semantic_window_days: int = 14
     # Rules-only scam-story progression signal (no LLM)

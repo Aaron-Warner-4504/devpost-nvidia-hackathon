@@ -1,0 +1,66 @@
+{
+  "id": "scam-distributed-slow-burn-09",
+  "label": "scam",
+  "category": "distributed_slow_burn",
+  "lang": "hinglish",
+  "shape": "distributed",
+  "template": "dsb_relative_hinglish",
+  "harm_index": 3,
+  "events": [
+    {
+      "device_event_id": "scam-distributed-slow-burn-09-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-11T11:31:00+05:30",
+      "sender": "+91 88117 57866",
+      "text": "Beta main Mama bol raha hoon, purana phone kharab ho gaya, ye mera naya number hai.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-09-e01",
+      "source": "call",
+      "ts": "2026-07-12T12:38:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+917646197418",
+        "duration_s": 211,
+        "is_contact": false,
+        "direction": "in"
+      },
+      "triage_score": 0.3,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-09-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-12T15:43:00+05:30",
+      "sender": "9028637248",
+      "text": "Main City Hospital se doctor ka assistant bol raha hoon, aapke mama yahan admit hain.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-09-e03",
+      "source": "whatsapp",
+      "ts": "2026-07-12T17:51:00+05:30",
+      "sender": "+91 98368 55238",
+      "text": "Operation se pehle 40,000 advance ka intezaam karna padega, baad mein lauta denge.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 3,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

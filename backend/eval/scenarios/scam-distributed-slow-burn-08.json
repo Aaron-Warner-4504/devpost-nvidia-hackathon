@@ -1,0 +1,66 @@
+{
+  "id": "scam-distributed-slow-burn-08",
+  "label": "scam",
+  "category": "distributed_slow_burn",
+  "lang": "hi",
+  "shape": "distributed",
+  "template": "dsb_relative_hi",
+  "harm_index": 3,
+  "events": [
+    {
+      "device_event_id": "scam-distributed-slow-burn-08-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-10T09:02:00+05:30",
+      "sender": "+91 96427 82823",
+      "text": "बेटा, मैं चाचा बोल रहा हूँ। पुराना फ़ोन खराब हो गया, यह मेरा नया नंबर है।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-08-e01",
+      "source": "call",
+      "ts": "2026-07-11T10:05:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+918543722650",
+        "duration_s": 69,
+        "is_contact": false,
+        "direction": "in"
+      },
+      "triage_score": 0.3,
+      "lang": null
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-08-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-11T12:13:00+05:30",
+      "sender": "7142775565",
+      "text": "मैं सिटी अस्पताल से डॉक्टर का सहायक बोल रहा हूँ। आपके चाचा यहाँ भर्ती हैं, उन्होंने आपको संदेश भेजने को कहा।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-08-e03",
+      "source": "whatsapp",
+      "ts": "2026-07-11T13:17:00+05:30",
+      "sender": "+919921009223",
+      "text": "ऑपरेशन से पहले ₹40,000 एडवांस जमा कराना ज़रूरी है, वे बाद में लौटा देंगे।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 3,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

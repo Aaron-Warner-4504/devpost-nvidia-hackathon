@@ -712,7 +712,8 @@ _ASK_CUE = _rx(
     r"|\b(?:fee|fees|charges?|deposit)\s+(?:of\s+)?(?:rs\.?|₹|inr)\s*\d"
     r"|\bto\s+(?:secure|confirm|book|reserve|activate|unlock|release|block)\s+(?:your|the|a)\s+"
     r"(?:slot|seat|spot|account|membership|withdrawal|profit|parcel|job)\b"
-    r"|\b(?:fees?|charges?|paise|amount)\s+(?:bhar|jama|de|bhej)\w*|(?:शुल्क|फीस|फ़ीस)")
+    r"|\b(?:fees?|charges?|paise|amount)\s+(?:bhar|jama|de|bhej)\w*|(?:शुल्क|फीस|फ़ीस)"
+    r"|\b\d[\d,]*\s+advance\b|\badvance\s+(?:ka|ki|amount|payment)\b|एडवांस|अग्रिम\s*(?:राशि|भुगतान)|जमा\s*करा")
 _HEADER_SENDER = re.compile(r"(?:[A-Za-z]{2}-)?[A-Za-z0-9]{3,10}(?:-[A-Za-z])?")
 
 

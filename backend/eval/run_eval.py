@@ -47,7 +47,7 @@ from sqlalchemy import select  # noqa: E402
 from app.config import settings as default_settings  # noqa: E402
 from app.llm import ChatResult, FakeLLM, ToolCall  # noqa: E402
 from app.models import Alert, Assessment, User  # noqa: E402
-from app.pipeline import agent, link_client, tools  # noqa: E402
+from app.pipeline import agent, embeddings, link_client, review, tools  # noqa: E402
 from app.pipeline.link_client import LinkReport  # noqa: E402
 from app.pipeline.orchestrator import PipelineDeps, process_event  # noqa: E402
 from app.pipeline.signals import TIER_ORDER, DomainInfo  # noqa: E402
@@ -328,19 +328,41 @@ class ScriptedAgentLLM(FakeLLM):
 
 
 # ---------------------------------------------------------------- running scenarios
+# memory ablation configurations (--ablation): settings overrides + whether stage 2 runs
+OFF_MEMORY = {"story_progression": False, "semantic_memory": False, "agent_review": "escalated"}
+CONFIGS: dict[str, dict] = {
+    # (a) before this work: no semantic memory, no progression, single stage
+    "baseline_rules": {"mode": "rules", "review": "off", **OFF_MEMORY},
+    "baseline_hybrid": {"mode": "hybrid", "review": "off", **OFF_MEMORY},
+    # (b) memory + progression, rules only (no LLM), two-stage so semantic links are built
+    "memory_rules": {"mode": "rules", "review": "two-stage", "story_progression": True, "semantic_memory": True,
+                     "agent_review": "escalated"},
+    # (c) full two-stage: scripted fake agent on every event in stage 2
+    "two_stage_hybrid": {"mode": "hybrid", "review": "two-stage", "story_progression": True,
+                         "semantic_memory": True, "agent_review": "all"},
+}
+
+
 def run_scenarios(scenarios: list[dict], mode: str, llm, session_factory: Callable,
-                  *, settings=None) -> list[dict]:
+                  *, settings=None, review_mode: str = "off", overrides: dict | None = None) -> list[dict]:
     """Replay each scenario for a fresh user through process_event in `mode`. Returns per-scenario
-    results with one record per event."""
+    results with one record per event. `review_mode="two-stage"` runs the stage-2 background review
+    after every event (flush_background) and counts upgrade alerts at that event's index."""
     base = settings or default_settings
-    run_settings = base.model_copy(update={"agent_mode": mode, "tavily_api_key": "", "inspector_url": "",
-                                           "inspector_secret": ""})
+    upd = {"agent_mode": mode, "tavily_api_key": "", "inspector_url": "", "inspector_secret": "",
+           **(overrides or {})}
+    if review_mode == "off":
+        upd.update(semantic_memory=False, agent_review="escalated")
+    run_settings = base.model_copy(update=upd)
     saved = default_settings.agent_mode
     default_settings.agent_mode = mode  # belt and braces: the pipeline reads deps.settings
+    review.configure(workers=1, queue_size=10_000, deferred=True)
     try:
         return [_run_one(sc, mode, llm, session_factory, run_settings) for sc in scenarios]
     finally:
         default_settings.agent_mode = saved
+        review.flush_background()
+        review.configure(workers=default_settings.review_workers, queue_size=default_settings.review_queue_size)
 
 
 def _run_one(sc: dict, mode: str, llm, session_factory, run_settings) -> dict:
@@ -351,7 +373,7 @@ def _run_one(sc: dict, mode: str, llm, session_factory, run_settings) -> dict:
         decisions[alert.event_id] = decision
 
     deps = PipelineDeps(settings=run_settings, domain_info=lambda ctx, d: fixture_domain_info(fx, d),
-                        http_client_factory=_offline_http, hooks=[hook])
+                        http_client_factory=_offline_http, hooks=[hook], session_factory=session_factory)
     out_events = []
     with session_factory() as db, offline_tools(fx):
         user = User()
@@ -362,17 +384,33 @@ def _run_one(sc: dict, mode: str, llm, session_factory, run_settings) -> dict:
             t0 = time.perf_counter()
             res = process_event(db, user, ev, llm=llm, deps=deps)
             ms = (time.perf_counter() - t0) * 1000
+            review.flush_background()  # stage 2 (no-op unless enabled) completes before the next event
+            db.expire_all()
             asm = db.scalar(select(Assessment).where(Assessment.event_id == res.event_id,
-                                                     Assessment.user_id == user.id))
+                                                     Assessment.user_id == user.id)
+                            .order_by(Assessment.created_at, Assessment.id).limit(1))
             reason = db.scalar(select(Alert.reason).where(Alert.assessment_id == asm.id)) if asm else None
             dec = decisions.get(res.event_id)
             shown = res.alert is not None
             payload = asm.payload if asm is not None and isinstance(asm.payload, dict) else {}
+            tier = asm.tier if asm else "info"
+            signals = list(asm.signals or []) if asm else []
+            interrupt = bool(shown and dec is not None and dec.interrupt)
+            upgraded = False
+            for a_tier, a_int, a_sig in db.execute(
+                    select(Assessment.tier, Alert.interrupt, Assessment.signals).join(
+                        Alert, Alert.assessment_id == Assessment.id).where(
+                        Assessment.event_id == res.event_id, Assessment.user_id == user.id,
+                        Alert.reason == review.REVIEW_UPGRADE, Alert.shown_at.is_not(None))).all():
+                upgraded, shown = True, True
+                interrupt = interrupt or bool(a_int)
+                if TIER_ORDER.index(a_tier) > TIER_ORDER.index(tier) or not res.alert:
+                    tier, signals = max((tier, a_tier), key=TIER_ORDER.index), list(a_sig or [])
             out_events.append({
                 "index": i, "ts": raw["ts"], "source": raw["source"],
-                "tier": asm.tier if asm else "info", "shown": shown,
-                "interrupt": bool(shown and dec is not None and dec.interrupt),
-                "reason": reason, "signals": list(asm.signals or []) if asm else [],
+                "tier": tier, "shown": shown, "upgraded": upgraded,
+                "interrupt": interrupt,
+                "reason": reason, "signals": signals,
                 "used_tools": list(payload.get("used_tools") or []), "mode_used": payload.get("mode"),
                 "raised_by": list(payload.get("raised_by") or []),
                 "degraded": bool(asm.degraded) if asm else False, "latency_ms": round(ms, 2),
@@ -501,7 +539,7 @@ def render_tables(report: dict) -> str:
 
 
 def render_report_md(report: dict, existing: str | None) -> str:
-    gen = (f"{GEN_BEGIN}\n_Generated by `eval/run_eval.py` ({report['llm']} LLM, "
+    gen = (f"{GEN_BEGIN}\n_Generated by `eval/run_eval.py` ({report['llm']} LLM, review: {report.get('review', 'off')}, "
            f"{report['n_scenarios']} scenarios, splits: {report['split']})._\n\n{render_tables(report)}\n{GEN_END}")
     if existing and GEN_BEGIN in existing and GEN_END in existing:
         head, rest = existing.split(GEN_BEGIN, 1)
@@ -547,6 +585,92 @@ def eval_database(suffix: str = "_eval"):
         admin.dispose()
 
 
+# ---------------------------------------------------------------- memory ablation
+MEM_BEGIN, MEM_END = "<!-- BEGIN MEMORY ABLATION -->", "<!-- END MEMORY ABLATION -->"
+DSB = "distributed_slow_burn"
+
+
+def subsets(results: list[dict]) -> dict[str, dict[str, dict]]:
+    """metrics[subset][split]: subset = original (the 123 pre-existing scenarios) | dsb | all."""
+    out: dict[str, dict[str, dict]] = {}
+    for name, pick in (("original", lambda r: r["category"] != DSB), ("dsb", lambda r: r["category"] == DSB),
+                       ("all", lambda r: True)):
+        rs = [r for r in results if pick(r)]
+        out[name] = {sp: compute_metrics([r for r in rs if sp == "all" or r["split"] == sp])
+                     for sp in ("tune", "holdout", "all")}
+    return out
+
+
+def render_ablation(rep: dict) -> str:
+    lines = [f"_Generated by `eval/run_eval.py --ablation` (embeddings: {rep['embeddings']}, semantic threshold "
+             f"{rep['semantic_threshold']}, fake scripted agent, {rep['n_scenarios']} scenarios)._", "",
+             "| config | subset | split | scams | recall | benign weeks | false interrupts / week | caution / week "
+             "| upgrades shown |", "|---|---|---|---|---|---|---|---|---|"]
+    for cfg, by in rep["configs"].items():
+        for sub in ("original", "dsb"):
+            for sp in ("tune", "holdout", "all"):
+                m = by["metrics"][sub][sp]
+                if not (m["n_scam"] or m["n_benign"]):
+                    continue
+                lines.append(f"| {cfg} | {sub} | {sp} | {m['n_scam']} | {m['n_detected']}/{m['n_scam']} = "
+                             f"{_f(m['scam_recall'], '{:.3f}')} | {m['n_benign']} | "
+                             f"{_f(m['false_interrupts_per_user_week'], '{:.3f}')} | "
+                             f"{_f(m['caution_alerts_per_user_week'])} | {by['upgrades'][sub][sp]} |")
+    for cfg, by in rep["configs"].items():
+        f = by["metrics"]["all"]["all"]["failures"]
+        dsb_miss = [x["id"] for x in f["missed_scams"] if x["category"] == DSB]
+        dsb_fi = [x["id"] for x in f["false_interrupts"] if x["category"] == DSB]
+        new_fi = [x["id"] for x in f["false_interrupts"] if x["category"] != DSB]
+        lines.append(f"\n- `{cfg}`: missed dsb {dsb_miss or '-'}; dsb false interrupts {dsb_fi or '-'}; "
+                     f"original false interrupts {new_fi or '-'}")
+    return "\n".join(lines)
+
+
+def _ablation(a, scs, split, mem_overrides, emb, session_factory) -> int:
+    names = [c.strip() for c in a.configs.split(",") if c.strip()]
+    if not names or set(names) - set(CONFIGS):
+        print(f"--configs must be a subset of {','.join(CONFIGS)}")
+        return 2
+    thr = mem_overrides.get("semantic_threshold", default_settings.semantic_threshold)
+    rep: dict[str, Any] = {"embeddings": emb, "semantic_threshold": thr, "split": split,
+                           "n_scenarios": len(scs), "configs": {}}
+
+    def run(sf):
+        for name in names:
+            c = dict(CONFIGS[name])
+            mode, rv = c.pop("mode"), c.pop("review")
+            ov = {**mem_overrides, **c} if rv == "two-stage" else c
+            t = time.monotonic()
+            res = run_scenarios(scs, mode, ScriptedAgentLLM(), sf, review_mode=rv, overrides=ov)
+            ups = {sub: {sp: sum(1 for r in res for e in r["events"] if e.get("upgraded")
+                                 and (sub == "all" or (r["category"] == DSB) == (sub == "dsb"))
+                                 and (sp == "all" or r["split"] == sp))
+                         for sp in ("tune", "holdout", "all")} for sub in ("original", "dsb", "all")}
+            rep["configs"][name] = {"metrics": subsets(res), "upgrades": ups, "results": res}
+            print(f"[{name}] {len(res)} scenarios in {time.monotonic() - t:.1f}s")
+
+    if session_factory is not None:
+        run(session_factory)
+    else:
+        with eval_database("_evalmem") as sf:
+            run(sf)
+    table = render_ablation(rep)
+    print(table)
+    a.out_dir.mkdir(parents=True, exist_ok=True)
+    (a.out_dir / "report_memory.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1, default=str) + "\n",
+                                                  encoding="utf-8")
+    md = a.out_dir / "report.md"
+    old = md.read_text(encoding="utf-8") if md.exists() else "# Sentinel evaluation report\n"
+    block = f"{MEM_BEGIN}\n{table}\n{MEM_END}"
+    if MEM_BEGIN in old and MEM_END in old:
+        head, rest = old.split(MEM_BEGIN, 1)
+        old = head + block + rest.split(MEM_END, 1)[1]
+    else:
+        old = old.rstrip("\n") + "\n\n" + block + "\n"
+    md.write_text(old, encoding="utf-8")
+    return 0
+
+
 # ---------------------------------------------------------------- CLI
 def main(argv: list[str] | None = None, *, session_factory: Callable | None = None) -> int:
     ap = argparse.ArgumentParser(description="Sentinel rules / agent / hybrid ablation")
@@ -558,6 +682,14 @@ def main(argv: list[str] | None = None, *, session_factory: Callable | None = No
     ap.add_argument("--ids", default="", help="comma-separated scenario ids (debugging)")
     ap.add_argument("--out-dir", type=Path, default=EVAL_DIR)
     ap.add_argument("--no-fail", action="store_true", help="always exit 0 (exploration)")
+    ap.add_argument("--review", choices=("off", "two-stage"), default="off",
+                    help="off: today's single-stage pipeline; two-stage: run the background review after each event")
+    ap.add_argument("--ablation", action="store_true",
+                    help="memory ablation: baseline vs memory+progression (rules) vs full two-stage (fake agent)")
+    ap.add_argument("--configs", default=",".join(CONFIGS), help="subset of ablation configs")
+    ap.add_argument("--embeddings", choices=("local", "fake", "none"), default="local",
+                    help="embedding provider for two-stage runs (local needs `uv sync --extra semantic`)")
+    ap.add_argument("--semantic-threshold", type=float, default=None)
     a = ap.parse_args(argv)
 
     modes = [m.strip() for m in a.modes.split(",") if m.strip()]
@@ -578,6 +710,20 @@ def main(argv: list[str] | None = None, *, session_factory: Callable | None = No
         want = {x.strip() for x in a.ids.split(",")}
         scs = [s for s in scs if s["id"] in want]
 
+    emb = a.embeddings
+    if emb == "local" and not embeddings.available("local"):
+        print("NOTE: sentence-transformers not installed (uv sync --extra semantic): falling back to the FAKE "
+              "lexical embedding provider; semantic linking is NOT measured.")
+        emb = "fake"
+    mem_overrides: dict[str, Any] = {"embedding_provider": "" if emb == "none" else emb}
+    if emb == "none":
+        mem_overrides["semantic_memory"] = False
+    if a.semantic_threshold is not None:
+        mem_overrides["semantic_threshold"] = a.semantic_threshold
+
+    if a.ablation:
+        return _ablation(a, scs, split, mem_overrides, emb, session_factory)
+
     if a.llm == "live":
         if not (default_settings.token_factory_api_key and default_settings.llm_model):
             print("SKIPPED: --llm live needs TOKEN_FACTORY_API_KEY and LLM_MODEL (backend/.env); nothing was run.")
@@ -587,14 +733,15 @@ def main(argv: list[str] | None = None, *, session_factory: Callable | None = No
     else:
         make_llm = ScriptedAgentLLM
 
-    report: dict[str, Any] = {"llm": a.llm, "split": split, "n_scenarios": len(scs), "modes": {}, "results": {},
+    report: dict[str, Any] = {"llm": a.llm, "split": split, "review": a.review, "n_scenarios": len(scs), "modes": {}, "results": {},
                               "thresholds": {"recall_min": RECALL_MIN, "false_interrupts_max_exclusive":
                                              FALSE_INTERRUPTS_MAX}}
 
     def run(sf):
         for mode in modes:
             t = time.monotonic()
-            res = run_scenarios(scs, mode, make_llm(), sf)
+            res = run_scenarios(scs, mode, make_llm(), sf, review_mode=a.review,
+                                overrides=mem_overrides if a.review == "two-stage" else None)
             report["results"][mode] = res
             report["modes"][mode] = {
                 "tune": compute_metrics([r for r in res if r["split"] == "tune"]),

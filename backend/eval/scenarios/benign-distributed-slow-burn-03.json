@@ -1,0 +1,99 @@
+{
+  "id": "benign-distributed-slow-burn-03",
+  "label": "benign",
+  "category": "distributed_slow_burn",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "dsb_b_family",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-distributed-slow-burn-03-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-17T09:00:00+05:30",
+      "sender": "Mummy",
+      "text": "Beta, my phone is acting up, using Papa's phone today.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-03-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-18T18:00:00+05:30",
+      "sender": "Papa",
+      "text": "Had a checkup at the hospital, all fine.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-03-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-19T20:00:00+05:30",
+      "sender": "Papa",
+      "text": "Can you send ₹5,000 for the medicines? Will return when you visit.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-03-e03",
+      "source": "sms",
+      "ts": "2026-07-20T09:54:00+05:30",
+      "sender": "VM-ZOMATO",
+      "text": "130736 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-03-e04",
+      "source": "call",
+      "ts": "2026-07-20T20:00:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+916818944022",
+        "duration_s": 434,
+        "is_contact": true,
+        "direction": "in"
+      },
+      "triage_score": 0.1,
+      "lang": null
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-03-e05",
+      "source": "sms",
+      "ts": "2026-07-22T19:36:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "INR 184.00 spent on ICICI Credit Card XX0659 at RELIANCE FRESH on 26-Mar-26. Avl limit INR 1,70,530.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-03-e06",
+      "source": "sms",
+      "ts": "2026-07-23T19:30:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "258635 is your OTP for login to ICICI Bank NetBanking. Valid for 5 mins. Do not share it with anyone. -ICICI",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}
