@@ -1,0 +1,20 @@
+# Signal names the backend can emit: keys of SIGNAL_WEIGHTS in backend/app/pipeline/signals.py
+urgency
+authority_impersonation
+payment_request
+credential_or_otp_ask
+remote_access_ask
+new_domain
+lookalike_domain
+unknown_sender
+channel_hop
+repeat_contact
+secrecy_demand
+amount_escalation
+known_benign_sender
+injection_attempt
+known_bad_entity
+user_marked_safe
+credential_form_on_new_domain
+apk_download
+threat_feed_hit
