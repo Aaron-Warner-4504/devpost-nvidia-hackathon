@@ -1,47 +1,48 @@
 package ai.enthral.sentinel.ui.alerts
 
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.size
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ai.enthral.sentinel.R
-import ai.enthral.sentinel.ui.common.AdaptiveBox
 import ai.enthral.sentinel.ui.common.DayBucket
 import ai.enthral.sentinel.ui.common.graphViewModel
-import ai.enthral.sentinel.ui.components.AlertCard
+import ai.enthral.sentinel.ui.components.AlertRow
 import ai.enthral.sentinel.ui.components.EmptyState
 import ai.enthral.sentinel.ui.components.ErrorState
+import ai.enthral.sentinel.ui.components.GroupedHeader
+import ai.enthral.sentinel.ui.components.GroupedItem
+import ai.enthral.sentinel.ui.components.LargeTitleList
 import ai.enthral.sentinel.ui.components.LoadingSkeleton
 import ai.enthral.sentinel.ui.components.SecondaryButton
+import ai.enthral.sentinel.ui.components.ShieldIllustration
 import ai.enthral.sentinel.ui.components.apiErrorMessage
+import ai.enthral.sentinel.ui.components.presentation
+import ai.enthral.sentinel.ui.components.rememberHaptics
 import ai.enthral.sentinel.ui.home.Phase
+import ai.enthral.sentinel.ui.theme.SentinelTheme
 import ai.enthral.sentinel.ui.theme.Spacing
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -68,10 +69,9 @@ private fun filterLabel(f: AlertFilter) = stringResource(
 private fun bucketLabel(b: DayBucket): String = when (b) {
     DayBucket.Today -> stringResource(R.string.day_today)
     DayBucket.Yesterday -> stringResource(R.string.day_yesterday)
-    is DayBucket.On -> DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.getDefault()).format(b.date)
+    is DayBucket.On -> DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(Locale.getDefault()).format(b.date)
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AlertsContent(
     state: AlertsUiState,
@@ -79,64 +79,90 @@ fun AlertsContent(
     onRefresh: () -> Unit,
     onOpenAlert: (String) -> Unit,
 ) {
-    AdaptiveBox(Modifier.statusBarsPadding()) {
-        Column {
-            Text(
-                stringResource(R.string.nav_alerts),
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(start = Spacing.gutter, end = Spacing.gutter, top = Spacing.x2).semantics { heading() },
-            )
-            Row(
-                Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = Spacing.gutter, vertical = Spacing.x1),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.x1),
-            ) {
-                AlertFilter.entries.forEach { f ->
-                    FilterChip(
-                        selected = state.filter == f,
-                        onClick = { onFilter(f) },
-                        label = { Text(filterLabel(f), style = MaterialTheme.typography.labelLarge) },
-                        leadingIcon = if (state.filter == f) {
-                            { Icon(Icons.Filled.Check, null, Modifier.size(18.dp)) }
-                        } else null,
+    LargeTitleList(
+        title = stringResource(R.string.nav_alerts),
+        refreshing = state.refreshing,
+        onRefresh = onRefresh,
+    ) {
+        item(key = "filters") { FilterRow(state.filter, onFilter) }
+        when {
+            state.phase == Phase.Loading -> item(key = "loading") {
+                LoadingSkeleton(Modifier.padding(horizontal = Spacing.inset, vertical = Spacing.x1), rows = 4)
+            }
+            state.phase == Phase.Error -> item(key = "error") { ErrorState(apiErrorMessage(state.failure!!), onRefresh) }
+            state.groups.isEmpty() -> item(key = "empty") {
+                if (state.filteredOut) {
+                    EmptyState(
+                        stringResource(R.string.alerts_filtered_title),
+                        stringResource(R.string.alerts_filtered_body),
+                        action = { SecondaryButton(stringResource(R.string.filter_show_all), { onFilter(AlertFilter.All) }) },
+                    )
+                } else {
+                    EmptyState(
+                        stringResource(R.string.home_empty_title),
+                        stringResource(R.string.alerts_empty_body),
+                        illustration = { ShieldIllustration(size = 140.dp) },
                     )
                 }
             }
-            PullToRefreshBox(isRefreshing = state.refreshing, onRefresh = onRefresh, modifier = Modifier.weight(1f)) {
-                when {
-                    state.phase == Phase.Loading -> Box(Modifier.padding(Spacing.gutter)) { LoadingSkeleton(rows = 4) }
-                    state.phase == Phase.Error -> LazyColumn { item { ErrorState(apiErrorMessage(state.failure!!), onRefresh) } }
-                    state.groups.isEmpty() -> LazyColumn {
-                        item {
-                            if (state.filteredOut) {
-                                EmptyState(
-                                    stringResource(R.string.alerts_filtered_title),
-                                    stringResource(R.string.alerts_filtered_body),
-                                    action = { SecondaryButton(stringResource(R.string.filter_show_all), { onFilter(AlertFilter.All) }) },
-                                )
-                            } else {
-                                EmptyState(stringResource(R.string.home_empty_title), stringResource(R.string.alerts_empty_body))
-                            }
-                        }
-                    }
-                    else -> LazyColumn(
-                        contentPadding = PaddingValues(horizontal = Spacing.gutter, vertical = Spacing.x1),
-                        verticalArrangement = Arrangement.spacedBy(Spacing.x1),
-                    ) {
-                        state.groups.forEach { group ->
-                            stickyHeader(key = "h-${group.bucket}") {
-                                Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.background) {
-                                    Text(
-                                        bucketLabel(group.bucket),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(vertical = Spacing.x1).semantics { heading() },
-                                    )
-                                }
-                            }
-                            items(group.alerts, key = { it.id }) { alert -> AlertCard(alert, onClick = { onOpenAlert(alert.id) }) }
+            else -> state.groups.forEach { group ->
+                item(key = "h-${group.bucket}", contentType = "header") {
+                    GroupedHeader(bucketLabel(group.bucket), Modifier.padding(horizontal = Spacing.inset).animateItem())
+                }
+                val count = group.alerts.size
+                group.alerts.forEachIndexed { i, alert ->
+                    item(key = alert.id, contentType = "alert") {
+                        GroupedItem(i, count, Modifier.animateItem(), dividerInset = Spacing.x2 + 32.dp + Spacing.x15) {
+                            AlertRow(alert, onClick = { onOpenAlert(alert.id) })
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/** Minimal chips: selected is filled with the accent; tier chips carry their tier shape so colour is not alone. */
+@Composable
+private fun FilterRow(selected: AlertFilter, onFilter: (AlertFilter) -> Unit) {
+    val p = SentinelTheme.palette
+    val haptics = rememberHaptics()
+    Row(
+        Modifier.horizontalScroll(rememberScrollState()).selectableGroup()
+            .padding(PaddingValues(horizontal = Spacing.inset, vertical = Spacing.x05)),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.x05),
+    ) {
+        AlertFilter.entries.forEach { f ->
+            val isSelected = selected == f
+            // 36-dp pill inside a 48-dp touch target.
+            Box(
+                Modifier.heightIn(min = Spacing.minTouchTarget)
+                    .selectable(isSelected, role = Role.RadioButton, interactionSource = null, indication = null) {
+                        if (!isSelected) haptics.tick(); onFilter(f)
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+            Row(
+                Modifier.heightIn(min = 36.dp).clip(CircleShape)
+                    .background(if (isSelected) p.accent else p.elevated)
+                    .padding(horizontal = Spacing.x15 + 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                val tier = f.tier
+                if (tier != null) {
+                    Icon(
+                        painterResource(tier.presentation().icon), null,
+                        tint = if (isSelected) p.onAccent else SentinelTheme.colors[tier].content,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+                Text(
+                    filterLabel(f),
+                    style = SentinelTheme.type.subhead.copy(fontWeight = FontWeight.SemiBold),
+                    color = if (isSelected) p.onAccent else p.label,
+                )
+            }
             }
         }
     }
