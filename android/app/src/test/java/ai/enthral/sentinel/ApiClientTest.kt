@@ -11,6 +11,7 @@ import ai.enthral.sentinel.domain.FeedbackLabel
 import ai.enthral.sentinel.domain.Source
 import ai.enthral.sentinel.domain.Tier
 import java.time.Instant
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -270,5 +271,20 @@ class ApiClientTest {
         val alert = (api.getAlerts() as ApiResult.Success).value.single().toDomain()
         assertEquals(listOf("earlier", "later"), alert.why.map { it.text })
         assertTrue(alert.tier.interrupts)
+    }
+
+    @Test fun `response bodies are read off the caller's thread`() {
+        // Regression: the body was read on the resumed (Main) thread and crashed with NetworkOnMainThreadException.
+        val readThreads = java.util.concurrent.CopyOnWriteArrayList<String>()
+        val client = OkHttpClient.Builder().eventListener(object : okhttp3.EventListener() {
+            override fun responseBodyEnd(call: okhttp3.Call, byteCount: Long) { readThreads += Thread.currentThread().name }
+        }).build()
+        val api = OkHttpSentinelApi(server.url("/").toString(), client, tokenProvider = { token })
+        server.enqueue(json("[" + List(300) { """{"id":"a$it","event_id":"e","tier":"high","headline":"h","why":[],"next_step":"n","signals":[],"created_at":"2026-10-17T10:00:00Z"}""" }.joinToString(",") + "]"))
+        val callerThread = "fake-main-thread"
+        val dispatcher = java.util.concurrent.Executors.newSingleThreadExecutor { Thread(it, callerThread) }.asCoroutineDispatcher()
+        val result = kotlinx.coroutines.runBlocking(dispatcher) { api.getAlerts() }
+        assertEquals(300, (result as ApiResult.Success).value.size)
+        assertTrue("body was read on $readThreads", readThreads.isNotEmpty() && readThreads.none { it == callerThread })
     }
 }

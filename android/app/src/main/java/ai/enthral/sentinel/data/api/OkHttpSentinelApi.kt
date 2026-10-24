@@ -4,7 +4,10 @@ import ai.enthral.sentinel.domain.FeedbackLabel
 import ai.enthral.sentinel.domain.Source
 import java.io.IOException
 import kotlin.coroutines.resume
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -41,6 +44,7 @@ class OkHttpSentinelApi(
     private val client: OkHttpClient,
     private val tokenProvider: suspend () -> String?,
     private val json: Json = SentinelJson,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : SentinelApi {
 
     private val base: HttpUrl = baseUrl.toHttpUrl()
@@ -142,14 +146,18 @@ class OkHttpSentinelApi(
             .header("Accept", "application/json")
             .apply { if (auth) tokenProvider()?.let { header("Authorization", "Bearer $it") } }
             .build()
-        return try {
-            client.newCall(request).await().use { response ->
-                val text = response.body?.string().orEmpty()
-                if (response.isSuccessful) Raw.Ok(response.code, text)
-                else Raw.Failure(ApiResult.HttpError(response.code, parseDetail(text)))
+        // The coroutine resumes on the caller's dispatcher (often Main), but reading the body is blocking socket
+        // I/O, so the whole exchange, body included, runs on the I/O dispatcher.
+        return withContext(ioDispatcher) {
+            try {
+                client.newCall(request).await().use { response ->
+                    val text = response.body?.string().orEmpty()
+                    if (response.isSuccessful) Raw.Ok(response.code, text)
+                    else Raw.Failure(ApiResult.HttpError(response.code, parseDetail(text)))
+                }
+            } catch (e: IOException) {
+                Raw.Failure(ApiResult.NetworkError(e::class.java.simpleName))
             }
-        } catch (e: IOException) {
-            Raw.Failure(ApiResult.NetworkError(e::class.java.simpleName))
         }
     }
 
