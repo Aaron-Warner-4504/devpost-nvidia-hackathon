@@ -33,6 +33,26 @@ class Settings(BaseSettings):
     classifier_timeout_ms: int = 300
     laya_model: str = "multilingual"  # multilingual | english | auto
     embed_dim: int = 1024
+    # ---- persistent memory (docs/memory.md) ----
+    # Embedding provider for semantic memory: "" = auto (token_factory when TOKEN_FACTORY_API_KEY and
+    # EMBED_MODEL are set, else none) | token_factory | local (uv extra `semantic`) | fake (tests) | none.
+    embedding_provider: str = ""
+    # Semantic linking of events. None = auto: on only when the embedding provider is usable.
+    semantic_memory: bool | None = None
+    local_embed_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    embed_timeout_s: float = 5.0
+    # cosine similarity (1 - distance) needed to link two events as `similar`; tuned on the eval TUNE split
+    semantic_threshold: float = 0.55
+    semantic_k: int = 5
+    semantic_window_days: int = 14
+    # Rules-only scam-story progression signal (no LLM)
+    story_progression: bool = True
+    # Stage-2 background review: "escalated" (agent only for escalated events, as before) | "all"
+    agent_review: str = "escalated"
+    agent_review_daily_cap: int = 200  # stage-2 agent runs per user per rolling 24 h
+    review_workers: int = 2
+    review_queue_size: int = 256
+    review_sweep_minutes: int = 5
     # Family push (Task 11): path to a Firebase service-account JSON; unset -> notifications are no-ops.
     firebase_credentials_file: str = ""
     # Server-side secret mixed into stored pairing-code hashes. Required (>= 16 chars) when ENVIRONMENT=prod:

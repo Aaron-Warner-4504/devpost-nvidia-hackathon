@@ -21,6 +21,8 @@ dependencies = [
 search = ["tavily-python>=0.5"]
 # Self-hosted first-pass classifier (CLASSIFIER=laya). CPU-only torch wheels (see [tool.uv.sources]).
 laya = ["laya>=0.4.14", "torch>=2.0"]
+# Local multilingual sentence embeddings for semantic memory (EMBEDDING_PROVIDER=local). CPU-only torch.
+semantic = ["sentence-transformers>=3.0", "torch>=2.0"]
 
 [dependency-groups]
 dev = ["pytest>=8", "pytest-asyncio>=0.24", "respx>=0.21"]
@@ -34,7 +36,10 @@ pythonpath = ["."]
 package = false
 
 [tool.uv.sources]
-torch = { index = "pytorch-cpu", extra = "laya" }
+torch = [
+  { index = "pytorch-cpu", extra = "laya" },
+  { index = "pytorch-cpu", extra = "semantic" },
+]
 
 [[tool.uv.index]]
 name = "pytorch-cpu"

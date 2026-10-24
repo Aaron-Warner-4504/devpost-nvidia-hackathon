@@ -171,11 +171,15 @@ class FamilyPing(Base):
 
 
 class Embedding(Base):
+    """One vector per event (redacted text only). `model` names the provider that produced it."""
     __tablename__ = "embeddings"
+    __table_args__ = (UniqueConstraint("event_id", name="uq_embeddings_event"),)
     id: Mapped[str] = _pk("emb")
     user_id: Mapped[str] = _uid()
     event_id: Mapped[str] = mapped_column(String, ForeignKey("events.id", ondelete="CASCADE"), index=True)
     vector = mapped_column(Vector(settings.embed_dim), nullable=False)
+    model: Mapped[str] = mapped_column(String, default="", server_default="")
+    created_at: Mapped[datetime] = _now()
 
 
 class Override(Base):
