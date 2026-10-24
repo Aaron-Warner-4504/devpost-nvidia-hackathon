@@ -1,7 +1,8 @@
 package ai.enthral.sentinel.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,32 +19,30 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ai.enthral.sentinel.R
 import ai.enthral.sentinel.domain.Alert
 import ai.enthral.sentinel.domain.FeedbackLabel
 import ai.enthral.sentinel.domain.Signals
-import ai.enthral.sentinel.domain.Tier
-import ai.enthral.sentinel.domain.WhyItem
 import ai.enthral.sentinel.ui.common.RelativeTime
 import ai.enthral.sentinel.ui.common.relativeTime
+import ai.enthral.sentinel.ui.theme.Radii
 import ai.enthral.sentinel.ui.theme.SentinelTheme
 import ai.enthral.sentinel.ui.theme.Spacing
 import java.time.Instant
@@ -55,114 +55,176 @@ fun relativeTimeText(then: Instant, now: Instant): String = when (val r = relati
     is RelativeTime.DaysAgo -> pluralStringResource(R.plurals.time_days_ago, r.n, r.n)
 }
 
-/** Vertical "why we flagged this" timeline. The current event is highlighted (and appended if not in the list). */
+@Composable
+private fun signalLabel(name: String): String = Signals.labelRes(name)?.let { stringResource(it) } ?: Signals.humanise(name)
+
+/** Home's latest alert: one lifted card with a soft shadow. Glyph + tier word + time, headline, what to do. */
+@Composable
+fun AlertCard(alert: Alert, onClick: () -> Unit, modifier: Modifier = Modifier, now: Instant = remember { Instant.now() }) {
+    val p = SentinelTheme.palette
+    val tier = SentinelTheme.colors[alert.tier]
+    val shape = RoundedCornerShape(Radii.large)
+    val interaction = remember { MutableInteractionSource() }
+    Column(
+        modifier.fillMaxWidth().pressScale(interaction, 0.98f).softShadow(shape).clip(shape).background(p.elevated)
+            .clickable(interactionSource = interaction, indication = androidx.compose.material3.ripple(), role = Role.Button, onClick = onClick)
+            .semantics(mergeDescendants = true) {}
+            .padding(Spacing.x25),
+        verticalArrangement = Arrangement.spacedBy(Spacing.x15),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.x15)) {
+            TierGlyph(alert.tier, size = 36.dp, pulse = false, announce = false)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    stringResource(alert.tier.presentation().label),
+                    style = SentinelTheme.type.footnote.copy(fontWeight = FontWeight.SemiBold),
+                    color = tier.content,
+                )
+                Text(relativeTimeText(alert.createdAt, now), style = SentinelTheme.type.footnote, color = p.secondaryLabel)
+            }
+            Icon(SentinelIcons.ChevronRight, null, tint = p.tertiaryLabel, modifier = Modifier.size(18.dp))
+        }
+        Text(alert.headline, style = SentinelTheme.type.headline, color = p.label)
+        Text(
+            stringResource(R.string.alert_next_step, alert.nextStep),
+            style = SentinelTheme.type.subhead,
+            color = p.secondaryLabel,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/** Alerts list row: tier glyph, tier word + time, headline, one quiet line of "why" (plain-language signals). */
+@Composable
+fun AlertRow(alert: Alert, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val p = SentinelTheme.palette
+    val tier = SentinelTheme.colors[alert.tier]
+    val why = alert.signals.distinct().take(2).map { signalLabel(it) }.joinToString(" · ").ifEmpty { alert.nextStep }
+    Row(
+        modifier.fillMaxWidth().heightIn(min = 72.dp)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics(mergeDescendants = true) {}
+            .padding(horizontal = Spacing.x2, vertical = Spacing.x15),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.x15),
+        verticalAlignment = Alignment.Top,
+    ) {
+        TierGlyph(alert.tier, size = 32.dp, pulse = false)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(alert.tier.presentation().label),
+                    style = SentinelTheme.type.footnote.copy(fontWeight = FontWeight.SemiBold),
+                    color = tier.content,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(formatTime(alert.createdAt), style = SentinelTheme.type.footnote, color = p.secondaryLabel)
+            }
+            Text(alert.headline, style = SentinelTheme.type.headline, color = p.label, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Text(why, style = SentinelTheme.type.subhead, color = p.secondaryLabel, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/**
+ * The product's differentiator: "why we flagged this" as a vertical timeline. Earlier events are quiet; the current
+ * event sits on a soft tier wash with a filled, haloed node. Each event is one TalkBack item.
+ */
 @Composable
 fun WhyTimeline(alert: Alert, now: Instant, modifier: Modifier = Modifier) {
-    val colors = SentinelTheme.colors[alert.tier]
+    val p = SentinelTheme.palette
+    val tier = SentinelTheme.colors[alert.tier]
     val items = alert.why
     val hasCurrent = items.any { it.eventId == alert.eventId }
     val rows = items.map { Triple(it.timestamp, it.text, it.eventId == alert.eventId) } +
         if (hasCurrent) emptyList() else listOf(Triple(alert.createdAt, stringResource(R.string.why_this_message), true))
     Column(modifier.fillMaxWidth()) {
         rows.forEachIndexed { index, (time, text, current) ->
+            val first = index == 0
             val last = index == rows.lastIndex
-            val rel = relativeTimeText(time, now)
-            val abs = formatTimestamp(time)
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).semantics(mergeDescendants = true) {}) {
-                Column(
-                    Modifier.width(28.dp).fillMaxHeight(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Box(
-                        Modifier.padding(top = 6.dp).size(if (current) 16.dp else 12.dp)
-                            .then(
-                                if (current) Modifier.background(colors.content, CircleShape)
-                                else Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
-                            ),
-                    )
-                    if (!last) {
-                        Box(
-                            Modifier.weight(1f).width(2.dp)
-                                .background(MaterialTheme.colorScheme.outlineVariant),
-                        )
+                // Rail: connector above, node, connector below.
+                Column(Modifier.width(28.dp).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(Modifier.width(2.dp).height(if (current) 7.dp else 11.dp).background(if (first) androidx.compose.ui.graphics.Color.Transparent else p.separator))
+                    if (current) {
+                        Box(Modifier.size(20.dp).background(tier.container, CircleShape), contentAlignment = Alignment.Center) {
+                            Box(Modifier.size(10.dp).background(tier.content, CircleShape))
+                        }
+                    } else {
+                        Box(Modifier.size(12.dp).background(p.elevated, CircleShape).padding(2.5.dp).background(p.tertiaryLabel, CircleShape))
                     }
+                    if (!last) Box(Modifier.width(2.dp).weight(1f).background(p.separator))
                 }
-                Surface(
-                    Modifier.fillMaxWidth().padding(bottom = if (last) 0.dp else Spacing.x1),
-                    color = if (current) colors.container else androidx.compose.ui.graphics.Color.Transparent,
-                    contentColor = if (current) colors.content else MaterialTheme.colorScheme.onSurface,
-                    shape = MaterialTheme.shapes.medium,
+                Spacer(Modifier.width(Spacing.x1))
+                Column(
+                    Modifier.weight(1f).padding(bottom = if (last) 0.dp else Spacing.x1)
+                        .then(
+                            if (current) Modifier.clip(RoundedCornerShape(Radii.medium)).background(tier.container)
+                                .padding(horizontal = Spacing.x15, vertical = Spacing.x1)
+                            else Modifier.padding(horizontal = Spacing.x05, vertical = Spacing.x1),
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    Column(Modifier.padding(horizontal = Spacing.x1, vertical = Spacing.x05)) {
-                        Text(
-                            "$rel · $abs",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (current) colors.content else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(text, style = MaterialTheme.typography.bodyMedium)
-                    }
+                    Text(
+                        "${relativeTimeText(time, now)} · ${formatTimestamp(time)}",
+                        style = SentinelTheme.type.footnote.copy(fontWeight = if (current) FontWeight.SemiBold else FontWeight.Normal),
+                        color = if (current) tier.content else p.secondaryLabel,
+                    )
+                    Text(
+                        text,
+                        style = if (current) SentinelTheme.type.bodyEmphasis else SentinelTheme.type.body,
+                        color = p.label,
+                    )
                 }
             }
         }
     }
 }
 
+/** Signals as quiet chips in plain language. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SignalChips(signals: List<String>, modifier: Modifier = Modifier) {
+    val p = SentinelTheme.palette
     FlowRow(
         modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.x1),
         verticalArrangement = Arrangement.spacedBy(Spacing.x1),
     ) {
         signals.distinct().forEach { name ->
-            val label = Signals.labelRes(name)?.let { stringResource(it) } ?: Signals.humanise(name)
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-                shape = MaterialTheme.shapes.small,
-            ) {
-                Text(
-                    label,
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = Spacing.x1),
-                )
-            }
+            Text(
+                signalLabel(name),
+                style = SentinelTheme.type.subhead,
+                color = p.label,
+                modifier = Modifier.clip(RoundedCornerShape(Radii.small)).background(p.elevated)
+                    .padding(horizontal = Spacing.x15, vertical = Spacing.x1),
+            )
         }
     }
 }
 
-
-@Composable
-fun NoteCard(text: String, modifier: Modifier = Modifier, iconRes: Int? = null) {
-    Card(
-        modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-    ) {
-        Row(Modifier.padding(Spacing.x2), horizontalArrangement = Arrangement.spacedBy(Spacing.x2), verticalAlignment = Alignment.Top) {
-            if (iconRes != null) {
-                Icon(painterResource(iconRes), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
-            } else {
-                Icon(Icons.Filled.Lock, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
-            }
-            Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-        }
-    }
-}
-
+/** "Was this right?" with two equal-weight answers; the chosen one fills and shows a check. */
 @Composable
 fun FeedbackBar(selected: FeedbackLabel?, onSelect: (FeedbackLabel) -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.x1)) {
-        Text(stringResource(R.string.feedback_title), style = MaterialTheme.typography.titleSmall)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.x1)) {
-            FeedbackButton(FeedbackLabel.Scam, selected == FeedbackLabel.Scam, R.string.feedback_scam, onSelect, Modifier.weight(1f))
-            FeedbackButton(FeedbackLabel.Safe, selected == FeedbackLabel.Safe, R.string.feedback_safe, onSelect, Modifier.weight(1f))
+    val haptics = rememberHaptics()
+    val pick: (FeedbackLabel) -> Unit = { haptics.confirm(); onSelect(it) }
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.x15), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            stringResource(R.string.feedback_title),
+            style = SentinelTheme.type.headline,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading() },
+        )
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Spacing.x15)) {
+            FeedbackButton(FeedbackLabel.Scam, selected, R.string.feedback_scam, pick, Modifier.weight(1f).fillMaxHeight())
+            FeedbackButton(FeedbackLabel.Safe, selected, R.string.feedback_safe, pick, Modifier.weight(1f).fillMaxHeight())
         }
         if (selected != null) {
             Text(
                 stringResource(R.string.feedback_thanks),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = SentinelTheme.type.footnote,
+                color = SentinelTheme.palette.secondaryLabel,
+                textAlign = TextAlign.Center,
             )
         }
     }
@@ -171,22 +233,14 @@ fun FeedbackBar(selected: FeedbackLabel?, onSelect: (FeedbackLabel) -> Unit, mod
 @Composable
 private fun FeedbackButton(
     label: FeedbackLabel,
-    selected: Boolean,
+    selected: FeedbackLabel?,
     text: Int,
     onSelect: (FeedbackLabel) -> Unit,
     modifier: Modifier,
 ) {
-    val content: @Composable () -> Unit = {
-        if (selected) {
-            Icon(Icons.Filled.Check, null, Modifier.size(18.dp))
-            androidx.compose.foundation.layout.Spacer(Modifier.size(Spacing.x1))
-        }
-        Text(stringResource(text), style = MaterialTheme.typography.labelLarge, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-    }
-    val m = modifier.heightIn(min = Spacing.minTouchTarget)
-    if (selected) {
-        androidx.compose.material3.Button(onClick = { onSelect(label) }, modifier = m, shape = MaterialTheme.shapes.medium) { content() }
+    if (selected == label) {
+        PrimaryButton(stringResource(text), { onSelect(label) }, modifier, icon = SentinelIcons.Checkmark)
     } else {
-        androidx.compose.material3.OutlinedButton(onClick = { onSelect(label) }, modifier = m, shape = MaterialTheme.shapes.medium) { content() }
+        SecondaryButton(stringResource(text), { onSelect(label) }, modifier)
     }
 }

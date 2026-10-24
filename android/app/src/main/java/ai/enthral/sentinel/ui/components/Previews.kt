@@ -1,9 +1,9 @@
 package ai.enthral.sentinel.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,21 +38,21 @@ private val sampleAlert = Alert(
 @Composable
 private fun Frame(content: @Composable () -> Unit) {
     SentinelTheme {
-        Surface {
-            Column(Modifier.padding(Spacing.x2), verticalArrangement = Arrangement.spacedBy(Spacing.x1)) { content() }
-        }
+        Column(
+            Modifier.background(SentinelTheme.palette.groupedBackground).padding(Spacing.x2),
+            verticalArrangement = Arrangement.spacedBy(Spacing.x15),
+        ) { content() }
     }
 }
 
-/** Light + dark. */
 @PreviewLightDark
 @Composable
 private fun TierBadgesPreview() = Frame { Tier.entries.forEach { TierBadge(it) } }
 
-/** Font scales 0.85 .. 2.0 (the Home skeleton and cards must not clip). */
+/** Font scales 0.85 .. 2.0 (cards must not clip). */
 @PreviewFontScale
 @Composable
-private fun AlertCardPreview() = Frame { AlertCard(sampleAlert, onClick = {}) }
+private fun AlertCardPreview() = Frame { AlertCard(sampleAlert, onClick = {}, now = now) }
 
 @PreviewLightDark
 @Composable
@@ -67,18 +67,21 @@ private fun WhyTimelinePreview() = Frame { WhyTimeline(sampleAlert, now) }
 @PreviewLightDark
 @Composable
 private fun SourceRowsPreview() = Frame {
-    SourceStatus.entries.forEach { SourceRow(ConsentSource.Notifications, it, {}, {}, {}) }
+    GroupedSection { SourceStatus.entries.forEach { SourceRow(ConsentSource.Notifications, it, {}, {}, {}) } }
 }
 
 /** Hindi: Devanagari line heights and wrapping. */
 @Preview(locale = "hi", fontScale = 1.3f, showBackground = true)
 @Composable
 private fun HindiPreview() = Frame {
-    AlertCard(sampleAlert, onClick = {})
+    AlertCard(sampleAlert, onClick = {}, now = now)
     FeedbackBar(selected = null, onSelect = {})
     SignalChips(sampleAlert.signals)
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun CodeEntryPreview() = Frame { CodeEntry(code = "K7M", onCodeChange = {}) }
+private fun CodePreview() = Frame {
+    CodeDisplay("K7M4PQ")
+    CodeEntry(code = "K7M", onCodeChange = {})
+}
