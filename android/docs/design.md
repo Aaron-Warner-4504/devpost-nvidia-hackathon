@@ -55,7 +55,7 @@ deliberate. Tier colour fills at most a glyph, a small badge or the current time
 ## Typography
 Inter (variable, OFL, `res/font/inter_variable.ttf`, subset to Latin + ₹ + punctuation, weights 400 to 700, 86 KB)
 for Latin. Devanagari falls back to the system Noto Sans Devanagari, which matches Inter's x-height and stroke
-well, so no Devanagari font ships. Hindi gets ~10% more line height (`SentinelType.forLocale`).
+well, so no Devanagari font ships. Hindi gets ~12% more line height (`DevanagariType`, picked by the theme from the locale).
 
 | Token | Size / line (sp) | Weight | Use |
 |---|---|---|---|
@@ -93,12 +93,14 @@ Short and spring-based; everything is skipped when the system "remove animations
   opening.
 
 ## Components (`ui/components`)
-`LargeTitleScaffold` (large collapsing title, optional back, actions), `TabBar`, `GroupedSection` + `GroupedRow`
-/ `ToggleRow` / `NavRow` / `ValueRow` (inset grouped lists with hairlines and chevrons), `PrimaryButton`,
+`LargeTitleList` / `LargeTitleColumn` + `CollapsingTopBar` (large title, compact bar on scroll, optional back),
+`TabBar`, `GroupedSection` / `GroupedItem` + `GroupedRow` (chevron when it navigates) / `ToggleRow` / `ValueRow`
+(inset grouped lists with hairlines), `PrimaryButton`,
 `SecondaryButton`, `PlainButton`, `DestructiveButton`, `IconAction`, `SegmentedControl`, `TierGlyph`, `TierBadge`,
-`TierCountRow`, `AlertCard`, `AlertRow`, `StatusHero`, `WhyTimeline`, `SignalChips`, `Footnote`,
-`EmptyState`/`ErrorState`, `ShimmerSkeleton`, `SentinelSheet`/`ConfirmSheet`, `PageIndicator`, `CodeDisplay` (ring
-countdown), `CodeEntry`, `Illustrations` (shield, masked messages, family), `SentinelIcons` (~30 1.6-dp line icons).
+`TierCountRow`, `AlertCard`, `AlertRow`, `StatusHero`, `WhyTimeline`, `SignalChips`, `NoteCard` (quiet footnote),
+`StatusLine`, `EmptyState`/`ErrorState`, `LoadingSkeleton` + `Modifier.shimmer`, `SentinelSheet`/`ConfirmSheet`,
+`SentinelTextField`, `SentinelSnackbarHost`, `PageIndicator`, `CodeDisplay` + `CountdownRing`, `CodeEntry`,
+illustrations (shield, masked messages, family, language), `SentinelIcons` (~40 1.6-dp line icons), `Haptics`.
 
 ## Do / don't
 * Do write the verdict as a sentence ("Likely scam: ..."). Don't rely on a colour or a badge alone.
