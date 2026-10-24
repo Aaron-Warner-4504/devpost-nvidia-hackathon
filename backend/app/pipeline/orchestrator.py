@@ -26,11 +26,11 @@ from typing import Any, Callable
 from urllib.parse import urlsplit
 
 from sqlalchemy import select, text
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import Settings, settings as default_settings
 from app.models import Alert, Assessment, Event, Override
-from app.pipeline import agent, classifier as clf_mod, memory, policy, tools
+from app.pipeline import agent, classifier as clf_mod, memory, policy, review, tools
 from app.pipeline.extract import Entity, extract_entities
 from app.pipeline.link_client import LinkReport
 from app.pipeline.memory import HistoryItem
@@ -75,6 +75,7 @@ class PipelineDeps:
     hooks: list[AlertHook] | None = None  # None -> the module registry `alert_hooks`
     domain_timeout: float = 3.0  # wall clock for all RDAP lookups of one event
     classifier: clf_mod.Classifier | None = None  # None -> clf_mod.get_classifier(settings)
+    session_factory: Callable | None = None  # stage-2 sessions; None -> a sessionmaker on the request's bind
 
 
 # ---------------------------------------------------------------- helpers
@@ -313,30 +314,56 @@ def process_event(db: Session, user, ev: EventIn, force_agent: bool = False, *, 
             return EventResult(event_id=stored.id, duplicate=True, alert=existing)
         memory.link(db, user, stored, entities)
         out = _assess(db, user, rev, ev, entities, stored.id, skey, force_agent, llm, deps, t0)
-        db.commit()  # the only commit: event, links, assessment and alert land together
+        job = review.enqueue(db, user, stored.id, rev, force=force_agent, settings=deps.settings)
+        db.commit()  # the only commit: event, links, assessment, alert and review job land together
     except Exception:
         db.rollback()
         raise
     if out.decision.show and out.alert is not None:
         _run_hooks(db, user, out.alert, out.decision, deps)
+    if job is not None:  # stage 2 runs after the response is decided, off the request path
+        review.submit(job, session_factory=deps.session_factory or sessionmaker(bind=db.get_bind()),
+                      llm=llm, deps=deps)
     return EventResult(event_id=stored.id, duplicate=False,
                        alert=out.alert if out.decision.show else None)
 
 
-def _assess(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity], event_id: str,
-            skey: str | None, force_agent: bool, llm, deps: PipelineDeps, t0: float) -> _Outcome:
+@dataclass
+class Evaluation:
+    """Everything one pass of the pipeline decided about an event (not yet persisted)."""
+    tier: Tier
+    signals: list
+    names: list[str]
+    stages: list[str]
+    verdict: agent.AgentVerdict
+    mode: str
+    headline: str
+    next_step: str
+    why: list[WhyItem]
+    escalated: bool
+    cls_info: dict | None = None
+
+
+def evaluate(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity], event_id: str,
+             skey: str | None, force_agent: bool, llm, deps: PipelineDeps, *, semantic: bool = False,
+             run_agent: bool | None = None) -> Evaluation:
+    """signals -> rules floor -> [escalation: domain info, agent, link reports] -> final tier.
+    `semantic` adds `similar`-edge neighbours to the linked history (stage 2). `run_agent` (stage 2)
+    overrides the escalation decision for the agent: True forces it, False forbids it, None = the
+    normal gate. The floor rule is the same in both stages."""
     ts = rev.ts
     overrides = load_overrides(db, user)
     origin = [e for e in extract_entities(None, rev.sender, rev.call) if e.type == "phone"]
     ctx = build_history_ctx(db, user, event_id=event_id, now=ts, entities=entities, sender_key=skey,
-                            origin=origin, progression=bool(deps.settings.story_progression))
+                            origin=origin, semantic=semantic,
+                            progression=bool(deps.settings.story_progression))
     signals = detect_signals(rev, entities, ctx, overrides=overrides)
     floor = tier_for(signals, ctx)
     triage = ev.triage_score if isinstance(ev.triage_score, (int, float)) else 0.0
     escalate = force_agent or _rank(floor) >= _rank("caution") or triage >= ESCALATE_TRIAGE
     # Optional first-pass classifier: may only ADD an escalation (never lowers floor / alerts / the gate).
     cls_info: dict | None = None
-    if (not escalate and (deps.settings.classifier or "rules").strip().lower() != "rules"
+    if (run_agent is None and not escalate and (deps.settings.classifier or "rules").strip().lower() != "rules"
             and (cls := deps.classifier or clf_mod.get_classifier(deps.settings)) is not None):
         res = clf_mod.classify_safe(cls, rev.text, ev.lang, deps.settings.classifier_timeout_ms)
         if res is not None:
@@ -346,6 +373,8 @@ def _assess(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity]
                         "threshold": deps.settings.classifier_threshold, "escalated": hit,
                         "latency_ms": round(res.latency_ms, 1)}
             log.info("classifier %s: escalated=%s", type(cls).__name__, hit)
+    if run_agent is not None:
+        escalate = run_agent
     tctx = tools.ToolContext(db=db, user=user, now=ts, settings=deps.settings,
                              http_client_factory=deps.http_client_factory)
 
@@ -394,26 +423,40 @@ def _assess(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity]
         t = agent.rules_verdict(tier, signals, history, rev)
         headline, next_step = t.headline, t.next_step
         why = why or t.why
+    return Evaluation(tier=tier, signals=signals, names=names, stages=stages, verdict=verdict, mode=mode,
+                      headline=headline, next_step=next_step, why=why, escalated=escalate, cls_info=cls_info)
 
-    model = "rules" if mode == "rules" else (getattr(llm, "model", "") or deps.settings.llm_model or "llm")
-    asm = Assessment(user_id=user.id, event_id=event_id, tier=tier, signals=names, explanation=headline,
-                     model=model, latency=round(time.monotonic() - t0, 4), degraded=bool(verdict.degraded),
-                     payload={"headline": headline, "next_step": next_step, "why": _why_json(why),
-                              "used_tools": list(verdict.used_tools), "raised_by": list(verdict.raised_by),
-                              "mode": mode, "stages": stages,
-                              **({"classifier": cls_info} if cls_info else {})})
+
+def persist_assessment(db: Session, user, ev_: Evaluation, event_id: str, llm, deps: PipelineDeps,
+                       t0: float, extra: dict | None = None) -> Assessment:
+    model = "rules" if ev_.mode == "rules" else (getattr(llm, "model", "") or deps.settings.llm_model or "llm")
+    v = ev_.verdict
+    asm = Assessment(user_id=user.id, event_id=event_id, tier=ev_.tier, signals=ev_.names,
+                     explanation=ev_.headline, model=model, latency=round(time.monotonic() - t0, 4),
+                     degraded=bool(v.degraded),
+                     payload={"headline": ev_.headline, "next_step": ev_.next_step, "why": _why_json(ev_.why),
+                              "used_tools": list(v.used_tools), "raised_by": list(v.raised_by),
+                              "mode": ev_.mode, "stages": ev_.stages,
+                              **({"classifier": ev_.cls_info} if ev_.cls_info else {}), **(extra or {})})
     db.add(asm)
     db.flush()
+    return asm
+
+
+def _assess(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity], event_id: str,
+            skey: str | None, force_agent: bool, llm, deps: PipelineDeps, t0: float) -> _Outcome:
+    e = evaluate(db, user, rev, ev, entities, event_id, skey, force_agent, llm, deps)
+    asm = persist_assessment(db, user, e, event_id, llm, deps, t0)
     text_hash = hashlib.sha256((rev.text or "").encode()).hexdigest()
     key = policy.dedupe_key(entities, text_hash)
-    decision = policy.decide(db, user, policy.AlertCandidate(event_id, tier, key, ts), always=force_agent)
+    decision = policy.decide(db, user, policy.AlertCandidate(event_id, e.tier, key, rev.ts), always=force_agent)
     now = datetime.now(timezone.utc)
     alert = Alert(user_id=user.id, assessment_id=asm.id, shown_at=now if decision.show else None,
                   dedupe_key=key, interrupt=decision.interrupt, reason=decision.reason, created_at=now)
     db.add(alert)
     db.flush()
-    out = AlertOut(id=alert.id, event_id=event_id, tier=tier, headline=headline, why=why,
-                   next_step=next_step, signals=names, created_at=now)
+    out = AlertOut(id=alert.id, event_id=event_id, tier=e.tier, headline=e.headline, why=e.why,
+                   next_step=e.next_step, signals=e.names, created_at=now)
     return _Outcome(alert=out, decision=decision)
 
 

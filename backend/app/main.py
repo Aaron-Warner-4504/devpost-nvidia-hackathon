@@ -19,12 +19,33 @@ async def lifespan(_: FastAPI):
     # alert hooks are registered at startup (not import time) so tests can inject their own
     orchestrator.register_alert_hook(family.family_alert_hook)
     orchestrator.register_alert_hook(push.push_alert_hook)
+    _start_review()
     try:
         yield
     finally:
         for hook in (family.family_alert_hook, push.push_alert_hook):
             if hook in orchestrator.alert_hooks:
                 orchestrator.alert_hooks.remove(hook)
+
+
+def _start_review() -> None:
+    """Stage-2 worker pool from settings; resume jobs a crash / restart left behind (background thread)."""
+    import threading
+    from datetime import timedelta
+
+    from app.db import SessionLocal
+    from app.pipeline import review
+    review.configure(workers=settings.review_workers, queue_size=settings.review_queue_size)
+    if not review.enabled(settings) or settings.environment == "test":
+        return
+
+    def run():
+        try:
+            review.sweep(SessionLocal, older_than=timedelta(minutes=settings.review_sweep_minutes))
+        except Exception as exc:
+            logging.getLogger("app").warning("review sweeper failed (%s)", type(exc).__name__)
+
+    threading.Thread(target=run, name="review-sweeper", daemon=True).start()
 
 
 app = FastAPI(title="Sentinel API", version="0.1.0", lifespan=lifespan)
