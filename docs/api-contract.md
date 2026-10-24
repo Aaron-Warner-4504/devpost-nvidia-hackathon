@@ -10,6 +10,10 @@ Authorization: Bearer <token>
 ```
 Missing or invalid token returns `401 {"detail": "..."}`. The token comes from `/v1/devices/register`.
 
+CORS: off by default (no CORS headers). For a browser client set `CORS_ALLOW_ORIGINS` (comma-separated exact origins,
+e.g. `http://localhost:5173`); allowed methods GET/POST/DELETE/OPTIONS, headers `Authorization` and `Content-Type`, no
+credentials. `*` is accepted only when `ENVIRONMENT` is dev/test; in prod every origin must be https.
+
 ## Tiers
 | tier | meaning | interrupts the user? |
 |---|---|---|

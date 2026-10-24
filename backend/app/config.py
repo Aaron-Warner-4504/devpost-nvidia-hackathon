@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     trusted_proxy_count: int = 1
     # Demo web dashboard (/dashboard and GET /v1/dashboard/timeline). Off by default: both return 404.
     demo_enabled: bool = False
+    # Dev-only: comma-separated browser origins allowed by CORS (e.g. http://localhost:5173). Empty = no CORS
+    # middleware. '*' only in dev/test; in prod every origin must be https. See app/cors.py.
+    cors_allow_origins: str = ""
 
 
 settings = Settings()
