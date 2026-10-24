@@ -1,6 +1,6 @@
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
@@ -9,7 +9,9 @@ from pydantic import ValidationError
 from python_multipart.multipart import MultipartParser, parse_options_header
 from sqlalchemy.orm import Session
 
+from app import ratelimit
 from app.auth import current_user
+from app.config import settings
 from app.db import get_session
 from app.llm import get_llm
 from app.models import User
@@ -37,6 +39,7 @@ MAX_IMAGE_BYTES = 5 * 1024 * 1024
 _MULTIPART_OVERHEAD = 64 * 1024  # boundaries, headers and the small form fields
 MAX_REQUEST_BYTES = MAX_IMAGE_BYTES + _MULTIPART_OVERHEAD
 MAX_FIELD_BYTES = 4096
+MAX_JSON_BYTES = 64 * 1024
 log = logging.getLogger(__name__)
 
 _OCR_FAILED = "could not read the image, please try again or paste the text"
@@ -170,10 +173,23 @@ async def check(request: Request, user: User = Depends(current_user), db: Sessio
     """User-initiated "is this a scam?": always runs the agent and always returns an alert. Body is
     JSON (EventIn) or multipart/form-data with an `image` screenshot (read by the vision model, then
     processed as a `share` event; the image is never stored)."""
-    if request.headers.get("content-type", "").lower().startswith("multipart/form-data"):
+    is_image = request.headers.get("content-type", "").lower().startswith("multipart/form-data")
+    # per-user limit first, before the body is read or the vision model / agent can run
+    ratelimit.hit(db, "check-image" if is_image else "check", user.id, window=timedelta(hours=1),
+                  limit=settings.check_image_rate_limit_per_hour if is_image else settings.check_rate_limit_per_hour,
+                  detail="rate limit exceeded")
+    if is_image:
         return await _check_image(request, user, db, llm, deps)
+    declared = request.headers.get("content-length")
+    if declared is not None and declared.isdigit() and int(declared) > MAX_JSON_BYTES:
+        raise HTTPException(status_code=413, detail="request body too large (max 64 KB)")
+    body = bytearray()
+    async for chunk in request.stream():
+        body += chunk
+        if len(body) > MAX_JSON_BYTES:
+            raise HTTPException(status_code=413, detail="request body too large (max 64 KB)")
     try:
-        event = EventIn.model_validate_json(await request.body())
+        event = EventIn.model_validate_json(bytes(body))
     except ValidationError as exc:
         raise RequestValidationError([{**e, "loc": ("body", *e["loc"])} for e in exc.errors()])
     return await run_in_threadpool(process_event, db, user, event, force_agent=True, llm=llm, deps=deps)

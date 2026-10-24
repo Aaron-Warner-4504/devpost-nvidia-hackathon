@@ -124,6 +124,11 @@ and **always returns an alert**, of any tier including `info`. If the same `devi
 processed, the response has `duplicate: true` and the alert stored for it. A check never suppresses a later
 alert from `/v1/events` for the same message.
 
+Limits: at most 30 JSON checks per user per rolling hour (`CHECK_RATE_LIMIT_PER_HOUR`) and 10 screenshot checks
+per user per rolling hour (`CHECK_IMAGE_RATE_LIMIT_PER_HOUR`); separate counters, applied before the body is read
+or any model runs. Beyond that: `429 {"detail": "rate limit exceeded"}`. A JSON body over 64 KB is rejected with
+`413`. Other errors: `401`, `422` invalid body.
+
 ### POST /v1/check with a screenshot (`multipart/form-data`)
 The same endpoint also accepts `multipart/form-data` (dispatch is on `Content-Type`; JSON behaviour is unchanged).
 Fields: `image` (**required** file part: PNG, JPEG, WEBP or GIF, at most 5 MB), optional form fields

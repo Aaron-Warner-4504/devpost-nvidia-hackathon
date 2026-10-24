@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     family_global_accept_failures_per_hour: int = 300
     # POST /v1/devices/register per client IP per rolling hour
     register_per_ip_per_hour: int = 20
+    # POST /v1/check per user per rolling hour (JSON text checks / multipart screenshot checks, separate counters)
+    check_rate_limit_per_hour: int = 30
+    check_image_rate_limit_per_hour: int = 10
     # Use X-Forwarded-For for the client IP. Only enable behind a reverse proxy that appends to it.
     trust_proxy_headers: bool = False
     # Number of trusted proxies appending to X-Forwarded-For: the client is the entry this many positions
