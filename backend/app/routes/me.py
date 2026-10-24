@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel
-from sqlalchemy import delete, select
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
+from sqlalchemy import delete, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import ratelimit
-from app.auth import current_user, hash_token, new_token
+from app.auth import current_device, current_user, hash_token, new_token
 from app.config import settings
 from app.db import get_session
 from app.models import Consent, Device, User
@@ -18,6 +19,10 @@ router = APIRouter()
 class ConsentIn(BaseModel):
     source: Source
     granted: bool
+
+
+class FcmIn(BaseModel):
+    token: str = Field(min_length=1, max_length=4096)
 
 
 def _consents(session: Session, user_id: str) -> dict[str, bool]:
@@ -39,6 +44,22 @@ def register_device(request: Request, session: Session = Depends(get_session)):
     session.add(device)
     session.commit()
     return DeviceRegistered(device_id=device.id, token=token)
+
+
+@router.post("/v1/devices/fcm")
+def set_fcm_token(body: FcmIn, device: Device = Depends(current_device), session: Session = Depends(get_session)):
+    """Store (or replace) this device's own push token; re-posting also clears an earlier invalid mark.
+    A token belongs to ONE device: it is cleared on every other device (any user) in the same transaction."""
+    session.execute(update(Device).where(Device.fcm_token == body.token, Device.id != device.id)
+                    .values(fcm_token=None, fcm_invalid_at=None))
+    device.fcm_token = body.token
+    device.fcm_invalid_at = None
+    try:
+        session.commit()
+    except IntegrityError:  # another device claimed the same token concurrently (unique index)
+        session.rollback()
+        raise HTTPException(status_code=409, detail="token already in use")
+    return {"ok": True}
 
 
 @router.get("/v1/me")

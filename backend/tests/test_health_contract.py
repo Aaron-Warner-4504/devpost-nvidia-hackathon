@@ -83,6 +83,20 @@ def test_openapi_has_all_paths(client):
         assert p in paths, p
 
 
+def test_event_is_contact_optional(client, auth_headers):
+    """R34: optional client-checked flag; omitted -> None (backward compatible)."""
+    from app.schemas import EventIn
+    assert EventIn.model_validate(EVENT).is_contact is None
+    assert EventIn.model_validate({**EVENT, "is_contact": True}).is_contact is True
+    r = client.post("/v1/events", json={**EVENT, "device_event_id": "dev-c", "is_contact": True},
+                    headers=auth_headers)
+    assert r.status_code == 200
+    assert client.post("/v1/events", json={**EVENT, "device_event_id": "dev-d", "is_contact": "yes please"},
+                       headers=auth_headers).status_code == 422
+    props = client.get("/openapi.json").json()["components"]["schemas"]["EventIn"]["properties"]
+    assert "is_contact" in props
+
+
 def test_oversized_text_rejected(client, auth_headers):
     r = client.post("/v1/events", json={**EVENT, "text": "x" * 10001}, headers=auth_headers)
     assert r.status_code == 422

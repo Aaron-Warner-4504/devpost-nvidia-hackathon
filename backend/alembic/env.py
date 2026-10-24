@@ -3,7 +3,7 @@ from sqlalchemy import create_engine, pool
 
 from app import models  # noqa: F401  (register tables)
 from app.config import settings
-from app.db import Base
+from app.db import Base, connect_args
 
 config = context.config
 target_metadata = Base.metadata
@@ -14,7 +14,7 @@ def _url() -> str:
 
 
 def run_migrations_online() -> None:
-    engine = create_engine(_url(), poolclass=pool.NullPool)
+    engine = create_engine(_url(), poolclass=pool.NullPool, connect_args=connect_args())
     with engine.connect() as conn:
         context.configure(connection=conn, target_metadata=target_metadata)
         with context.begin_transaction():

@@ -113,17 +113,24 @@ def test_benign_must_not_have_harm_index():
 
 def test_all_committed_scenarios_validate_and_set_properties():
     scs = ev.load_scenarios(SCEN_DIR)
-    assert len(scs) == 120
+    n_scam = sum(gen.SCAM_COUNTS.values()) + sum(gen.EXTRA_SCAM_COUNTS.values())  # 40 + 3 (R34)
+    assert len(scs) == n_scam + 80
     for s in scs:
         assert ev.validate_scenario(s) == [], s["id"]
     assert ev.validate_set(scs) == []
     labels = Counter(s["label"] for s in scs)
-    assert labels == {"scam": 40, "benign": 80}
-    assert len({s["id"] for s in scs}) == 120
+    assert labels == {"scam": n_scam, "benign": 80} and n_scam == 43
+    assert len({s["id"] for s in scs}) == n_scam + 80
     for label, n in labels.items():
         hold = sum(1 for s in scs if s["label"] == label and s["split"] == "holdout")
         assert 0.25 <= hold / n <= 0.35, (label, hold)
-    assert {s["category"] for s in scs if s["label"] == "scam"} == set(gen.SCAM_COUNTS)
+    assert {s["category"] for s in scs if s["label"] == "scam"} == set(gen.SCAM_COUNTS) | set(gen.EXTRA_SCAM_COUNTS)
+    # R34: saved-contact family chat carries the client-checked flag; name-spoofing scams never do
+    fam = [e for s in scs if s["category"] == "family_chat" for e in s["events"] if e["source"] == "whatsapp"]
+    assert fam and all(e.get("is_contact") is True for e in fam)
+    spoof = [e for s in scs if s["category"] == "contact_name_spoof" for e in s["events"]]
+    assert len(spoof) >= 3 and all(e.get("is_contact") is not True for e in spoof)
+    assert {e["sender"] for e in spoof} >= {"Mom", "Papa", "Bank Manager"}
     assert all(s["source"] == "synthetic" for s in scs)
     assert {s["lang"] for s in scs} == {"en", "hi", "hinglish"}
     shapes = Counter(s["shape"] for s in scs if s["label"] == "scam")
@@ -145,7 +152,7 @@ def test_generator_is_deterministic_and_matches_committed_files(tmp_path):
     gen.write(a)
     gen.write(b)
     fa = sorted(p.name for p in a.glob("*.json"))
-    assert fa == sorted(p.name for p in b.glob("*.json")) and len(fa) == 120
+    assert fa == sorted(p.name for p in b.glob("*.json")) and len(fa) == 123
     for name in fa:
         assert (a / name).read_bytes() == (b / name).read_bytes()
         assert (a / name).read_bytes() == (SCEN_DIR / name).read_bytes(), f"{name}: regenerate eval/scenarios"
@@ -197,6 +204,28 @@ def test_compute_metrics_exact_values():
 
     hold = ev.compute_metrics([r for r in results if r["split"] == "holdout"])
     assert hold["scam_recall"] == 0.0 and hold["false_interrupts_per_user_week"] == 0.0
+
+
+def test_scripted_agent_never_argues_a_confirmed_risk_down():
+    """Weak tool facts allow 'high'; when the rules already say critical the fake agent keeps critical."""
+    payload = {"base_tier": "critical", "rule_signals": [{"name": "payment_request"}], "entities": []}
+    done = [("check_number", {"e164": "+919876543210"}, {"seen_count": 4, "in_contacts": False})]
+    assert ev.ScriptedAgentLLM._answer(payload, done)["tier"] == "critical"
+    payload["base_tier"] = "caution"
+    ans = ev.ScriptedAgentLLM._answer(payload, done)
+    assert ans["tier"] == "high" and ans["raises"] == [{"tool": "check_number", "fact": "repeat_number"}]
+
+
+def test_agent_raise_and_severity_metrics():
+    results = [
+        _r("s1", "scam", "tune", [_ev(0, 0, "critical", True, True) | {"raised_by": ["new_domain_7d"]}],
+           harm=0, first=0),
+        _r("s2", "scam", "tune", [_ev(0, 0, "high", True, True)], harm=0, first=0),
+        _r("b1", "benign", "tune", [_ev(0, 0)]),
+    ]
+    m = ev.compute_metrics(results)
+    assert m["agent_raised_events"] == 1
+    assert m["critical_first_alert_frac"] == pytest.approx(0.5)
 
 
 def test_metrics_empty_subsets_are_none():

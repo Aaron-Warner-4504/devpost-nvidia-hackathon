@@ -1,0 +1,43 @@
+{
+  "id": "scam-contact-name-spoof-02",
+  "label": "scam",
+  "category": "contact_name_spoof",
+  "lang": "en",
+  "shape": "slow_burn",
+  "template": "spoof_papa_en",
+  "harm_index": 1,
+  "events": [
+    {
+      "device_event_id": "scam-contact-name-spoof-02-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-01T11:33:00+05:30",
+      "sender": "Papa",
+      "text": "Hi beta, this is my new number, save it. Old phone fell in water.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en",
+      "is_contact": false
+    },
+    {
+      "device_event_id": "scam-contact-name-spoof-02-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-01T13:36:00+05:30",
+      "sender": "Papa",
+      "text": "I am stuck at the airport, my card got blocked. Transfer Rs 18,000 to account 50108158895682 IFSC SBIN0001234 immediately, will explain later. Don't tell Mummy.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en",
+      "is_contact": false
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 1,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

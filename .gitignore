@@ -4,3 +4,8 @@ __pycache__/
 .venv/
 *.pyc
 .pytest_cache/
+
+.demo_token
+deploy/.env
+deploy/.env.prod
+deploy/*.env

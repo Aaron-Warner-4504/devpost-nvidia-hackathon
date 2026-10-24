@@ -75,7 +75,8 @@
       "text": "Khana kha liya?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     }
   ],
   "expect": {

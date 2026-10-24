@@ -62,7 +62,7 @@ def client_ip(request: Request) -> str:
     return _peer(request)
 
 
-def hit(db: Session, kind: str, value: str, *, limit: int, window: timedelta) -> None:
+def hit(db: Session, kind: str, value: str, *, limit: int, window: timedelta, detail: str = TOO_MANY) -> None:
     """Record one event for (kind, value); raise 429 (without recording) once `limit` events fall in the
     rolling window. Commits."""
     now = utcnow()
@@ -73,6 +73,6 @@ def hit(db: Session, kind: str, value: str, *, limit: int, window: timedelta) ->
         RateLimitEvent.kind == kind, RateLimitEvent.key == key, RateLimitEvent.created_at > now - window)) or 0
     if n >= limit:
         db.commit()
-        raise HTTPException(status_code=429, detail=TOO_MANY)
+        raise HTTPException(status_code=429, detail=detail)
     db.add(RateLimitEvent(kind=kind, key=key, created_at=now))
     db.commit()

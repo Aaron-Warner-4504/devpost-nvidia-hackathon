@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (Boolean, CheckConstraint, DateTime, Float, ForeignKey, Index,
-                        String, Text, UniqueConstraint, func)
+                        String, Text, UniqueConstraint, func, text)
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -35,10 +35,14 @@ class User(Base):
 
 class Device(Base):
     __tablename__ = "devices"
+    __table_args__ = (Index("uq_devices_fcm_token", "fcm_token", unique=True,
+                            postgresql_where=text("fcm_token IS NOT NULL")),)
     id: Mapped[str] = _pk("dev")
     user_id: Mapped[str] = _uid()
     token_hash: Mapped[str] = mapped_column(String, unique=True)  # sha256 hex; raw token never stored
     created_at: Mapped[datetime] = _now()
+    fcm_token: Mapped[str | None] = mapped_column(String, nullable=True)  # this device's own push token; never returned
+    fcm_invalid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class Consent(Base):

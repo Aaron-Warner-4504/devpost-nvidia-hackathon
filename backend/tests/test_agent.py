@@ -775,3 +775,17 @@ def test_degraded_verdict_keeps_tool_results(spy):
 def test_rules_mode_has_no_tool_results(spy):
     v = run(FakeLLM([]), mode="rules")
     assert v.tool_results == []
+
+
+@pytest.mark.parametrize("text", ["Call numbers 551234 now", "verify users 55123", "ref.551234", "hours 55123",
+                                  "Call numbers ५५१२३४ now", "ref.५५१२३४", "Rs 55000.5 12345"])
+def test_clean_text_removes_short_digit_runs_near_rs_words(text):
+    out = agent._clean_text(text, 200, set())
+    assert "number removed" in out
+    assert not re.search(r"\d{5}|[५-९]{5}", out.replace("55000.5", ""))
+
+
+@pytest.mark.parametrize("text", ["Rs 55000", "Rs. 55000", "₹ 55000", "INR 55,000", "rs55000", "₹55000"])
+def test_clean_text_keeps_currency_amounts(text):
+    out = agent._clean_text(f"Pay {text} now", 200, set())
+    assert "number removed" not in out and "55" in out

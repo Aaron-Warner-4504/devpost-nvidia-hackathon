@@ -15,7 +15,8 @@
       "text": "₹500 भेज देना, सब्ज़ी वाले को देने हैं",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-05-e01",
@@ -25,7 +26,8 @@
       "text": "₹500 भेज देना, सब्ज़ी वाले को देने हैं",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-05-e02",
@@ -35,7 +37,8 @@
       "text": "ठीक है, ध्यान रखना",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-05-e03",
@@ -45,7 +48,8 @@
       "text": "ठीक है, ध्यान रखना",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-05-e04",
@@ -55,7 +59,8 @@
       "text": "दवाई ले आना मेरे लिए",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-05-e05",
@@ -80,7 +85,8 @@
       "text": "₹500 भेज देना, सब्ज़ी वाले को देने हैं",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-05-e07",
@@ -90,7 +96,8 @@
       "text": "₹500 भेज देना, सब्ज़ी वाले को देने हैं",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-05-e08",
@@ -100,7 +107,8 @@
       "text": "₹500 भेज देना, सब्ज़ी वाले को देने हैं",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi"
+      "lang": "hi",
+      "is_contact": true
     }
   ],
   "expect": {

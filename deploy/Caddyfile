@@ -1,0 +1,30 @@
+# HTTPS reverse proxy. SITE_ADDRESS is the public DNS name (Caddy obtains a Let's Encrypt certificate);
+# for a local smoke test use SITE_ADDRESS=:80 (plain HTTP).
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	# Caddy adds the real peer address as the RIGHT-MOST X-Forwarded-For entry, which is what the API
+	# reads (TRUST_PROXY_HEADERS=true, TRUSTED_PROXY_COUNT=1). Entries to its left are client-controlled.
+	reverse_proxy api:8000 {
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		health_uri /health
+		health_interval 15s
+	}
+
+	request_body {
+		max_size 6MB  # screenshots are capped at 5 MB by the API
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

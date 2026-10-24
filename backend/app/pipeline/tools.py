@@ -74,7 +74,8 @@ BRANDS: dict[str, str] = {  # brand token -> canonical domains
     "npci": "npci.org.in", "incometax": "incometax.gov.in", "uidai": "uidai.gov.in",
     "irctc": "irctc.co.in", "google": "google.com", "microsoft": "microsoft.com",
 }
-_BRAND_DOMAINS = set(BRANDS.values()) | {"amazon.com", "onlinesbi.sbi", "sbi.bank.in", "hdfc.com",
+_BRAND_DOMAINS = set(BRANDS.values()) | {"amazon.com", "amzn.in", "amzn.to", "amzn.eu", "onlinesbi.sbi",
+                                         "sbi.bank.in", "hdfc.com",
                                          "google.co.in", "microsoft.in"}
 _SAFE_INFRA = {"amazonaws.com", "googleapis.com", "googleusercontent.com", "microsoftonline.com",
                "azurewebsites.net", "googlevideo.com", "gstatic.com", "web.app", "firebaseapp.com",

@@ -15,7 +15,8 @@
       "text": "Khana kha liya?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-telecom-offers-01-e01",

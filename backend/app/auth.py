@@ -28,3 +28,13 @@ def current_user(request: Request, session: Session = Depends(get_session)) -> U
         if user is not None:
             return user
     raise HTTPException(status_code=401, detail="missing or invalid bearer token")
+
+
+def current_device(request: Request, session: Session = Depends(get_session)) -> Device:
+    scheme, _, token = (request.headers.get("authorization") or "").partition(" ")
+    token = token.strip()
+    if scheme.lower() == "bearer" and token:
+        device = session.scalar(select(Device).where(Device.token_hash == hash_token(token)))
+        if device is not None:
+            return device
+    raise HTTPException(status_code=401, detail="missing or invalid bearer token")

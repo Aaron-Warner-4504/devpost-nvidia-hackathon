@@ -124,11 +124,18 @@ _AUTHORITY = _rx(
     r"|अधिकारी|इंस्पेक्टर|साइबर\s*क्राइम|गिरफ्तारी|वारंट|सरकारी|न्यायालय")
 # Hindi credit notifications ("जमा कर दिए गए हैं", "जमा हो गए", "जमा किए गए"): passive/perfective forms
 _HI_NOTIF = r"(?![^।.!?\n]*?(?:जमा|डेबिट|क्रेडिट|निकाले|निकाला)\s*(?:कर\s*)?(?:दिए|दिया|दी|किए|किया|की\b|गए|गई|गया|हो\s|हो$|हुए|हुआ|हुई))"
+_HI_LETTER = r"[ऀ-ॣॱ-ॿ]"  # Devanagari letters / matras; NOT the danda । ॥ (U+0964/5) or digits
 _HI_JAMA_ASK = (r"जमा\s*(?:करें|करे\b|कीजिए|कीजिये|करिए|करिये|करो|करना|कर\s*(?:दो|दें|दीजिए|दीजिये|देना))"
-                r"(?![ऀ-ॿ])")
+                r"(?!" + _HI_LETTER + r")")
+# A UPI id as written in a message (same shape as extract._UPI; "name@gmail.com" is an email, not a UPI id)
+_UPI_ID = r"[\w.\-]{2,}@[a-z][a-z0-9]{1,20}(?![\w@]|\.\w)"
 _PAYMENT = _rx(
     r"\b(?:collect\s+request|payment\s+request|pay\s*(?:₹|rs\.?|inr|rupees)"
-    r"|pay\s+\d|pay\s+(?:the\s+|a\s+)?(?:fee|fine|amount|charges?|penalty|duty|deposit)|pay\s+now"
+    r"|pay\s+\d|pay\s+(?!(?:cash\s+)?on\s+delivery\b)(?:the\s+|a\s+|your\s+)?(?:[\w-]+\s+){0,2}?(?:fees?|fine|amount|charges?|penalty|duty|deposit)\b"
+    r"|pay\s+now"
+    r"|\b(?:send|transfer|pay|bhej\w*|invest\w*)\b[^.!?\n।]{0,40}?" + _UPI_ID +
+    r"|" + _UPI_ID + r"\s*(?:pe|par|per|on|पर|पे)?\s*(?:bhej\w*|send\b|transfer\b|pay\b|भेज|जमा\s*कर)"
+    r"|(?:शुल्क|फीस|फ़ीस)\s*(?:देकर|दें|दीजिए|दीजिये|भरें|भरकर|भरिए|जमा\s*कर)"
     r"|transfer|send\s+(?:me\s+)?(?:money|₹|rs\.?)|approve\s+(?:the\s+)?(?:request|collect)"
     r"|scan\s+(?:the\s+)?qr|paise\s+bhej\w*|paisa\s+bhej\w*|pay\s+kar\w*"
     r"|(?:jama|deposit)\s+(?:kar(?:o|ein|en|iye|na)\b|kar\s+(?:do|dein|den|dijiye|de)\b|kiji\w*)"
@@ -166,7 +173,7 @@ _CRED_HI = re.compile(
     r"|(?:शेयर|साझा|भेज|बता|दर्ज|डाल)" + _DEV + r"[^।.!?\n]{0,30}"
     r"(?:ओटीपी|पिन|पासवर्ड|सीवीवी|आधार|पैन|कार्ड)")
 _CRED_HINGLISH = _rx(
-    r"\b(?:otp|pin|password|cvv)\b[^.!?\n,]{0,20}\b(?:bata|share|bhej|de\b)\w*"
+    r"\b(?:otp|pin|password|cvv)\b[^.!?\n,]{0,20}\b(?:bata|share|bhej|de\b|daal|dalo|dal\s+(?:do|dein|dena)\b|enter)\w*"
     r"|\botp\s+(?:bata|share|bhej|de\b)|\b(?:bata|share|bhej)\w*\s+(?:do\s+)?(?:otp|pin|password|cvv)")
 _VERIFY = _rx(r"\bverif(?:y|ication)\b|\bre-?verify\b|सत्यापित|वेरिफाई|वेरीफाई")
 _LINK_WORD = _rx(r"https?://|www\.|\blink\b|लिंक")
@@ -445,6 +452,8 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
         unknown = not history_ctx.sender_seen_before
     else:
         unknown = False
+    if getattr(event, "is_contact", None) is True:  # client-checked saved contact (never inferred from names)
+        unknown = False
     if unknown and not safe_sender:
         add("unknown_sender", "call from non-contact" if event.call else f"first contact: {event.sender}")
 
@@ -577,7 +586,7 @@ def _hist_window(ctx: HistoryCtx, now: datetime):
 
 
 def _hop_keys(ents: set[Entity], ctx: HistoryCtx) -> set[Entity]:
-    base = {e for e in ents if e.type in ("org", "claim")}
+    base = {e for e in ents if e.type == "claim" or (e.type == "org" and e.canonical in _AUTH_ORGS)}
     keys = set(base)
     for b in base:
         keys |= {r for r in ctx.related.get(b, []) if r.type in ("phone", "domain")}

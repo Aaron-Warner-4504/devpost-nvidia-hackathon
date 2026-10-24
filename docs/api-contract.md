@@ -37,6 +37,21 @@ Request: empty body. Response 200:
 At most 20 registrations per client IP (IPv6: per /64 network) per rolling hour; beyond that `429 {"detail": "too many requests, try
 again later"}`. Register once per install and keep the token.
 
+## POST /v1/devices/fcm
+Registers this device's own FCM registration token so Sentinel can push your own `high` / `critical` alerts.
+Request (device bearer token): `{"token": "<FCM registration token>"}` (1-4096 chars, else `422`). Response 200:
+`{"ok": true}`. Re-posting replaces the token for this device (and re-enables pushes if FCM had reported the old
+one unregistered). Tokens are never returned or logged. A push token belongs to one device at a time: posting a token that is
+already registered on another device (any user) moves it here and clears it there. If two devices claim the same token at the same instant the loser gets
+`409 {"detail": "token already in use"}` (retry).
+
+Push to your own devices: when an alert of tier `high` or `critical` is shown **and interrupts** (see `/v1/events`),
+every device of the user with a token gets one FCM push: `notification.title` = `"Sentinel alert"`,
+`notification.body` = the alert headline only (numbers, links and ids masked, at most 140 chars), `data` =
+`{"kind": "own_alert", "alert_tier": "high" | "critical"}`. Never the message text. No push for
+`caution`/`info`, for `/v1/check` results, for duplicates, or for alerts the server did not interrupt for
+(suppressed, daily cap, critical ceiling). Push failures never affect the API response.
+
 ## POST /v1/events
 Ingest a device event; the server triages and may return an alert. `duplicate: true` if `device_event_id` was already seen.
 Request:
@@ -49,10 +64,18 @@ Request:
   "text": "Your account is blocked, click http://x.co",
   "call": null,
   "triage_score": 0.8,
-  "lang": "en"
+  "lang": "en",
+  "is_contact": false
 }
 ```
 For `source: "call"`, `call` is `{"number": "+911234567890", "duration_s": 42, "is_contact": false, "direction": "in"}`.
+
+`is_contact` (optional, `true` | `false` | omitted/`null`): set it to `true` only when the app has checked that the
+sender is a saved contact, e.g. via `ContactsContract` lookup of the sender number or the notification's `Person`
+contact URI. Never infer it from the display name: anyone can call themselves "Mom" on WhatsApp. Group-chat
+notifications send `false` or omit it. Omitted means "not known to be a contact", the same as before this
+field existed. It only suppresses the "unknown sender" signal and never lowers a tier on its own. For calls,
+`call.is_contact` keeps working as before.
 
 Response 200 (`EventResult`):
 ```json
@@ -100,6 +123,22 @@ Same request body and response as `/v1/events`, but always runs the full agent (
 and **always returns an alert**, of any tier including `info`. If the same `device_event_id` was already
 processed, the response has `duplicate: true` and the alert stored for it. A check never suppresses a later
 alert from `/v1/events` for the same message.
+
+Limits: at most 30 JSON checks per user per rolling hour (`CHECK_RATE_LIMIT_PER_HOUR`) and 10 screenshot checks
+per user per rolling hour (`CHECK_IMAGE_RATE_LIMIT_PER_HOUR`); separate counters, applied before the body is read
+or any model runs. Beyond that: `429 {"detail": "rate limit exceeded"}`. A JSON body over 64 KB is rejected with
+`413`. Other errors: `401`, `422` invalid body.
+
+### POST /v1/check with a screenshot (`multipart/form-data`)
+The same endpoint also accepts `multipart/form-data` (dispatch is on `Content-Type`; JSON behaviour is unchanged).
+Fields: `image` (**required** file part: PNG, JPEG, WEBP or GIF, at most 5 MB), optional form fields
+`device_event_id` (default: generated), `ts` (ISO-8601, default: now), `lang`, `triage_score` (default `0.5`).
+The server reads the visible text with a vision model and processes it exactly like a `share` event
+(redaction, agent, always returns an alert). The image is never stored; only the redacted text is, as for any event.
+Response: same `EventResult` as the JSON form. Errors: `401`; `413` image over 5 MB; `415` not a PNG/JPEG/WEBP/GIF
+(checked by content, not file name); `422` no `image` part, bad `ts` / `triage_score`, or no text found in the
+image (`{"detail": "no text could be found in the image"}`); `502`
+`{"detail": "could not read the image, please try again or paste the text"}` if the vision model fails.
 
 ## GET /v1/alerts?since=<ISO-8601>
 Response 200: list of `AlertOut` (shape as above) that were shown to this user (returned by `/v1/events` or
@@ -176,6 +215,22 @@ The caller's links in both roles. Response 200:
 ### DELETE /v1/family/contacts/{id}
 Either the protected user or the guardian removes the link; pushes stop immediately. Response 204.
 `404 {"detail": "not found"}` if the caller is not part of that link (or it does not exist).
+
+## Demo dashboard (`DEMO_ENABLED=true` only)
+Off by default: with `DEMO_ENABLED` unset/false every path below returns `404 {"detail": "not found"}`, with or
+without a token.
+- `GET /dashboard` (+ `/dashboard/dashboard.js`, `/dashboard/dashboard.css`): a static, offline page (no CDN, no
+  inline script; CSP `default-src 'self'`, `frame-ancestors 'none'`, `nosniff`). It asks for a bearer token
+  (kept in memory / sessionStorage), calls the endpoint below and renders the event timeline, a linked-entities
+  graph and the current tier with its "why" list. Message text is rendered with `textContent` only.
+- `GET /v1/dashboard/timeline` (bearer token; `401` otherwise). No `user` parameter: it returns only the CALLER's
+  data, so showing the demo user needs the demo user's token (`uv run python -m sim.inject --user demo`, token in
+  `backend/.demo_token`). Response 200:
+  `{"events": [{"id", "ts", "source", "redacted_text", "entities": [entity id]}]` (oldest first, newest 200),
+  `"entities": [{"id", "type", "canonical"}], "edges": [{"a", "b", "relation", "evidence_event_ids"}],
+  "alerts": [{"id", "event_id", "tier", "headline", "why": [{"event_id", "ts", "text"}], "signals",
+  "created_at"}]` (shown alerts, newest first, max 100), `"latest": {"tier", "why": [text]}` (`info` / `[]` when
+  there are no alerts)`}`.
 
 ## DELETE /v1/me
 Deletes the device and all its data, including family links in both roles and pending invites. Response 204,

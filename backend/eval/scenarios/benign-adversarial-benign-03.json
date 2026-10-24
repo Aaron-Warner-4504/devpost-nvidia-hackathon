@@ -65,7 +65,8 @@
       "text": "Reached home?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "hi-Latn"
+      "lang": "hi-Latn",
+      "is_contact": true
     }
   ],
   "expect": {

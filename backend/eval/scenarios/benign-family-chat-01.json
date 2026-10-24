@@ -15,7 +15,8 @@
       "text": "Can you send ₹1,200 for the electrician? Will return tomorrow",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-01-e01",
@@ -25,7 +26,8 @@
       "text": "Mom says hi",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-01-e02",
@@ -35,7 +37,8 @@
       "text": "Can you send ₹1,200 for the electrician? Will return tomorrow",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-01-e03",
@@ -60,7 +63,8 @@
       "text": "Please pick up milk on the way back",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-01-e05",
@@ -70,7 +74,8 @@
       "text": "Mom says hi",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-01-e06",
@@ -80,7 +85,8 @@
       "text": "Did you reach office?",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     },
     {
       "device_event_id": "benign-family-chat-01-e07",
@@ -90,7 +96,8 @@
       "text": "Can you send ₹1,200 for the electrician? Will return tomorrow",
       "call": null,
       "triage_score": 0.1,
-      "lang": "en"
+      "lang": "en",
+      "is_contact": true
     }
   ],
   "expect": {

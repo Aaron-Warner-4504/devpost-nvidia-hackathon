@@ -103,10 +103,13 @@ def client(test_engine):
     app.dependency_overrides[get_pipeline_deps] = offline_deps
     # tests register many users from the single TestClient address; tests of the limit set it explicitly
     from app.config import settings
-    saved = settings.register_per_ip_per_hour
+    saved = (settings.register_per_ip_per_hour, settings.check_rate_limit_per_hour,
+             settings.check_image_rate_limit_per_hour)
     settings.register_per_ip_per_hour = 100_000
+    settings.check_rate_limit_per_hour = settings.check_image_rate_limit_per_hour = 100_000
     yield TestClient(app)
-    settings.register_per_ip_per_hour = saved
+    (settings.register_per_ip_per_hour, settings.check_rate_limit_per_hour,
+     settings.check_image_rate_limit_per_hour) = saved
     app.dependency_overrides.clear()
 
 
