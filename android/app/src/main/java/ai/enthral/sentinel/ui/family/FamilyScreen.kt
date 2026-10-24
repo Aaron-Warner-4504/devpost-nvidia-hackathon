@@ -1,23 +1,17 @@
 package ai.enthral.sentinel.ui.family
 
 import android.content.Intent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,30 +20,51 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ai.enthral.sentinel.R
 import ai.enthral.sentinel.domain.Guardian
 import ai.enthral.sentinel.domain.Protectee
-import ai.enthral.sentinel.ui.common.AdaptiveBox
+import ai.enthral.sentinel.domain.Tier
 import ai.enthral.sentinel.ui.common.graphViewModel
+import ai.enthral.sentinel.ui.components.CodeDisplay
 import ai.enthral.sentinel.ui.components.CodeEntry
+import ai.enthral.sentinel.ui.components.ConfirmSheet
+import ai.enthral.sentinel.ui.components.CountdownRing
+import ai.enthral.sentinel.ui.components.FamilyIllustration
+import ai.enthral.sentinel.ui.components.GroupedDivider
+import ai.enthral.sentinel.ui.components.GroupedFooter
+import ai.enthral.sentinel.ui.components.GroupedHeader
+import ai.enthral.sentinel.ui.components.GroupedRow
+import ai.enthral.sentinel.ui.components.GroupedSection
+import ai.enthral.sentinel.ui.components.IconRowDividerInset
+import ai.enthral.sentinel.ui.components.LargeTitleList
 import ai.enthral.sentinel.ui.components.NoteCard
+import ai.enthral.sentinel.ui.components.PlainButton
 import ai.enthral.sentinel.ui.components.PrimaryButton
 import ai.enthral.sentinel.ui.components.SecondaryButton
-import ai.enthral.sentinel.ui.components.SectionHeader
+import ai.enthral.sentinel.ui.components.SentinelIcons
+import ai.enthral.sentinel.ui.components.SentinelSheet
+import ai.enthral.sentinel.ui.components.SentinelTextField
+import ai.enthral.sentinel.ui.components.StatusLine
+import ai.enthral.sentinel.ui.components.ToggleRow
 import ai.enthral.sentinel.ui.components.formatTimestamp
+import ai.enthral.sentinel.ui.components.rememberHaptics
+import ai.enthral.sentinel.ui.theme.Radii
+import ai.enthral.sentinel.ui.theme.SentinelTheme
 import ai.enthral.sentinel.ui.theme.Spacing
 import kotlinx.coroutines.delay
+
+/** Invite codes live for 10 minutes (backend contract); drives the countdown ring. */
+private const val INVITE_LIFETIME_SECONDS = 600f
 
 @Composable
 fun FamilyScreen() {
@@ -87,6 +102,8 @@ fun familyErrorMessage(e: FamilyError): String = stringResource(
     },
 )
 
+private val Inset = Modifier.padding(horizontal = Spacing.inset)
+
 @Composable
 fun FamilyContent(
     state: FamilyUiState,
@@ -100,124 +117,172 @@ fun FamilyContent(
     onDismissUnlinkError: () -> Unit,
 ) {
     var confirmUnlink by rememberSaveable { mutableStateOf<String?>(null) }
-    AdaptiveBox(Modifier.statusBarsPadding()) {
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = Spacing.gutter, vertical = Spacing.x2),
-            verticalArrangement = Arrangement.spacedBy(Spacing.x2),
-        ) {
-            item {
-                Text(stringResource(R.string.nav_family), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
+    val ready = state.links as? LinksState.Ready
+    val noLinks = ready != null && ready.links.guardians.isEmpty() && ready.links.protecting.isEmpty()
+    LargeTitleList(title = stringResource(R.string.nav_family), subtitle = stringResource(R.string.family_intro)) {
+        if (noLinks && state.invite == null) {
+            item(key = "illustration") {
+                Box(Modifier.fillMaxWidth().padding(vertical = Spacing.x1), contentAlignment = Alignment.Center) {
+                    FamilyIllustration(size = 132.dp)
+                }
             }
-            item { Text(stringResource(R.string.family_intro), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            item { ProtectMeCard(state, onConsent, onCreateInvite, onUnlink = { confirmUnlink = it }) }
-            item { ProtectSomeoneCard(state, onCode, onName, onAccept, onUnlink = { confirmUnlink = it }) }
-            if (state.links is LinksState.Failed) {
-                item {
-                    NoteCard(stringResource(R.string.family_links_failed), iconRes = R.drawable.ic_offline)
-                    SecondaryButton(stringResource(R.string.action_retry), onRetryLinks, Modifier.padding(top = Spacing.x1))
+        }
+        // --- Someone protects me ---------------------------------------------------------------------
+        item(key = "me") {
+            GroupedSection(header = stringResource(R.string.family_protect_me_title), footer = stringResource(R.string.family_protect_me_body)) {
+                ToggleRow(
+                    title = stringResource(R.string.family_consent_title),
+                    subtitle = stringResource(R.string.family_consent_body),
+                    checked = state.consent,
+                    onCheckedChange = onConsent,
+                )
+            }
+        }
+        item(key = "invite") { InviteBlock(state, onCreateInvite, Inset.padding(top = Spacing.x2)) }
+        item(key = "guardians") {
+            GroupedSection(header = stringResource(R.string.family_my_guardians)) {
+                when (val l = state.links) {
+                    is LinksState.Ready ->
+                        if (l.links.guardians.isEmpty()) {
+                            GroupedRow(stringResource(R.string.family_no_guardians), titleColor = SentinelTheme.palette.secondaryLabel)
+                        } else {
+                            l.links.guardians.forEachIndexed { i, g ->
+                                if (i > 0) GroupedDivider(IconRowDividerInset)
+                                GuardianRow(g, state.workingLinkId == g.id) { confirmUnlink = g.id }
+                            }
+                        }
+                    LinksState.Loading -> GroupedRow(stringResource(R.string.loading_cd), titleColor = SentinelTheme.palette.secondaryLabel)
+                    LinksState.Failed -> LinksFailed(onRetryLinks)
+                }
+            }
+        }
+
+        // --- I protect someone -----------------------------------------------------------------------
+        item(key = "someone-h") {
+            Column(Inset.padding(top = Spacing.x3)) {
+                GroupedHeader(stringResource(R.string.family_protect_someone_title))
+                GroupedFooter(stringResource(R.string.family_protect_someone_body), Modifier.padding(bottom = Spacing.x15))
+            }
+        }
+        item(key = "someone") {
+            Column(Inset, verticalArrangement = Arrangement.spacedBy(Spacing.x15)) {
+                CodeEntry(state.code, onCode, enabled = !state.accepting, isError = state.acceptError == FamilyError.InvalidCode)
+                SentinelTextField(
+                    value = state.name,
+                    onValueChange = onName,
+                    label = stringResource(R.string.family_name_label),
+                    supporting = stringResource(R.string.family_name_hint),
+                    enabled = !state.accepting,
+                    singleLine = true,
+                )
+                PrimaryButton(stringResource(R.string.family_link), onAccept, Modifier.fillMaxWidth(), enabled = state.canAccept)
+                state.acceptError?.let { StatusLine(familyErrorMessage(it), SentinelIcons.Info, SentinelTheme.colors[Tier.Critical].content) }
+                if (state.accepted) StatusLine(stringResource(R.string.family_linked_success), SentinelIcons.ShieldCheck, SentinelTheme.palette.accent)
+                Text(stringResource(R.string.family_push_note), style = SentinelTheme.type.footnote, color = SentinelTheme.palette.secondaryLabel)
+            }
+        }
+        item(key = "protecting") {
+            GroupedSection(header = stringResource(R.string.family_people_i_protect)) {
+                when (val l = state.links) {
+                    is LinksState.Ready ->
+                        if (l.links.protecting.isEmpty()) {
+                            GroupedRow(stringResource(R.string.family_no_protecting), titleColor = SentinelTheme.palette.secondaryLabel)
+                        } else {
+                            l.links.protecting.forEachIndexed { i, p ->
+                                if (i > 0) GroupedDivider(IconRowDividerInset)
+                                ProtecteeRow(i + 1, p, state.workingLinkId == p.id) { confirmUnlink = p.id }
+                            }
+                        }
+                    LinksState.Loading -> GroupedRow(stringResource(R.string.loading_cd), titleColor = SentinelTheme.palette.secondaryLabel)
+                    LinksState.Failed -> LinksFailed(onRetryLinks)
                 }
             }
         }
     }
+
     confirmUnlink?.let { id ->
-        val isGuardian = (state.links as? LinksState.Ready)?.links?.guardians?.any { it.id == id } == true
-        AlertDialog(
-            onDismissRequest = { confirmUnlink = null },
-            title = { Text(stringResource(if (isGuardian) R.string.family_remove_title else R.string.family_stop_title)) },
-            text = { Text(stringResource(if (isGuardian) R.string.family_remove_body else R.string.family_stop_body)) },
-            confirmButton = {
-                TextButton({ confirmUnlink = null; onUnlink(id) }) {
-                    Text(stringResource(if (isGuardian) R.string.family_remove else R.string.family_stop))
-                }
-            },
-            dismissButton = { TextButton({ confirmUnlink = null }) { Text(stringResource(R.string.action_cancel)) } },
+        val isGuardian = ready?.links?.guardians?.any { it.id == id } == true
+        ConfirmSheet(
+            title = stringResource(if (isGuardian) R.string.family_remove_title else R.string.family_stop_title),
+            body = stringResource(if (isGuardian) R.string.family_remove_body else R.string.family_stop_body),
+            confirmLabel = stringResource(if (isGuardian) R.string.family_remove else R.string.family_stop),
+            onConfirm = { confirmUnlink = null; onUnlink(id) },
+            onDismiss = { confirmUnlink = null },
         )
     }
     state.unlinkError?.let { err ->
-        AlertDialog(
-            onDismissRequest = onDismissUnlinkError,
-            title = { Text(stringResource(R.string.error_title)) },
-            text = { Text(familyErrorMessage(err)) },
-            confirmButton = { TextButton(onDismissUnlinkError) { Text(stringResource(R.string.action_got_it)) } },
-        )
-    }
-}
-
-@Composable
-private fun SectionCard(title: String, body: String, content: @Composable () -> Unit) {
-    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest)) {
-        Column(Modifier.padding(Spacing.x2), verticalArrangement = Arrangement.spacedBy(Spacing.x2)) {
-            Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
-            Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            content()
+        SentinelSheet(onDismiss = onDismissUnlinkError) {
+            Text(stringResource(R.string.error_title), style = SentinelTheme.type.title2, modifier = Modifier.semantics { heading() })
+            Text(familyErrorMessage(err), style = SentinelTheme.type.callout, color = SentinelTheme.palette.secondaryLabel)
+            PrimaryButton(stringResource(R.string.action_got_it), onDismissUnlinkError, Modifier.fillMaxWidth().padding(top = Spacing.x1))
         }
     }
 }
 
+/** The invite: a large code in fixed cells, a countdown ring, copy + share, and a quiet "new code". */
 @Composable
-private fun ProtectMeCard(state: FamilyUiState, onConsent: (Boolean) -> Unit, onCreate: () -> Unit, onUnlink: (String) -> Unit) {
+private fun InviteBlock(state: FamilyUiState, onCreate: () -> Unit, modifier: Modifier) {
+    val p = SentinelTheme.palette
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
-    SectionCard(stringResource(R.string.family_protect_me_title), stringResource(R.string.family_protect_me_body)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.x2), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.x05)) {
-                Text(stringResource(R.string.family_consent_title), style = MaterialTheme.typography.titleSmall)
-                Text(stringResource(R.string.family_consent_body), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            val label = stringResource(R.string.family_consent_title)
-            Switch(state.consent, onConsent, modifier = Modifier.semantics { contentDescription = label })
-        }
-        val invite = state.invite
+    val haptics = rememberHaptics()
+    val invite = state.invite
+    Column(modifier.fillMaxWidth()) {
         if (invite != null) {
-            val spoken = invite.code.toCharArray().joinToString(" ")
-            Text(
-                invite.code,
-                modifier = Modifier.fillMaxWidth().semantics { contentDescription = spoken },
-                style = MaterialTheme.typography.displaySmall.copy(fontFamily = FontFamily.Monospace, letterSpacing = 6.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                if (state.inviteExpired) stringResource(R.string.family_code_expired)
-                else stringResource(R.string.family_code_expires, formatCountdown(state.remainingSeconds)),
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.titleSmall,
-                color = if (state.inviteExpired) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-            )
-            if (!state.inviteExpired) {
-                val shareText = stringResource(R.string.family_share_text, invite.code)
-                val chooser = stringResource(R.string.family_share_chooser)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.x1)) {
-                    SecondaryButton(stringResource(R.string.family_copy), { clipboard.setText(AnnotatedString(invite.code)) }, Modifier.weight(1f), iconRes = R.drawable.ic_copy)
-                    PrimaryButton(
-                        stringResource(R.string.family_share),
-                        {
-                            val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, shareText)
-                            context.startActivity(Intent.createChooser(send, chooser))
-                        },
-                        Modifier.weight(1f),
+            Column(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.extraLarge)).background(p.elevated)
+                    .padding(horizontal = Spacing.x2, vertical = Spacing.x3),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                CodeDisplay(invite.code, dimmed = state.inviteExpired)
+                Spacer(Modifier.height(Spacing.x15))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.x1)) {
+                    if (!state.inviteExpired) CountdownRing(state.remainingSeconds / INVITE_LIFETIME_SECONDS)
+                    Text(
+                        if (state.inviteExpired) stringResource(R.string.family_code_expired)
+                        else stringResource(R.string.family_code_expires, formatCountdown(state.remainingSeconds)),
+                        style = SentinelTheme.type.subhead.copy(fontWeight = FontWeight.Medium, fontFeatureSettings = "tnum"),
+                        color = if (state.inviteExpired) SentinelTheme.colors[Tier.Critical].content else p.secondaryLabel,
                     )
                 }
+                if (!state.inviteExpired) {
+                    val shareText = stringResource(R.string.family_share_text, invite.code)
+                    val chooser = stringResource(R.string.family_share_chooser)
+                    Spacer(Modifier.height(Spacing.x25))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.x15)) {
+                        SecondaryButton(
+                            stringResource(R.string.family_copy),
+                            { clipboard.setText(AnnotatedString(invite.code)); haptics.confirm() },
+                            Modifier.weight(1f),
+                            icon = SentinelIcons.Copy,
+                        )
+                        PrimaryButton(
+                            stringResource(R.string.family_share),
+                            {
+                                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, shareText)
+                                context.startActivity(Intent.createChooser(send, chooser))
+                            },
+                            Modifier.weight(1f),
+                            icon = SentinelIcons.Share,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(Spacing.x05))
+                PlainButton(stringResource(R.string.family_regenerate), onCreate, enabled = state.consent && !state.creating)
             }
-            SecondaryButton(stringResource(R.string.family_regenerate), onCreate, Modifier.fillMaxWidth(), enabled = state.consent && !state.creating)
         } else {
             PrimaryButton(stringResource(R.string.family_create_code), onCreate, Modifier.fillMaxWidth(), enabled = state.consent && !state.creating)
             if (!state.consent) {
-                Text(stringResource(R.string.family_consent_required), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    stringResource(R.string.family_consent_required),
+                    style = SentinelTheme.type.footnote,
+                    color = p.secondaryLabel,
+                    modifier = Modifier.padding(start = Spacing.x2, top = Spacing.x1),
+                )
             }
         }
-        state.inviteError?.let { Text(familyErrorMessage(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
-
-        SectionHeader(stringResource(R.string.family_my_guardians))
-        when (val l = state.links) {
-            is LinksState.Ready ->
-                if (l.links.guardians.isEmpty()) {
-                    Text(stringResource(R.string.family_no_guardians), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else {
-                    l.links.guardians.forEach { GuardianRow(it, state.workingLinkId == it.id) { onUnlink(it.id) } }
-                }
-            LinksState.Loading -> Text(stringResource(R.string.loading_cd), style = MaterialTheme.typography.bodyMedium)
-            LinksState.Failed -> Unit
+        state.inviteError?.let {
+            StatusLine(familyErrorMessage(it), SentinelIcons.Info, SentinelTheme.colors[Tier.Critical].content, Modifier.padding(top = Spacing.x15))
         }
     }
 }
@@ -225,61 +290,33 @@ private fun ProtectMeCard(state: FamilyUiState, onConsent: (Boolean) -> Unit, on
 fun formatCountdown(seconds: Long): String = "%02d:%02d".format(seconds / 60, seconds % 60)
 
 @Composable
-private fun GuardianRow(g: Guardian, working: Boolean, onRemove: () -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = Spacing.minTouchTarget), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(g.name, style = MaterialTheme.typography.titleSmall)
-            Text(stringResource(R.string.family_linked_on, formatTimestamp(g.linkedAt)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        TextButton(onRemove, enabled = !working, modifier = Modifier.heightIn(min = Spacing.minTouchTarget)) { Text(stringResource(R.string.family_remove)) }
-    }
-}
+private fun RemoveButton(text: String, enabled: Boolean, onClick: () -> Unit) =
+    PlainButton(text, onClick, enabled = enabled, color = SentinelTheme.colors[Tier.Critical].content)
 
 @Composable
-private fun ProtectSomeoneCard(
-    state: FamilyUiState,
-    onCode: (String) -> Unit,
-    onName: (String) -> Unit,
-    onAccept: () -> Unit,
-    onUnlink: (String) -> Unit,
-) {
-    SectionCard(stringResource(R.string.family_protect_someone_title), stringResource(R.string.family_protect_someone_body)) {
-        CodeEntry(state.code, onCode, enabled = !state.accepting, isError = state.acceptError == FamilyError.InvalidCode)
-        OutlinedTextField(
-            value = state.name,
-            onValueChange = onName,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !state.accepting,
-            singleLine = true,
-            label = { Text(stringResource(R.string.family_name_label)) },
-            supportingText = { Text(stringResource(R.string.family_name_hint)) },
-        )
-        Text(stringResource(R.string.family_push_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        PrimaryButton(stringResource(R.string.family_link), onAccept, Modifier.fillMaxWidth(), enabled = state.canAccept)
-        state.acceptError?.let { Text(familyErrorMessage(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
-        if (state.accepted) {
-            NoteCard(stringResource(R.string.family_linked_success), iconRes = R.drawable.ic_shield)
-        }
-        SectionHeader(stringResource(R.string.family_people_i_protect))
-        when (val l = state.links) {
-            is LinksState.Ready ->
-                if (l.links.protecting.isEmpty()) {
-                    Text(stringResource(R.string.family_no_protecting), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else {
-                    l.links.protecting.forEachIndexed { i, p -> ProtecteeRow(i + 1, p, state.workingLinkId == p.id) { onUnlink(p.id) } }
-                }
-            else -> Unit
-        }
-    }
+private fun GuardianRow(g: Guardian, working: Boolean, onRemove: () -> Unit) {
+    GroupedRow(
+        title = g.name,
+        subtitle = stringResource(R.string.family_linked_on, formatTimestamp(g.linkedAt)),
+        icon = SentinelIcons.Person,
+        trailing = { RemoveButton(stringResource(R.string.family_remove), !working, onRemove) },
+    )
 }
 
 @Composable
 private fun ProtecteeRow(index: Int, p: Protectee, working: Boolean, onStop: () -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = Spacing.minTouchTarget), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.family_person, index), style = MaterialTheme.typography.titleSmall)
-            Text(stringResource(R.string.family_linked_on, formatTimestamp(p.linkedAt)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        TextButton(onStop, enabled = !working, modifier = Modifier.heightIn(min = Spacing.minTouchTarget)) { Text(stringResource(R.string.family_stop)) }
+    GroupedRow(
+        title = stringResource(R.string.family_person, index),
+        subtitle = stringResource(R.string.family_linked_on, formatTimestamp(p.linkedAt)),
+        icon = SentinelIcons.Person,
+        trailing = { RemoveButton(stringResource(R.string.family_stop), !working, onStop) },
+    )
+}
+
+@Composable
+private fun LinksFailed(onRetry: () -> Unit) {
+    Column(Modifier.padding(vertical = Spacing.x1)) {
+        NoteCard(stringResource(R.string.family_links_failed), icon = SentinelIcons.CloudOff)
+        PlainButton(stringResource(R.string.action_retry), onRetry, Modifier.padding(start = Spacing.x1))
     }
 }
