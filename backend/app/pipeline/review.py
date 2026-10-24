@@ -8,8 +8,10 @@
                        policy.decide (reason review_upgrade) -> commit -> alert hooks
 
 Guarantees: never downgrades or retracts an alert; one job per event (unique event_id), per-event
-advisory lock, at most MAX_ATTEMPTS attempts; a full queue drops the job to `failed` without blocking
-the request; LLM / embedding failures finish the job with no upgrade; a job whose user was deleted
+advisory lock, at most MAX_ATTEMPTS attempts; a full queue (or a user over REVIEW_MAX_QUEUED_PER_USER)
+leaves the job `queued` for the periodic sweeper (round-robin across users) and never blocks the request;
+the agent slot is RESERVED (agent_ran=True, committed under a per-user advisory lock) before the LLM call,
+so concurrent jobs cannot exceed the daily cap, and a failed agent run keeps its slot; LLM / embedding failures finish the job with no upgrade; a job whose user was deleted
 exits quietly (rows cascade); jobs are only created by process_event for an event it just stored,
 never from request parameters. Logs carry ids and exception types, never text.
 """
@@ -23,7 +25,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 
-from sqlalchemy import func, select, text, update
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.models import Alert, Assessment, EventJob, User
@@ -58,6 +60,7 @@ class _Task:
     session_factory: Callable
     llm: Any = None
     deps: Any = None
+    user_id: str | None = None
 
 
 @dataclass
@@ -65,18 +68,31 @@ class Runner:
     workers: int = 2
     queue_size: int = 256
     deferred: bool = False  # tests / eval: jobs wait for flush_background()
+    max_per_user: int = 20  # in-queue + running jobs per user; 0 = unlimited
     _lock: threading.Lock = field(default_factory=threading.Lock)
     _pending: list = field(default_factory=list)
     _futures: set = field(default_factory=set)
+    _inflight: dict = field(default_factory=dict)  # event_id -> user_id, queued in memory or running
     _pool: ThreadPoolExecutor | None = None
 
-    def submit(self, task: _Task) -> bool:
+    def inflight_ids(self) -> set:
         with self._lock:
-            busy = len(self._pending) + len(self._futures)
-            if busy >= self.queue_size:
-                full = True
+            return set(self._inflight)
+
+    def submit(self, task: _Task) -> bool:
+        """Accept the task, or refuse it (False) when the queue is full or its user is over the fair limit.
+        A refused job is NOT failed: its row stays `queued` and the sweeper submits it later."""
+        with self._lock:
+            if task.event_id in self._inflight:
+                return True  # already queued / running here
+            if len(self._inflight) >= self.queue_size:
+                refused = "queue_full"
+            elif (task.user_id is not None and self.max_per_user > 0
+                  and sum(1 for u in self._inflight.values() if u == task.user_id) >= self.max_per_user):
+                refused = "user_limit"
             else:
-                full = False
+                refused = None
+                self._inflight[task.event_id] = task.user_id
                 if self.deferred:
                     self._pending.append(task)
                 else:
@@ -85,15 +101,16 @@ class Runner:
                                                         thread_name_prefix="review")
                     fut: Future = self._pool.submit(_run_safe, task)
                     self._futures.add(fut)
-                    fut.add_done_callback(self._done)
-        if full:
-            _mark_failed(task, "queue_full")
+                    fut.add_done_callback(lambda f, eid=task.event_id: self._done(f, eid))
+        if refused:
+            log.info("review job for event %s stays queued (%s)", task.event_id, refused)
             return False
         return True
 
-    def _done(self, fut) -> None:
+    def _done(self, fut, event_id: str) -> None:
         with self._lock:
             self._futures.discard(fut)
+            self._inflight.pop(event_id, None)
 
     def flush(self) -> None:
         """Run / wait for every pending job (deferred jobs run in the calling thread, in order)."""
@@ -104,7 +121,11 @@ class Runner:
             if not batch and not futs:
                 return
             for t in batch:
-                _run_safe(t)
+                try:
+                    _run_safe(t)
+                finally:
+                    with self._lock:
+                        self._inflight.pop(t.event_id, None)
             if futs:
                 wait(futs)
 
@@ -112,30 +133,19 @@ class Runner:
 runner = Runner()
 
 
-def configure(*, workers: int, queue_size: int, deferred: bool = False) -> Runner:
+def configure(*, workers: int, queue_size: int, deferred: bool = False, max_per_user: int = 20) -> Runner:
     global runner
-    runner = Runner(workers=workers, queue_size=queue_size, deferred=deferred)
+    runner = Runner(workers=workers, queue_size=queue_size, deferred=deferred, max_per_user=max_per_user)
     return runner
 
 
-def submit(event_id: str, *, session_factory: Callable, llm=None, deps=None) -> bool:
-    return runner.submit(_Task(event_id, session_factory, llm, deps))
+def submit(event_id: str, *, session_factory: Callable, llm=None, deps=None, user_id: str | None = None) -> bool:
+    return runner.submit(_Task(event_id, session_factory, llm, deps, user_id))
 
 
 def flush_background() -> None:
     """Tests / eval: run all pending stage-2 jobs now, synchronously."""
     runner.flush()
-
-
-def _mark_failed(task: _Task, reason: str) -> None:
-    try:
-        with task.session_factory() as db:
-            db.execute(update(EventJob).where(EventJob.event_id == task.event_id, EventJob.state == "queued")
-                       .values(state="failed", error=reason, payload=None, updated_at=func.now()))
-            db.commit()
-        log.warning("review job for event %s dropped (%s)", task.event_id, reason)
-    except Exception as exc:
-        log.warning("could not mark review job failed (%s)", type(exc).__name__)
 
 
 def _run_safe(task: _Task) -> str:
@@ -198,7 +208,7 @@ def _locked(db: Session, event_id: str, llm, deps) -> str:
             db.rollback()
             return "gone"
         job.state, job.payload, job.error = "done", None, None
-        job.agent_ran, job.upgraded = outcome.agent_ran, outcome.alert is not None
+        job.agent_ran, job.upgraded = job.agent_ran or outcome.agent_ran, outcome.alert is not None
         job.updated_at = datetime.now(timezone.utc)
         db.commit()
     except Exception as exc:
@@ -242,6 +252,23 @@ def agent_runs_today(db: Session, user_id: str, now: datetime) -> int:
         EventJob.updated_at > now - timedelta(hours=24))) or 0
 
 
+def reserve_agent_slot(db: Session, user_id: str, event_id: str, cap: int) -> bool:
+    """Atomically take one of the user's daily agent slots BEFORE the LLM call.
+
+    A transaction-scoped advisory lock per user serialises the count + mark, so concurrent jobs cannot all
+    pass the check. The mark (job.agent_ran=True) is committed before returning. A job that already holds
+    a reservation (a retry after a failed agent run) does not get a second one: its slot was spent."""
+    db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:k))"), {"k": f"agentcap:{user_id}"})
+    job = db.scalar(select(EventJob).where(EventJob.event_id == event_id))
+    if job is None or job.agent_ran or agent_runs_today(db, user_id, datetime.now(timezone.utc)) >= cap:
+        db.commit()
+        return False
+    job.agent_ran = True
+    job.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    return True
+
+
 def _review(db: Session, user, event_id: str, payload: dict, llm, deps) -> _ReviewOutcome:
     import hashlib
     import time
@@ -267,6 +294,7 @@ def _review(db: Session, user, event_id: str, payload: dict, llm, deps) -> _Revi
     stage1_agent = any(isinstance(p, dict) and p.get("mode") not in (None, "rules") for _, p in prior)
 
     mode = (s.agent_review or "escalated").strip().lower()
+    # cheap pre-check only; the authoritative cap check is the atomic reservation below
     agent_ok = (s.agent_mode or "hybrid") != "rules" and llm is not None and (
         agent_runs_today(db, user.id, datetime.now(timezone.utc)) < max(0, s.agent_review_daily_cap))
     # rules-only re-score first: with AGENT_REVIEW=escalated the agent runs only for an event that
@@ -276,10 +304,10 @@ def _review(db: Session, user, event_id: str, payload: dict, llm, deps) -> _Revi
     want_agent = agent_ok and (mode == "all" or (not stage1_agent and _rank(ev_.tier) >= _rank("caution")
                                                  and _rank(ev_.tier) > _rank(best)))
     ran = False
-    if want_agent:
+    if want_agent and reserve_agent_slot(db, user.id, event_id, max(0, s.agent_review_daily_cap)):
+        ran = True  # the slot is spent from here on, even if the agent call fails
         ev_ = orch.evaluate(db, user, rev, rev, entities, event_id, skey, False, llm, deps, semantic=True,
                             run_agent=True)
-        ran = True
     if _rank(ev_.tier) <= _rank(best):
         db.commit()
         return _ReviewOutcome(agent_ran=ran)
@@ -301,16 +329,56 @@ def _review(db: Session, user, event_id: str, payload: dict, llm, deps) -> _Revi
     return _ReviewOutcome(agent_ran=ran, alert=out, decision=decision)
 
 
-# ---------------------------------------------------------------- startup sweeper
+# ---------------------------------------------------------------- sweeper
+_sweep_lock = threading.Lock()
+SWEEP_BATCH = 1000
+
+
 def sweep(session_factory: Callable, *, older_than: timedelta, deps=None, llm=None) -> int:
-    """Resubmit queued / running jobs not touched for `older_than` (a crash or restart lost them)."""
-    cutoff = datetime.now(timezone.utc) - older_than
-    with session_factory() as db:
-        ids = db.scalars(select(EventJob.event_id).where(
-            EventJob.state.in_(("queued", "running")), EventJob.attempts < MAX_ATTEMPTS,
-            EventJob.updated_at < cutoff).order_by(EventJob.updated_at).limit(1000)).all()
-    for eid in ids:
-        submit(eid, session_factory=session_factory, llm=llm, deps=deps)
-    if ids:
-        log.info("review sweeper resubmitted %d jobs", len(ids))
-    return len(ids)
+    """Submit jobs that are not in the in-memory queue: `queued` ones (refused earlier because the queue or
+    the user's limit was full, or lost in a restart) and `running` ones not touched for `older_than` (a
+    crash). Round-robin across users, oldest first within a user, so a flooding user cannot starve others.
+    Never runs two sweeps at once in a process. Returns the number of jobs accepted."""
+    if not _sweep_lock.acquire(blocking=False):
+        return 0
+    try:
+        cutoff = datetime.now(timezone.utc) - older_than
+        rn = func.row_number().over(partition_by=EventJob.user_id,
+                                    order_by=(EventJob.created_at, EventJob.id)).label("rn")
+        inflight = runner.inflight_ids()
+        with session_factory() as db:
+            sub = select(EventJob.event_id, EventJob.user_id, EventJob.created_at, rn).where(
+                EventJob.attempts < MAX_ATTEMPTS,
+                ((EventJob.state == "queued") | ((EventJob.state == "running") & (EventJob.updated_at < cutoff))),
+                EventJob.event_id.not_in(inflight) if inflight else True).subquery()
+            rows = db.execute(select(sub.c.event_id, sub.c.user_id).order_by(
+                sub.c.rn, sub.c.created_at).limit(SWEEP_BATCH)).all()
+        accepted = 0
+        for eid, uid in rows:
+            if runner.submit(_Task(eid, session_factory, llm, deps, uid)):
+                accepted += 1
+            elif len(runner.inflight_ids()) >= runner.queue_size:
+                break  # queue full: the rest wait for the next pass
+        if accepted:
+            log.info("review sweeper submitted %d jobs", accepted)
+        return accepted
+    finally:
+        _sweep_lock.release()
+
+
+def start_sweeper(session_factory: Callable, *, interval: timedelta, older_than: timedelta,
+                  deps=None) -> threading.Event:
+    """Daemon thread: sweep now, then every `interval` until the returned event is set."""
+    stop = threading.Event()
+
+    def loop():
+        while True:
+            try:
+                sweep(session_factory, older_than=older_than, deps=deps)
+            except Exception as exc:
+                log.warning("review sweeper failed (%s)", type(exc).__name__)
+            if stop.wait(max(1.0, interval.total_seconds())):
+                return
+
+    threading.Thread(target=loop, name="review-sweeper", daemon=True).start()
+    return stop

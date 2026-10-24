@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from sqlalchemy import select, text, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
@@ -129,14 +129,92 @@ def test_llm_down_finishes_job_without_upgrade(client, auth_headers, db, two_sta
     assert job.state == "done" and db.query(Alert).filter(Alert.reason == "review_upgrade").count() == 0
 
 
-def test_queue_full_drops_to_failed_without_blocking(client, auth_headers, db, two_stage):
+def test_queue_full_leaves_job_queued_and_sweeper_processes_it(client, auth_headers, db, two_stage):
     review.configure(workers=1, queue_size=0, deferred=True)
     r = client.post("/v1/events", headers=auth_headers, json={
         "device_event_id": "q1", "source": "sms", "ts": T0.isoformat(), "sender": "+919800000301",
         "text": "hello", "triage_score": 0.1})
     assert r.status_code == 200
     job = db.scalar(select(EventJob))
-    assert job.state == "failed" and job.error == "queue_full" and job.payload is None
+    assert job.state == "queued" and job.error is None and job.payload is not None
+    sf = sessionmaker(bind=db.get_bind())
+    assert review.sweep(sf, older_than=timedelta(minutes=5)) == 0  # still full
+    review.configure(workers=1, queue_size=10, deferred=True)
+    assert review.sweep(sf, older_than=timedelta(minutes=5)) == 1
+    review.flush_background()
+    db.expire_all()
+    assert db.scalar(select(EventJob.state)) == "done"
+
+
+def _flood(client, headers, n, tag):
+    for i in range(n):
+        client.post("/v1/events", headers=headers, json={
+            "device_event_id": f"{tag}-{i}", "source": "sms", "ts": (T0 + timedelta(minutes=i)).isoformat(),
+            "sender": f"+9198000{i:05d}", "text": "see you at lunch", "triage_score": 0.1})
+
+
+def test_per_user_limit_and_flood_does_not_starve_others(client, register, db, two_stage):
+    review.configure(workers=1, queue_size=1000, deferred=True, max_per_user=5)
+    _, flooder = register()
+    _, other = register()
+    _flood(client, flooder, 100, "f")
+    assert db.query(EventJob).filter(EventJob.state == "queued").count() == 100
+    assert len(review.runner.inflight_ids()) == 5  # fair limit: the rest wait in the DB, not in memory
+    _flood(client, other, 1, "o")  # the other user still gets in
+    assert len(review.runner.inflight_ids()) == 6
+    sf = sessionmaker(bind=db.get_bind())
+    review.flush_background()
+    db.expire_all()
+    done_other = db.query(EventJob).filter(EventJob.state == "done").count()
+    assert done_other == 6
+    # each sweeper pass hands the flooder at most 5 more jobs; nothing is lost
+    passes = 0
+    while db.query(EventJob).filter(EventJob.state == "queued").count():
+        passes += 1
+        assert passes <= 20
+        assert review.sweep(sf, older_than=timedelta(minutes=5)) <= 5
+        review.flush_background()
+        db.expire_all()
+    assert passes == 19
+    assert db.query(EventJob).filter(EventJob.state == "done").count() == 101
+
+
+def test_sweeper_round_robins_across_users(client, register, db, two_stage):
+    review.configure(workers=1, queue_size=0, deferred=True)  # every submit refused: all stay queued
+    _, flooder = register()
+    _, other = register()
+    _flood(client, flooder, 30, "f")
+    _flood(client, other, 1, "o")
+    assert db.query(EventJob).filter(EventJob.state == "queued").count() == 31
+    review.configure(workers=1, queue_size=3, deferred=True)  # room for 3 per pass
+    sf = sessionmaker(bind=db.get_bind())
+    assert review.sweep(sf, older_than=timedelta(minutes=5)) == 3
+    review.flush_background()
+    db.expire_all()
+    states = {uid: n for uid, n in db.execute(select(EventJob.user_id, func.count(EventJob.id)).where(
+        EventJob.state == "done").group_by(EventJob.user_id))}
+    assert len(states) == 2 and sorted(states.values()) == [1, 2]  # the other user's single job went first round
+
+
+def test_sweeps_do_not_overlap(db, monkeypatch):
+    import threading
+    started, release, results = threading.Event(), threading.Event(), []
+    sf = sessionmaker(bind=db.get_bind())
+
+    class Slow:
+        def __call__(self):
+            started.set()
+            release.wait(5)
+            return sf()
+
+    t = threading.Thread(target=lambda: results.append(review.sweep(Slow(), older_than=timedelta(0))))
+    t.start()
+    assert started.wait(5)
+    assert review.sweep(sf, older_than=timedelta(0)) == 0  # second concurrent sweep is a no-op
+    release.set()
+    t.join(5)
+    assert results == [0]
+    assert not review._sweep_lock.locked()
 
 
 def test_deleted_user_job_exits_quietly(client, auth_headers, db, two_stage):
@@ -196,3 +274,55 @@ def test_story_of_one_user_never_upgrades_another(client, register, db, two_stag
     review.flush_background()
     assert db.query(Alert).filter(Alert.reason == "review_upgrade").count() == 0
     assert db.query(Edge).filter(Edge.relation == "similar").count() == 1  # only user 1's own pair
+
+
+def test_concurrent_jobs_cannot_exceed_agent_cap(client, register, db, two_stage, monkeypatch):
+    import threading
+    import time
+    monkeypatch.setattr(settings, "agent_mode", "hybrid")
+    monkeypatch.setattr(settings, "agent_review", "all")
+    monkeypatch.setattr(settings, "agent_review_daily_cap", 3)
+    _, h = register()
+    ids = [post(client, h, i, f"+9198000099{i:02d}", "see you at lunch", i)["event_id"] for i in range(10)]
+    answer = ChatResult(content=json.dumps({"tier": "info", "headline": "ok", "next_step": "none",
+                                            "why": [], "raises": []}))
+    lock, calls = threading.Lock(), []
+
+    class Spy:
+        def chat(self, *a, **k):
+            time.sleep(0.2)  # widen the race window
+            with lock:
+                calls.append(1)
+            return answer
+
+        def embed(self, texts):
+            return FakeLLM().embed(texts)
+
+    spy, sf = Spy(), sessionmaker(bind=db.get_bind())
+    db.commit()
+    threads = [threading.Thread(target=review.run_job, args=(sf, e), kwargs={"llm": spy}) for e in ids]
+    [t.start() for t in threads]
+    [t.join(60) for t in threads]
+    db.expire_all()
+    assert len(calls) == 3
+    assert db.query(EventJob).filter(EventJob.agent_ran.is_(True)).count() == 3
+    assert db.query(EventJob).filter(EventJob.state == "done").count() == 10
+
+
+def test_failed_agent_run_keeps_its_slot(client, register, db, two_stage, monkeypatch):
+    monkeypatch.setattr(settings, "agent_mode", "hybrid")
+    monkeypatch.setattr(settings, "agent_review", "all")
+    monkeypatch.setattr(settings, "agent_review_daily_cap", 1)
+    _, h = register()
+    e1 = post(client, h, 1, "+919800009901", "see you at lunch", 0)["event_id"]
+    e2 = post(client, h, 2, "+919800009902", "lunch moved", 1)["event_id"]
+    boom = FakeLLM([RuntimeError("boom")])
+    sf = sessionmaker(bind=db.get_bind())
+    db.commit()
+    review.run_job(sf, e1, llm=boom)
+    db.expire_all()
+    j1 = db.scalar(select(EventJob).where(EventJob.event_id == e1))
+    assert j1.agent_ran is True  # reserved before the call; spent although it failed
+    nxt = FakeLLM([])
+    review.run_job(sf, e2, llm=nxt)  # cap reached: no agent call (an empty script would assert)
+    assert nxt.calls == []
