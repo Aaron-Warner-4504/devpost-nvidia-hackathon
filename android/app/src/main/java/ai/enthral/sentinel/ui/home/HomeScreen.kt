@@ -103,7 +103,8 @@ fun HomeContent(
                 modifier = CardPadding.animateItem(),
             )
         }
-        if (state.offline && state.phase == Phase.Ready) {
+        // The hero already says "You are offline"; the note is only for when it shows another state (e.g. Paused).
+        if (state.offline && state.phase == Phase.Ready && state.protection != ProtectionStatus.Offline) {
             item(key = "offline") {
                 NoteCard(stringResource(R.string.home_offline_note), Modifier.padding(top = Spacing.x1).animateItem(), icon = SentinelIcons.CloudOff)
             }
