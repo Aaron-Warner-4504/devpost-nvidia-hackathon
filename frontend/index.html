@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinel test console</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Sentinel test console <span id="health" class="dot" title="GET /health"></span></h1>
+  <p class="note">For testing only, not production. Tokens live in sessionStorage (cleared when the tab closes). Message text is attacker-controlled and is rendered as plain text.</p>
+  <nav>
+    <a href="#p-conn">Connection</a><a href="#p-event">Event</a><a href="#p-demo">3-day demo</a><a href="#p-check">Check</a>
+    <a href="#p-alerts">Alerts</a><a href="#p-family">Family</a><a href="#p-acct">Account</a><a href="#p-log">Log</a>
+  </nav>
+  <div id="banner" class="banner" hidden></div>
+</header>
+<main>
+<section id="p-conn"><h2>1. Connection</h2>
+  <div class="row">
+    <label>Base URL <input id="base" type="url" autocomplete="off"></label>
+    <a id="dash" href="#" target="_blank" rel="noopener">Dashboard</a>
+  </div>
+  <p class="hint">Dashboard only works if the backend runs with DEMO_ENABLED=true, and it asks for a token itself.</p>
+  <div class="row">
+    <label>Profile <select id="profile"></select></label>
+    <label>New profile <input id="newprofile" placeholder="e.g. guardian" size="12"></label>
+    <button id="addprofile" type="button">Add profile</button>
+    <button id="delprofile" type="button">Remove profile</button>
+  </div>
+  <p class="hint">To test family pairing you need two tokens: create profiles "protected" and "guardian", register a device in each, and switch between them. The selected profile is used for every request.</p>
+  <label>Token (active profile) <input id="token" type="password" autocomplete="off" spellcheck="false"></label>
+  <div class="row">
+    <button id="register" type="button">Register new device</button>
+    <button id="me" type="button">GET /v1/me</button>
+    <button id="forget" type="button">Forget token</button>
+  </div>
+  <pre id="meout" class="out"></pre>
+</section>
+
+<section id="p-event"><h2>2. Send event <code>POST /v1/events</code></h2>
+  <label>Preset <select id="preset"></select></label>
+  <div id="evform"></div>
+  <div class="row"><button id="sendev" type="button">Send event</button></div>
+  <div id="evout"></div>
+</section>
+
+<section id="p-demo"><h2>3. 3-day demo</h2>
+  <p class="hint">Courier SMS (3 days ago), unknown call (2 days ago), WhatsApp UPI demand (1 hour ago). Fresh ids each run. Use a fresh profile/device to avoid earlier history.</p>
+  <button id="rundemo" type="button">Run 3-day demo</button>
+  <div id="demoout"></div>
+</section>
+
+<section id="p-check"><h2>4. Check <code>POST /v1/check</code></h2>
+  <div class="row"><label><input type="radio" name="cmode" value="text" checked> Text</label>
+  <label><input type="radio" name="cmode" value="image"> Image</label></div>
+  <div id="ckform"></div>
+  <label id="imgwrap" hidden>Image (png/jpeg/webp/gif, max 5 MB) <input id="img" type="file" accept="image/*,.txt,.pdf"></label>
+  <div class="row"><button id="docheck" type="button">Check</button></div>
+  <div id="ckout"></div>
+</section>
+
+<section id="p-alerts"><h2>5. Alerts <code>GET /v1/alerts</code></h2>
+  <div class="row"><label>since (optional) <input id="since" type="datetime-local"></label>
+  <button id="loadalerts" type="button">Load alerts</button></div>
+  <div id="alertout"></div>
+</section>
+
+<section id="p-family"><h2>6. Family</h2>
+  <p class="hint">Pairing needs two profiles. As "protected": create an invite. Switch to "guardian": accept the code.</p>
+  <h3>Create invite (protected user)</h3>
+  <div class="row"><label><input id="consent" type="checkbox" checked> I consent to share critical alerts with a guardian</label>
+  <button id="invite" type="button">Create invite</button></div>
+  <div id="inviteout"></div>
+  <h3>Accept code (guardian)</h3>
+  <div class="row"><label>Code <input id="code" size="8" maxlength="12" autocomplete="off"></label>
+  <label>Name <input id="gname" value="Ravi"></label>
+  <label>FCM token <input id="gfcm" value="test-fcm-token"></label>
+  <button id="accept" type="button">Accept</button></div>
+  <h3>Links</h3>
+  <button id="links" type="button">GET /v1/family/contacts</button>
+  <div id="linkout"></div>
+</section>
+
+<section id="p-acct"><h2>7. Device &amp; account</h2>
+  <div class="row"><label>FCM token <input id="fcm" size="30" autocomplete="off"></label>
+  <button id="setfcm" type="button">POST /v1/devices/fcm</button></div>
+  <div class="row"><label>Consent source <select id="csrc"></select></label>
+  <label><input id="cgrant" type="checkbox" checked> granted</label>
+  <button id="setconsent" type="button">POST /v1/me/consents</button></div>
+  <div class="row"><button id="delme" type="button" class="danger">DELETE /v1/me</button></div>
+  <div id="acctout"></div>
+</section>
+
+<section id="p-log"><h2>8. Request log (last 30)</h2>
+  <button id="clearlog" type="button">Clear</button>
+  <div id="log"></div>
+</section>
+</main>
+<div id="toasts" aria-live="polite"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
