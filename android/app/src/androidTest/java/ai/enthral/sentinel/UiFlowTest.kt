@@ -67,11 +67,12 @@ class UiFlowTest {
         }
         compose.onNodeWithText("Critical").assertIsDisplayed()
         compose.onNodeWithText("Why we flagged this").assertIsDisplayed()
-        compose.onNodeWithText("Courier SMS with a link", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("Unknown call, 4 minutes", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("This message").assertIsDisplayed() // current event highlighted
-        compose.onNodeWithText("Do not pay. Call your bank.").assertIsDisplayed()
-        compose.onNodeWithText("Pressure to act fast").assertIsDisplayed() // signal in plain language
+        // The redesigned detail is one scrolling column with a larger verdict header: scroll each part into view.
+        compose.onNodeWithText("Courier SMS with a link", substring = true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Unknown call, 4 minutes", substring = true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("This message").performScrollTo().assertIsDisplayed() // current event highlighted
+        compose.onNodeWithText("Do not pay. Call your bank.").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Pressure to act fast").performScrollTo().assertIsDisplayed() // signal in plain language
         compose.onNodeWithText("This was a scam").performScrollTo().performClick()
         assertEquals(listOf(FeedbackLabel.Scam), picked)
     }

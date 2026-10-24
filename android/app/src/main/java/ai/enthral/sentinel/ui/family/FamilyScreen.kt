@@ -231,7 +231,7 @@ private fun InviteBlock(state: FamilyUiState, onCreate: () -> Unit, modifier: Mo
         if (invite != null) {
             Column(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.extraLarge)).background(p.elevated)
-                    .padding(horizontal = Spacing.x2, vertical = Spacing.x3),
+                    .padding(start = Spacing.x2, end = Spacing.x2, top = Spacing.x3, bottom = Spacing.x1),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 CodeDisplay(invite.code, dimmed = state.inviteExpired)

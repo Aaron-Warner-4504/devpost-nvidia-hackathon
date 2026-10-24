@@ -72,8 +72,10 @@ fun SettingsScreen(onOpenDemo: () -> Unit) {
         }
     }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.onResume() }
+    // The per-app locale change recreates the activity but not this ViewModel, so read the live locale here.
+    val liveLanguage = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]?.language
     SettingsContent(
-        state = state,
+        state = if (liveLanguage != null && Languages.any { it.first == liveLanguage }) state.copy(language = liveLanguage) else state,
         onSource = vm::setSource,
         onFix = vm::fixSource,
         onPaused = vm::setPaused,
