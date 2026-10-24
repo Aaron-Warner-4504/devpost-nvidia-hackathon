@@ -1,26 +1,30 @@
 package ai.enthral.sentinel.ui.home
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -30,20 +34,23 @@ import ai.enthral.sentinel.domain.ConsentSource
 import ai.enthral.sentinel.domain.ProtectionStatus
 import ai.enthral.sentinel.domain.SourceStatus
 import ai.enthral.sentinel.domain.Tier
-import ai.enthral.sentinel.ui.common.AdaptiveBox
 import ai.enthral.sentinel.ui.common.graphViewModel
 import ai.enthral.sentinel.ui.components.AlertCard
 import ai.enthral.sentinel.ui.components.EmptyState
 import ai.enthral.sentinel.ui.components.ErrorState
+import ai.enthral.sentinel.ui.components.GroupedHeader
+import ai.enthral.sentinel.ui.components.IconTile
+import ai.enthral.sentinel.ui.components.LargeTitleList
 import ai.enthral.sentinel.ui.components.LoadingSkeleton
 import ai.enthral.sentinel.ui.components.NoteCard
-import ai.enthral.sentinel.ui.components.PrimaryButton
-import ai.enthral.sentinel.ui.components.SecondaryButton
-import ai.enthral.sentinel.ui.components.SectionHeader
+import ai.enthral.sentinel.ui.components.SentinelIcons
 import ai.enthral.sentinel.ui.components.StatusHero
-import ai.enthral.sentinel.ui.components.TierCountChip
+import ai.enthral.sentinel.ui.components.TierCountRow
 import ai.enthral.sentinel.ui.components.apiErrorMessage
+import ai.enthral.sentinel.ui.components.pressScale
 import ai.enthral.sentinel.ui.components.titleRes
+import ai.enthral.sentinel.ui.theme.Radii
+import ai.enthral.sentinel.ui.theme.SentinelTheme
 import ai.enthral.sentinel.ui.theme.Spacing
 
 @Composable
@@ -67,7 +74,8 @@ fun HomeScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+private val CardPadding = Modifier.padding(horizontal = Spacing.inset)
+
 @Composable
 fun HomeContent(
     state: HomeUiState,
@@ -82,81 +90,102 @@ fun HomeContent(
         .filter { it != ConsentSource.Check && state.sources.status(it) == SourceStatus.On }
         .map { stringResource(it.titleRes()) }
         .joinToString(", ")
-    AdaptiveBox(Modifier.statusBarsPadding()) {
-        PullToRefreshBox(isRefreshing = state.refreshing, onRefresh = onRefresh) {
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = Spacing.gutter, vertical = Spacing.x2),
-                verticalArrangement = Arrangement.spacedBy(Spacing.x1),
-            ) {
-                item {
-                    Text(
-                        stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(bottom = Spacing.x1).semantics { heading() },
-                    )
-                }
-                item {
-                    StatusHero(
-                        status = state.protection,
-                        sourcesOn = sourcesOn,
-                        onAction = if (state.protection == ProtectionStatus.Offline) onRefresh else onOpenSettings,
-                    )
-                }
-                if (state.offline && state.phase == Phase.Ready) {
-                    item { NoteCard(stringResource(R.string.home_offline_note), iconRes = R.drawable.ic_offline) }
-                }
-                item { SectionHeader(stringResource(R.string.home_today)) }
-                item {
-                    Card(
-                        Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-                    ) {
-                        val counts = Tier.entries.reversed().filter { (state.todayCounts[it] ?: 0) > 0 }
-                        androidx.compose.foundation.layout.Column(
-                            Modifier.padding(Spacing.x2),
-                            verticalArrangement = Arrangement.spacedBy(Spacing.x1),
-                        ) {
-                            Text(
-                                stringResource(if (counts.isEmpty()) R.string.home_today_none else R.string.home_today_some),
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                            if (counts.isNotEmpty()) {
-                                FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(Spacing.x1),
-                                    verticalArrangement = Arrangement.spacedBy(Spacing.x1),
-                                ) { counts.forEach { TierCountChip(it, state.todayCounts.getValue(it)) } }
-                            }
-                        }
+    LargeTitleList(
+        title = stringResource(R.string.app_name),
+        refreshing = state.refreshing,
+        onRefresh = onRefresh,
+    ) {
+        item(key = "hero") {
+            StatusHero(
+                status = state.protection,
+                sourcesOn = sourcesOn,
+                onAction = if (state.protection == ProtectionStatus.Offline) onRefresh else onOpenSettings,
+                modifier = CardPadding.animateItem(),
+            )
+        }
+        if (state.offline && state.phase == Phase.Ready) {
+            item(key = "offline") {
+                NoteCard(stringResource(R.string.home_offline_note), Modifier.padding(top = Spacing.x1).animateItem(), icon = SentinelIcons.CloudOff)
+            }
+        }
+
+        item(key = "today-h") { HomeHeader(stringResource(R.string.home_today)) }
+        item(key = "today") { TodayCard(state.todayCounts, CardPadding) }
+
+        item(key = "latest-h") { HomeHeader(stringResource(R.string.home_latest_alert)) }
+        when (state.phase) {
+            Phase.Loading -> item(key = "latest-loading") { LoadingSkeleton(CardPadding, rows = 1) }
+            Phase.Error -> item(key = "latest-error") { ErrorState(apiErrorMessage(state.failure!!), onRefresh) }
+            Phase.Ready -> {
+                val latest = state.latest
+                if (latest == null) {
+                    item(key = "latest-empty") {
+                        HomeEmpty()
                     }
-                }
-                item { SectionHeader(stringResource(R.string.home_latest_alert)) }
-                when (state.phase) {
-                    Phase.Loading -> item { LoadingSkeleton(rows = 1) }
-                    Phase.Error -> item { ErrorState(apiErrorMessage(state.failure!!), onRefresh) }
-                    Phase.Ready -> {
-                        val latest = state.latest
-                        if (latest == null) {
-                            item {
-                                EmptyState(
-                                    title = stringResource(R.string.home_empty_title),
-                                    body = stringResource(R.string.home_empty_body),
-                                )
-                            }
-                        } else {
-                            item(key = latest.id) { AlertCard(latest, onClick = { onOpenAlert(latest.id) }) }
-                        }
-                    }
-                }
-                item { SectionHeader(stringResource(R.string.home_quick_actions)) }
-                item {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.x1)) {
-                        PrimaryButton(stringResource(R.string.home_action_check), onOpenCheck, Modifier.weight(1f))
-                        if (demoEnabled) {
-                            SecondaryButton(stringResource(R.string.home_action_demo), onOpenDemo, Modifier.weight(1f))
-                        }
+                } else {
+                    item(key = latest.id) {
+                        AlertCard(latest, onClick = { onOpenAlert(latest.id) }, modifier = CardPadding.animateItem())
                     }
                 }
             }
         }
+
+        item(key = "actions-h") { HomeHeader(stringResource(R.string.home_quick_actions)) }
+        item(key = "actions") {
+            Row(CardPadding.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.x15)) {
+                QuickAction(SentinelIcons.Check, stringResource(R.string.home_action_check), onOpenCheck, Modifier.weight(1f))
+                if (demoEnabled) QuickAction(SentinelIcons.Sparkles, stringResource(R.string.home_action_demo), onOpenDemo, Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeHeader(text: String) = GroupedHeader(text, Modifier.padding(horizontal = Spacing.inset, vertical = Spacing.x05))
+
+/** Today's counts in one quiet row (or a single reassuring sentence when nothing happened). */
+@Composable
+private fun TodayCard(counts: Map<Tier, Int>, modifier: Modifier) {
+    val p = SentinelTheme.palette
+    val any = counts.values.any { it > 0 }
+    Box(modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.large)).background(p.elevated).padding(Spacing.x25)) {
+        if (any) {
+            TierCountRow(counts)
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.x15)) {
+                IconTile(SentinelIcons.ShieldCheck)
+                Text(stringResource(R.string.home_today_none), style = SentinelTheme.type.callout, color = p.label)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeEmpty() {
+    val p = SentinelTheme.palette
+    Column(
+        CardPadding.fillMaxWidth().clip(RoundedCornerShape(Radii.large)).background(p.elevated).padding(Spacing.x25),
+        verticalArrangement = Arrangement.spacedBy(Spacing.x05),
+    ) {
+        Text(stringResource(R.string.home_empty_title), style = SentinelTheme.type.headline, color = p.label)
+        Text(stringResource(R.string.home_empty_body), style = SentinelTheme.type.subhead, color = p.secondaryLabel)
+    }
+}
+
+@Composable
+private fun QuickAction(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier) {
+    val p = SentinelTheme.palette
+    val interaction = remember { MutableInteractionSource() }
+    val shape = RoundedCornerShape(Radii.large)
+    Column(
+        modifier.heightIn(min = 104.dp).pressScale(interaction).clip(shape).background(p.elevated)
+            .clickable(interactionSource = interaction, indication = ripple(), role = Role.Button, onClick = onClick)
+            .padding(Spacing.x2),
+        verticalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Box(Modifier.size(40.dp).background(p.accentSoft, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = p.accent, modifier = Modifier.size(24.dp))
+        }
+        Text(label, style = SentinelTheme.type.headline, color = p.label, modifier = Modifier.padding(top = Spacing.x15))
     }
 }
