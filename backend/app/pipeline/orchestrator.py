@@ -35,8 +35,9 @@ from app.pipeline.extract import Entity, extract_entities
 from app.pipeline.link_client import LinkReport
 from app.pipeline.memory import HistoryItem
 from app.pipeline.redact import redact
-from app.pipeline.signals import (LINK_HARD, TIER_ORDER, DomainInfo, HistoryCtx, Overrides,
-                                  detect_signals, max_tier, tier_for)
+from app.pipeline.signals import (LINK_HARD, STORY_WINDOW, TIER_ORDER, DomainInfo, HistoryCtx, LinkedEvent,
+                                  Overrides, detect_signals, max_tier, stages_from_signals, story_stages,
+                                  tier_for)
 from app.schemas import AlertOut, EventIn, EventResult, Tier, WhyItem
 
 log = logging.getLogger(__name__)
@@ -47,6 +48,7 @@ HISTORY_LIMIT = 20  # prior events per entity
 RELATED_LIMIT = 20  # related entities per entity
 AGENT_HISTORY_MAX = 20
 AGENT_RELATED_MAX = 20
+LINKED_MAX = 40  # linked prior events considered for story progression
 MAX_DOMAIN_LOOKUPS = 3
 ESCALATE_TRIAGE = 0.5
 
@@ -111,10 +113,13 @@ def load_overrides(db: Session, user) -> Overrides:
 
 
 def build_history_ctx(db: Session, user, *, event_id: str, now: datetime, entities: list[Entity],
-                      sender_key: str | None = None, origin: list[Entity] | tuple = ()) -> HistoryCtx:
+                      sender_key: str | None = None, origin: list[Entity] | tuple = (),
+                      semantic: bool = False, progression: bool = True) -> HistoryCtx:
     """Pure-data context for signals.py: PRIOR events (ts <= now, current event excluded) per entity,
-    related entities per entity (time-filtered edges), and whether the sender was seen before
-    (`origin` = the originator's phone entities; `sender_key` = hashed sender string)."""
+    related entities per entity (time-filtered edges), whether the sender was seen before
+    (`origin` = the originator's phone entities; `sender_key` = hashed sender string), and the linked
+    prior events of the last 7 days (entity-linked, plus `similar`-edge neighbours when `semantic`) with
+    their stored signal names and story stages."""
     now = _utc(now)
     by_entity: dict[Entity, list[HistoryItem]] = {}
     related: dict[Entity, list[Entity]] = {}
@@ -133,7 +138,33 @@ def build_history_ctx(db: Session, user, *, event_id: str, now: datetime, entiti
         seen = db.scalar(select(Event.id).where(
             Event.user_id == user.id, Event.sender_key == sender_key, Event.id != event_id,
             Event.ts <= now).limit(1)) is not None
-    return HistoryCtx(now=now, events_by_entity=by_entity, related=related, sender_seen_before=seen)
+    linked = _linked_events(db, user, event_id, now, by_entity, semantic) if (progression or semantic) else ()
+    return HistoryCtx(now=now, events_by_entity=by_entity, related=related, sender_seen_before=seen,
+                      linked_events=linked, sender_key=sender_key, progression=progression)
+
+
+def _linked_events(db: Session, user, event_id: str, now: datetime, by_entity: dict[Entity, list[HistoryItem]],
+                   semantic: bool) -> tuple[LinkedEvent, ...]:
+    lo = now - STORY_WINDOW
+    items: dict[str, tuple[HistoryItem, str]] = {}
+    for hs in by_entity.values():
+        for h in hs:
+            if h.event_id != event_id and lo <= _utc(h.ts) <= now:
+                items.setdefault(h.event_id, (h, "entity"))
+    if semantic:
+        for h in memory.similar_events(db, user, event_id, now=now, window=STORY_WINDOW):
+            items.setdefault(h.event_id, (h, "semantic"))
+    chosen = sorted(items.values(), key=lambda x: (_utc(x[0].ts), x[0].event_id))[-LINKED_MAX:]
+    meta = memory.event_meta(db, user, [h.event_id for h, _ in chosen])
+    out = []
+    for h, via in chosen:
+        m = meta.get(h.event_id)
+        if m is None:
+            continue
+        stages = m.stages if m.stages is not None else stages_from_signals(m.signals)
+        out.append(LinkedEvent(h.event_id, _utc(h.ts), h.source, m.sender_key, stages, m.signals,
+                               h.redacted_text, via))
+    return tuple(out)
 
 
 def history_for_agent(ctx: HistoryCtx) -> list[HistoryItem]:
@@ -294,7 +325,7 @@ def _assess(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity]
     overrides = load_overrides(db, user)
     origin = [e for e in extract_entities(None, rev.sender, rev.call) if e.type == "phone"]
     ctx = build_history_ctx(db, user, event_id=event_id, now=ts, entities=entities, sender_key=skey,
-                            origin=origin)
+                            origin=origin, progression=bool(deps.settings.story_progression))
     signals = detect_signals(rev, entities, ctx, overrides=overrides)
     floor = tier_for(signals, ctx)
     triage = ev.triage_score if isinstance(ev.triage_score, (int, float)) else 0.0
@@ -350,6 +381,7 @@ def _assess(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity]
         log.exception("link report re-scoring failed; keeping earlier signals")
 
     names = [s.name for s in signals]
+    stages = sorted(story_stages(rev, entities, names))
     tier: Tier = verdict.tier if verdict.tier in TIER_ORDER else floor
     if mode != "agent" or set(names) & (LINK_HARD | {"injection_attempt"}):
         tier = max_tier(tier, floor)
@@ -364,7 +396,8 @@ def _assess(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity]
                      model=model, latency=round(time.monotonic() - t0, 4), degraded=bool(verdict.degraded),
                      payload={"headline": headline, "next_step": next_step, "why": _why_json(why),
                               "used_tools": list(verdict.used_tools), "raised_by": list(verdict.raised_by),
-                              "mode": mode, **({"classifier": cls_info} if cls_info else {})})
+                              "mode": mode, "stages": stages,
+                              **({"classifier": cls_info} if cls_info else {})})
     db.add(asm)
     db.flush()
     text_hash = hashlib.sha256((rev.text or "").encode()).hexdigest()

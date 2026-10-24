@@ -45,6 +45,8 @@ SIGNAL_WEIGHTS: dict[str, int] = {
     "credential_form_on_new_domain": 4,
     "apk_download": 4,
     "threat_feed_hit": 5,
+    # scam-story progression across linked events (docs/memory.md): positive only, rules-only, no LLM
+    "story_progression": 3,
 }
 
 # Link-inspector verdicts that no discount (user_marked_safe, known_benign_sender) may offset
@@ -82,6 +84,24 @@ class Overrides:
     known_bad: frozenset[Entity] = frozenset()
 
 
+STAGES: tuple[str, ...] = ("contact", "trust", "pressure", "ask")
+STORY_WINDOW = timedelta(days=7)
+
+
+@dataclass(frozen=True)
+class LinkedEvent:
+    """A PRIOR event linked to the current one (shared entity or semantic `similar` edge), with the
+    signal names and story stages stored for it. `sender_key` is the opaque hashed sender."""
+    event_id: str
+    ts: datetime
+    source: str
+    sender_key: str | None = None
+    stages: frozenset[str] = frozenset()
+    signals: frozenset[str] = frozenset()
+    redacted_text: str | None = None
+    via: str = "entity"  # entity | semantic
+
+
 @dataclass(frozen=True)
 class HistoryCtx:
     """Plain data filled by the caller. `events_by_entity` holds PRIOR events (excluding the
@@ -97,6 +117,11 @@ class HistoryCtx:
     # host without "www.", exactly as extract_entities produces it). Reports for domains that are
     # not in the current message are ignored.
     link_reports: dict[str, "LinkReport"] = field(default_factory=dict)
+    # Entity-linked + semantically linked PRIOR events (story progression) and the current event's hashed
+    # sender; `progression` False switches the story_progression signal off (STORY_PROGRESSION setting).
+    linked_events: tuple[LinkedEvent, ...] = ()
+    sender_key: str | None = None
+    progression: bool = True
 
     @classmethod
     def empty(cls, now: datetime) -> "HistoryCtx":
@@ -486,6 +511,12 @@ def detect_signals(event: EventIn, entities: list[Entity], history_ctx: HistoryC
     if bad:
         add("known_bad_entity", f"{bad[0].type}:{bad[0].canonical}")
 
+    # the story signal: cheap, deterministic, positive only; never for a trusted / user-safe sender
+    if history_ctx.progression and history_ctx.linked_events and not benign and not safe_sender:
+        prog = _progression(story_stages(event, ents, {s.name for s in out}, text), history_ctx, now)
+        if prog:
+            add("story_progression", prog)
+
     # negative signals never apply when the text tries to instruct the AI, or when an external
     # link verdict (threat feed, APK, credential form on a fresh domain) says the link is bad
     if not injection and not ({s.name for s in out} & LINK_HARD):
@@ -645,6 +676,138 @@ def _amount_escalation(ents: set[Entity], ctx: HistoryCtx, now: datetime) -> str
     return None
 
 
+# ------------------------------------------------------------------ story progression
+# A scam told in installments: a friendly first contact, then trust (an offer, returns, a job, an
+# official), then pressure, then the ask (pay / OTP / remote access). Each message can look harmless;
+# the order across LINKED events is the signal. Stages come from the signals already computed plus a
+# few short cue patterns; text is matched as data only.
+_STAGE_ASK_SIGNALS = frozenset({"payment_request", "credential_or_otp_ask", "remote_access_ask"})
+_STAGE_PRESSURE_SIGNALS = frozenset({"urgency", "secrecy_demand"})
+_STORY_CLAIMS = frozenset({"parcel_held", "kyc_expired", "account_blocked", "digital_arrest", "refund",
+                           "job_offer", "lottery"})
+STORY_ASK_MARK = " [ask]"
+_PRETEXT = _rx(
+    r"\b(?:got|found|saw|picked)\s+your\s+(?:number|contact|details|profile|resume|cv)\b|\byour\s+number\s+from\b"
+    r"|\badded\s+you\s+(?:to|in)\b|\bwrong\s+number\b|\b(?:hello|hi|hey)\s+dear\b|\bnew\s+number\b"
+    r"|\bsave\s+(?:this|my)\s+(?:new\s+)?number\b|\bi\s+am\s+calling\s+from\b|\breaching\s+out\b"
+    r"|\bwe\s+are\s+(?:hiring|recruiting)\b|\bhr\s+(?:team|manager|executive|from)\b|\brecruiter\b"
+    r"|\b(?:aapka|apka|tumhara)\s+number\b|\bnumber\s+\w+(?:\s+\w+)?\s+(?:se\s+)?(?:mila|diya)\b|\bnaya\s+number\b"
+    r"|नंबर[^।.!?\n]{0,25}(?:मिला|दिया)|नया\s+नंबर|नए\s+नंबर")
+_OFFER = _rx(
+    r"\bguarantee\w*|\b(?:assured|fixed|daily|weekly|monthly|high|double)\s+(?:returns?|profits?|income|earnings?)\b"
+    r"|\d+\s*%\s*(?:returns?|profits?|daily|weekly|monthly)|\bprofits?\b|\bearn\w*\s+(?:rs|₹|inr|\d|up\s+to|daily|from)"
+    r"|\bpart[\s-]?time\b|\bwork\s+from\s+home\b|\b(?:stock|share|trading|crypto|ipo|forex)\s+"
+    r"(?:tips?|groups?|signals?|club|community|accounts?|experts?|mentors?)\b"
+    r"|\binvestment\s+(?:group|plan|opportunit\w*|scheme|club)\b|\bvip\s+(?:group|member\w*|account|slots?)\b"
+    r"|\b(?:selected|shortlisted)\b|\bjob\s+offer\b|\bcommission\b|\binsider\b|\bsebi[\s-]registered\b"
+    r"|\b(?:munafa|kamai|kamao|naukri|ghar\s+baithe)\b|मुनाफ|गारंटी|कमाई|कमाएं|निवेश|रिटर्न|नौकरी|चयन|पार्ट\s*टाइम|घर\s+बैठे")
+_PRESSURE = _rx(
+    r"\blast\s+(?:chance|date|day)\b|\b(?:only|sirf)\s+(?:today|aaj)\b|\btoday\s+only\b"
+    r"|\blimited\s+(?:seats?|slots?|spots?|time)\b|\bslots?\s+(?:are\s+)?(?:filling|closing|left)\b|\bhurry\b"
+    r"|\bbefore\s+(?:it|the\s+(?:slot|offer|seat))\s+(?:closes|expires)\b|\baaj\s+hi\b|\bjaldi\s+karo\b"
+    r"|आज\s+ही|सीमित|आखिरी\s+मौका")
+_ASK_CUE = _rx(
+    r"\b(?:registration|joining|processing|activation|membership|security|token|advance|verification|booking|"
+    r"onboarding|training|kit|withdrawal|unlock\w*|upgrade)\s+(?:fee|fees|charges?|amount|deposit|money)\b"
+    r"|\b(?:fee|fees|charges?|deposit)\s+(?:of\s+)?(?:rs\.?|₹|inr)\s*\d"
+    r"|\bto\s+(?:secure|confirm|book|reserve|activate|unlock|release|block)\s+(?:your|the|a)\s+"
+    r"(?:slot|seat|spot|account|membership|withdrawal|profit|parcel|job)\b"
+    r"|\b(?:fees?|charges?|paise|amount)\s+(?:bhar|jama|de|bhej)\w*|(?:शुल्क|फीस|फ़ीस)")
+_HEADER_SENDER = re.compile(r"(?:[A-Za-z]{2}-)?[A-Za-z0-9]{3,10}(?:-[A-Za-z])?")
+
+
+def _header_sms(event) -> bool:
+    """An alphanumeric (DLT-style) SMS header such as VM-HDFCBK / AX-SWIGGY: a registered business."""
+    snd = (event.sender or "").strip()
+    return (event.source == "sms" and bool(snd) and not any(ch.isdigit() for ch in snd[-4:])
+            and bool(_HEADER_SENDER.fullmatch(snd)))
+
+
+def story_stages(event: EventIn, entities, names, text: str | None = None) -> frozenset[str]:
+    """Story stages of one event from its (non-story) signal names, entities and a few cue patterns.
+    Saved contacts, trusted / user-safe senders contribute no stages. Business SMS headers only get
+    stages from their signals (no cue-based stages, never "contact")."""
+    names = set(names) - {"story_progression"}
+    if getattr(event, "is_contact", None) is True or (event.call is not None and event.call.is_contact):
+        return frozenset()
+    if names & {"known_benign_sender", "user_marked_safe"}:
+        return frozenset()
+    text = text if text is not None else redact(_ZW.sub("", (event.text or "")[:10000]))
+    header = _header_sms(event)
+    cues = not header
+    ents = set(entities)
+    st: set[str] = set()
+    person = event.call is not None or event.source in ("whatsapp", "call") or any(
+        e.type == "phone" for e in extract_entities(None, event.sender, None))
+    if not header and (("unknown_sender" in names and person) or (cues and _PRETEXT.search(text))
+                       or any(e.type == "claim" and e.canonical in _STORY_CLAIMS for e in ents)):
+        st.add("contact")
+    if "authority_impersonation" in names or (cues and _OFFER.search(text)):
+        st.add("trust")
+    if names & _STAGE_PRESSURE_SIGNALS or (cues and _PRESSURE.search(text)):
+        st.add("pressure")
+    if names & _STAGE_ASK_SIGNALS or (cues and (_ASK_CUE.search(text) or any(e.type == "upi_id" for e in ents))):
+        st.add("ask")
+    return frozenset(st)
+
+
+def stages_from_signals(names) -> frozenset[str]:
+    """Fallback for stored events without persisted stages: signal-derived stages only."""
+    names = set(names)
+    if names & {"known_benign_sender", "user_marked_safe"}:
+        return frozenset()
+    st = set()
+    if "authority_impersonation" in names:
+        st.add("trust")
+    if names & _STAGE_PRESSURE_SIGNALS:
+        st.add("pressure")
+    if names & _STAGE_ASK_SIGNALS:
+        st.add("ask")
+    return frozenset(st)
+
+
+def _progression(stages_now: frozenset[str], ctx: HistoryCtx, now: datetime) -> str | None:
+    """Fires when the CURRENT event completes a story across linked events (within STORY_WINDOW):
+    (a) >= 3 distinct stages in story order across >= 2 events, the last one from this event, and at
+        least one earlier stage that this event does not show itself (history adds information: a
+        repeated self-contained message is not a story), and the last stage is not one this same sender
+        already reached in a linked event (a repeat is not a progression); or
+    (b) this event is an ask and a linked event from a DIFFERENT sender was a contact / trust stage."""
+    if not stages_now:
+        return None
+    lo = now - STORY_WINDOW
+    prior = sorted((le for le in ctx.linked_events if le.stages and lo <= _utc(le.ts) <= now),
+                   key=lambda le: (_utc(le.ts), le.event_id))
+    if not prior:
+        return None
+    ask = "ask" in stages_now
+    mark = STORY_ASK_MARK if ask else ""
+    rank = {s: i for i, s in enumerate(STAGES)}
+    # (a) chain: points (event order, stage rank); the last point must be in the current event
+    pts = [(i, rank[s]) for i, le in enumerate(prior) for s in le.stages if s in rank]
+    cur = len(prior)
+    # a stage this sender already reached in a linked event is a repeat, not a progression
+    repeated = {s for le in prior if le.sender_key is not None and le.sender_key == ctx.sender_key
+                for s in le.stages}
+    for s3 in sorted((rank[s] for s in stages_now if s in rank and s not in repeated), reverse=True):
+        lower = [(i, r) for i, r in pts if r < s3] + [(cur, r) for r in (rank[s] for s in stages_now) if r < s3]
+        for i2, r2 in lower:
+            for i1, r1 in lower:
+                novel = ((i1 != cur and STAGES[r1] not in stages_now)
+                         or (i2 != cur and STAGES[r2] not in stages_now))
+                if r1 < r2 and i1 <= i2 and novel:
+                    chain = [STAGES[r1], STAGES[r2], STAGES[s3]]
+                    events = len({i1, i2, cur})
+                    return f"story {'>'.join(chain)} across {events} linked events{mark}"
+    # (b) the ask comes from someone else than the friendly first contact / the "official"
+    if ask and "ask" not in repeated:
+        for le in reversed(prior):
+            if le.stages & {"contact", "trust"} and le.sender_key != ctx.sender_key:
+                hours = max(0, int((now - _utc(le.ts)).total_seconds() // 3600))
+                return f"ask after a {le.source} contact from another sender {hours}h earlier{mark}"
+    return None
+
+
 # ------------------------------------------------------------------ tiers
 def tier_for(signals: list[Signal], history_ctx: HistoryCtx | None = None) -> Tier:
     names = {s.name for s in signals}
@@ -658,4 +821,6 @@ def tier_for(signals: list[Signal], history_ctx: HistoryCtx | None = None) -> Ti
             break
     if names & _FLOOR_A and names & _FLOOR_B:
         tier = max_tier(tier, "high")
+    if any(s.name == "story_progression" and s.evidence.endswith(STORY_ASK_MARK) for s in signals):
+        tier = max_tier(tier, "high")  # the story reached its ask: floor high
     return tier

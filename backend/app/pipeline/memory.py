@@ -298,3 +298,34 @@ def similar_events(db: Session, user: _HasId, event_id: str, *, now: datetime,
         Event.user_id == user.id, Event.id.in_(other_events), Event.id != event_id,
         Event.ts <= now, Event.ts >= now - window).order_by(Event.ts, Event.id)).all()
     return [HistoryItem(*r) for r in rows]
+
+
+@dataclass(frozen=True)
+class EventMeta:
+    sender_key: str | None
+    signals: frozenset[str]
+    stages: frozenset[str] | None  # None when no assessment stored stages (older rows)
+
+
+def event_meta(db: Session, user: _HasId, event_ids: list[str]) -> dict[str, EventMeta]:
+    """Hashed sender, stored signal names and story stages (union over the event's assessments)."""
+    from app.models import Assessment  # local: keeps the import graph of this module small
+    ids = list(dict.fromkeys(event_ids))
+    if not ids:
+        return {}
+    senders = dict(db.execute(select(Event.id, Event.sender_key).where(
+        Event.user_id == user.id, Event.id.in_(ids))).all())
+    sig: dict[str, set[str]] = {}
+    stg: dict[str, set[str] | None] = {}
+    for eid, names, payload in db.execute(select(Assessment.event_id, Assessment.signals, Assessment.payload).where(
+            Assessment.user_id == user.id, Assessment.event_id.in_(ids))).all():
+        sig.setdefault(eid, set()).update(names or [])
+        st = payload.get("stages") if isinstance(payload, dict) else None
+        if isinstance(st, list):
+            cur = stg.get(eid) or set()
+            stg[eid] = cur | {x for x in st if isinstance(x, str)}
+        else:
+            stg.setdefault(eid, None)
+    return {eid: EventMeta(senders.get(eid), frozenset(sig.get(eid, ())),
+                           frozenset(stg[eid]) if stg.get(eid) is not None else None)
+            for eid in ids if eid in senders}
