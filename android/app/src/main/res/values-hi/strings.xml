@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">सेंटिनल</string>
+
+    <string name="nav_home">होम</string>
+    <string name="nav_alerts">अलर्ट</string>
+    <string name="nav_check">जाँचें</string>
+    <string name="nav_family">परिवार</string>
+    <string name="nav_settings">सेटिंग</string>
+
+    <string name="tier_info">जानकारी</string>
+    <string name="tier_caution">सावधानी</string>
+    <string name="tier_high">ऊँचा जोखिम</string>
+    <string name="tier_critical">गंभीर</string>
+    <string name="tier_a11y">जोखिम स्तर: %1$s</string>
+
+    <string name="home_shield_cd">सेंटिनल सुरक्षा कवच</string>
+    <string name="home_status_title">सेंटिनल तैयार है</string>
+    <string name="home_status_body">जब तक आप कोई स्रोत चालू नहीं करते, आपके फ़ोन से कुछ भी नहीं पढ़ा जाता। आप जो भी जाँचने के लिए भेजते हैं, वह केवल आपकी मर्ज़ी से विश्लेषण के लिए जाता है।</string>
+    <string name="home_recent_alerts">हाल के अलर्ट</string>
+    <string name="home_empty_title">अभी कोई अलर्ट नहीं</string>
+    <string name="home_empty_body">जब सेंटिनल को कुछ संदिग्ध दिखेगा, तो कारणों और अगले कदम के साथ वह यहाँ दिखाई देगा।</string>
+
+    <string name="alert_next_step">क्या करें: %1$s</string>
+
+    <string name="loading_cd">लोड हो रहा है</string>
+    <string name="error_title">कुछ गड़बड़ हो गई</string>
+    <string name="error_network">सेंटिनल से संपर्क नहीं हो पा रहा। अपना इंटरनेट कनेक्शन जाँचें और फिर कोशिश करें।</string>
+    <string name="error_unauthorized">यह डिवाइस अभी सेंटिनल में साइन इन नहीं है। कृपया फिर कोशिश करें।</string>
+    <string name="error_rate_limited">बहुत ज़्यादा अनुरोध हो गए। कृपया थोड़ी देर रुककर फिर कोशिश करें।</string>
+    <string name="error_server">सेंटिनल यह अनुरोध पूरा नहीं कर सका (कोड %1$d)।</string>
+    <string name="action_retry">फिर कोशिश करें</string>
+
+    <string name="placeholder_alerts_body">आपके सभी अलर्ट का इतिहास यहाँ दिखाई देगा।</string>
+    <string name="placeholder_check_body">कोई संदेश पेस्ट करें या स्क्रीनशॉट साझा करें और पूछें कि क्या यह धोखाधड़ी है।</string>
+    <string name="placeholder_family_body">किसी परिवार के सदस्य को जोड़ें ताकि उन्हें गंभीर अलर्ट की सूचना मिले।</string>
+    <string name="placeholder_settings_body">चुनें कि सेंटिनल क्या देखे, अपनी भाषा और गोपनीयता के विकल्प।</string>
+</resources>

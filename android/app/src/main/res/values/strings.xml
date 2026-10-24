@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sentinel</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_alerts">Alerts</string>
+    <string name="nav_check">Check</string>
+    <string name="nav_family">Family</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Tiers -->
+    <string name="tier_info">Info</string>
+    <string name="tier_caution">Caution</string>
+    <string name="tier_high">High risk</string>
+    <string name="tier_critical">Critical</string>
+    <string name="tier_a11y">Risk level: %1$s</string>
+
+    <!-- Home -->
+    <string name="home_shield_cd">Sentinel shield</string>
+    <string name="home_status_title">Sentinel is ready</string>
+    <string name="home_status_body">Nothing is read from your phone until you turn a source on. Anything you ask Sentinel to check is sent for analysis only when you choose to.</string>
+    <string name="home_recent_alerts">Recent alerts</string>
+    <string name="home_empty_title">No alerts yet</string>
+    <string name="home_empty_body">When Sentinel spots something suspicious, it will show up here with the reasons and what to do next.</string>
+
+    <!-- Alerts -->
+    <string name="alert_next_step">What to do: %1$s</string>
+
+    <!-- Generic states -->
+    <string name="loading_cd">Loading</string>
+    <string name="error_title">Something went wrong</string>
+    <string name="error_network">Sentinel cannot be reached. Check your internet connection and try again.</string>
+    <string name="error_unauthorized">This device is not signed in to Sentinel yet. Please try again.</string>
+    <string name="error_rate_limited">Too many requests. Please wait a little and try again.</string>
+    <string name="error_server">Sentinel could not complete that request (code %1$d).</string>
+    <string name="action_retry">Try again</string>
+
+    <!-- Placeholders for upcoming screens -->
+    <string name="placeholder_alerts_body">Your full alert history will appear here.</string>
+    <string name="placeholder_check_body">Paste a message or share a screenshot to ask whether it is a scam.</string>
+    <string name="placeholder_family_body">Link a family member so they are told about critical alerts.</string>
+    <string name="placeholder_settings_body">Choose what Sentinel watches, your language and your privacy options.</string>
+</resources>
