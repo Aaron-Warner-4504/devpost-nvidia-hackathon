@@ -41,8 +41,6 @@ import ai.enthral.sentinel.ui.components.ConfirmSheet
 import ai.enthral.sentinel.ui.components.CountdownRing
 import ai.enthral.sentinel.ui.components.FamilyIllustration
 import ai.enthral.sentinel.ui.components.GroupedDivider
-import ai.enthral.sentinel.ui.components.GroupedFooter
-import ai.enthral.sentinel.ui.components.GroupedHeader
 import ai.enthral.sentinel.ui.components.GroupedRow
 import ai.enthral.sentinel.ui.components.GroupedSection
 import ai.enthral.sentinel.ui.components.IconRowDividerInset
@@ -128,8 +126,11 @@ fun FamilyContent(
             }
         }
         // --- Someone protects me ---------------------------------------------------------------------
+        item(key = "me-h") {
+            MainSection(stringResource(R.string.family_protect_me_title), stringResource(R.string.family_protect_me_body), first = true)
+        }
         item(key = "me") {
-            GroupedSection(header = stringResource(R.string.family_protect_me_title), footer = stringResource(R.string.family_protect_me_body)) {
+            GroupedSection {
                 ToggleRow(
                     title = stringResource(R.string.family_consent_title),
                     subtitle = stringResource(R.string.family_consent_body),
@@ -159,10 +160,7 @@ fun FamilyContent(
 
         // --- I protect someone -----------------------------------------------------------------------
         item(key = "someone-h") {
-            Column(Inset.padding(top = Spacing.x3)) {
-                GroupedHeader(stringResource(R.string.family_protect_someone_title))
-                GroupedFooter(stringResource(R.string.family_protect_someone_body), Modifier.padding(bottom = Spacing.x15))
-            }
+            MainSection(stringResource(R.string.family_protect_someone_title), stringResource(R.string.family_protect_someone_body))
         }
         item(key = "someone") {
             Column(Inset, verticalArrangement = Arrangement.spacedBy(Spacing.x15)) {
@@ -178,7 +176,7 @@ fun FamilyContent(
                 PrimaryButton(stringResource(R.string.family_link), onAccept, Modifier.fillMaxWidth(), enabled = state.canAccept)
                 state.acceptError?.let { StatusLine(familyErrorMessage(it), SentinelIcons.Info, SentinelTheme.colors[Tier.Critical].content) }
                 if (state.accepted) StatusLine(stringResource(R.string.family_linked_success), SentinelIcons.ShieldCheck, SentinelTheme.palette.accent)
-                Text(stringResource(R.string.family_push_note), style = SentinelTheme.type.footnote, color = SentinelTheme.palette.secondaryLabel)
+                Text(stringResource(R.string.family_push_note), style = SentinelTheme.type.footnote, color = SentinelTheme.palette.secondaryLabel, modifier = Modifier.padding(horizontal = Spacing.x2))
             }
         }
         item(key = "protecting") {
@@ -216,6 +214,19 @@ fun FamilyContent(
             Text(familyErrorMessage(err), style = SentinelTheme.type.callout, color = SentinelTheme.palette.secondaryLabel)
             PrimaryButton(stringResource(R.string.action_got_it), onDismissUnlinkError, Modifier.fillMaxWidth().padding(top = Spacing.x1))
         }
+    }
+}
+
+/** One of the two main sections: a title with heading semantics and one explanatory sentence. */
+@Composable
+private fun MainSection(title: String, body: String, first: Boolean = false) {
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.gutter)
+            .padding(top = if (first) Spacing.x1 else Spacing.x5, bottom = Spacing.x15),
+        verticalArrangement = Arrangement.spacedBy(Spacing.x05),
+    ) {
+        Text(title, style = SentinelTheme.type.title3, color = SentinelTheme.palette.label, modifier = Modifier.semantics { heading() })
+        Text(body, style = SentinelTheme.type.subhead, color = SentinelTheme.palette.secondaryLabel)
     }
 }
 
