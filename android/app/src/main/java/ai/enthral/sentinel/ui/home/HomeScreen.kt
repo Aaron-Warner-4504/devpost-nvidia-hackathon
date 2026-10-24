@@ -36,7 +36,6 @@ import ai.enthral.sentinel.domain.SourceStatus
 import ai.enthral.sentinel.domain.Tier
 import ai.enthral.sentinel.ui.common.graphViewModel
 import ai.enthral.sentinel.ui.components.AlertCard
-import ai.enthral.sentinel.ui.components.EmptyState
 import ai.enthral.sentinel.ui.components.ErrorState
 import ai.enthral.sentinel.ui.components.GroupedHeader
 import ai.enthral.sentinel.ui.components.IconTile
@@ -48,6 +47,7 @@ import ai.enthral.sentinel.ui.components.StatusHero
 import ai.enthral.sentinel.ui.components.TierCountRow
 import ai.enthral.sentinel.ui.components.apiErrorMessage
 import ai.enthral.sentinel.ui.components.pressScale
+import ai.enthral.sentinel.ui.components.shimmer
 import ai.enthral.sentinel.ui.components.titleRes
 import ai.enthral.sentinel.ui.theme.Radii
 import ai.enthral.sentinel.ui.theme.SentinelTheme
@@ -110,13 +110,29 @@ fun HomeContent(
             }
         }
 
-        item(key = "today-h") { HomeHeader(stringResource(R.string.home_today)) }
-        item(key = "today") { TodayCard(state.todayCounts, CardPadding) }
+        // Today's summary only ever shows real data: never claim "nothing was flagged" when nothing could be loaded.
+        if (state.phase != Phase.Error) {
+            item(key = "today-h") { HomeHeader(stringResource(R.string.home_today)) }
+            item(key = "today") {
+                if (state.phase == Phase.Loading) {
+                    Box(CardPadding.fillMaxWidth().heightIn(min = 88.dp).shimmer(RoundedCornerShape(Radii.large)))
+                } else {
+                    TodayCard(state.todayCounts, CardPadding)
+                }
+            }
+        }
 
         item(key = "latest-h") { HomeHeader(stringResource(R.string.home_latest_alert)) }
         when (state.phase) {
             Phase.Loading -> item(key = "latest-loading") { LoadingSkeleton(CardPadding, rows = 1) }
-            Phase.Error -> item(key = "latest-error") { ErrorState(apiErrorMessage(state.failure!!), onRefresh) }
+            Phase.Error -> item(key = "latest-error") {
+                // The offline hero already offers "Try again": keep this a quiet line instead of a second error block.
+                if (state.protection == ProtectionStatus.Offline) {
+                    NoteCard(apiErrorMessage(state.failure!!), icon = SentinelIcons.CloudOff)
+                } else {
+                    ErrorState(apiErrorMessage(state.failure!!), onRefresh)
+                }
+            }
             Phase.Ready -> {
                 val latest = state.latest
                 if (latest == null) {
