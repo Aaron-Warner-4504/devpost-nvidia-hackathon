@@ -6,3 +6,6 @@ __pycache__/
 .pytest_cache/
 
 .demo_token
+deploy/.env
+deploy/.env.prod
+deploy/*.env
