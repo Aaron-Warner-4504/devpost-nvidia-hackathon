@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings, settings as default_settings
 from app.models import Alert, Assessment, Event, Override
-from app.pipeline import agent, memory, policy, tools
+from app.pipeline import agent, classifier as clf_mod, memory, policy, tools
 from app.pipeline.extract import Entity, extract_entities
 from app.pipeline.link_client import LinkReport
 from app.pipeline.memory import HistoryItem
@@ -72,6 +72,7 @@ class PipelineDeps:
     http_client_factory: Callable | None = None
     hooks: list[AlertHook] | None = None  # None -> the module registry `alert_hooks`
     domain_timeout: float = 3.0  # wall clock for all RDAP lookups of one event
+    classifier: clf_mod.Classifier | None = None  # None -> clf_mod.get_classifier(settings)
 
 
 # ---------------------------------------------------------------- helpers
@@ -298,6 +299,18 @@ def _assess(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity]
     floor = tier_for(signals, ctx)
     triage = ev.triage_score if isinstance(ev.triage_score, (int, float)) else 0.0
     escalate = force_agent or _rank(floor) >= _rank("caution") or triage >= ESCALATE_TRIAGE
+    # Optional first-pass classifier: may only ADD an escalation (never lowers floor / alerts / the gate).
+    cls_info: dict | None = None
+    if (not escalate and (deps.settings.classifier or "rules").strip().lower() != "rules"
+            and (cls := deps.classifier or clf_mod.get_classifier(deps.settings)) is not None):
+        res = clf_mod.classify_safe(cls, rev.text, ev.lang, deps.settings.classifier_timeout_ms)
+        if res is not None:
+            hit = res.scam_prob >= deps.settings.classifier_threshold
+            escalate = escalate or hit
+            cls_info = {"source": res.source, "scam_prob": round(res.scam_prob, 4),
+                        "threshold": deps.settings.classifier_threshold, "escalated": hit,
+                        "latency_ms": round(res.latency_ms, 1)}
+            log.info("classifier %s: escalated=%s", type(cls).__name__, hit)
     tctx = tools.ToolContext(db=db, user=user, now=ts, settings=deps.settings,
                              http_client_factory=deps.http_client_factory)
 
@@ -351,7 +364,7 @@ def _assess(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity]
                      model=model, latency=round(time.monotonic() - t0, 4), degraded=bool(verdict.degraded),
                      payload={"headline": headline, "next_step": next_step, "why": _why_json(why),
                               "used_tools": list(verdict.used_tools), "raised_by": list(verdict.raised_by),
-                              "mode": mode})
+                              "mode": mode, **({"classifier": cls_info} if cls_info else {})})
     db.add(asm)
     db.flush()
     text_hash = hashlib.sha256((rev.text or "").encode()).hexdigest()

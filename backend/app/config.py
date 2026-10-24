@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     inspector_url: str = ""
     inspector_secret: str = ""
     agent_mode: str = "hybrid"
+    # First-pass classifier gate (app/pipeline/classifier.py): "rules" (default, off: current behaviour,
+    # no extra dependency) | "laya" (self-hosted Laya, uv extra `laya`). It can only ADD an agent
+    # escalation when scam_prob >= classifier_threshold; it never lowers a tier or suppresses an alert.
+    classifier: str = "rules"
+    classifier_threshold: float = 0.5
+    classifier_timeout_ms: int = 300
+    laya_model: str = "multilingual"  # multilingual | english | auto
     embed_dim: int = 1024
     # Family push (Task 11): path to a Firebase service-account JSON; unset -> notifications are no-ops.
     firebase_credentials_file: str = ""
