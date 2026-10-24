@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ import ai.enthral.sentinel.R
 import ai.enthral.sentinel.data.api.ApiResult
 import ai.enthral.sentinel.domain.Alert
 import ai.enthral.sentinel.domain.Tier
+import ai.enthral.sentinel.ui.common.rememberReducedMotion
 import ai.enthral.sentinel.ui.theme.SentinelTheme
 import ai.enthral.sentinel.ui.theme.Spacing
 import java.time.ZoneId
@@ -70,6 +72,30 @@ fun TierBadge(tier: Tier, modifier: Modifier = Modifier) {
     }
 }
 
+/** "3 · High risk" count pill used in the Home summary. */
+@Composable
+fun TierCountChip(tier: Tier, count: Int, modifier: Modifier = Modifier) {
+    val colors = SentinelTheme.colors[tier]
+    val p = tier.presentation()
+    val label = stringResource(p.label)
+    val text = stringResource(R.string.tier_count, count, label)
+    Surface(
+        modifier = modifier.clearAndSetSemantics { contentDescription = text },
+        color = colors.container,
+        contentColor = colors.content,
+        shape = RoundedCornerShape(percent = 50),
+    ) {
+        Row(
+            Modifier.padding(horizontal = Spacing.x2, vertical = Spacing.x05),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.x1),
+        ) {
+            Icon(painterResource(p.icon), contentDescription = null, modifier = Modifier.size(18.dp))
+            Text(text, style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
+
 @Composable
 fun AlertCard(alert: Alert, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = SentinelTheme.colors[alert.tier]
@@ -77,20 +103,22 @@ fun AlertCard(alert: Alert, onClick: () -> Unit, modifier: Modifier = Modifier) 
         onClick = onClick,
         modifier = modifier.fillMaxWidth().heightIn(min = Spacing.minTouchTarget),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-        border = androidx.compose.foundation.BorderStroke(1.dp, colors.content.copy(alpha = 0.35f)),
+        border = BorderStroke(1.dp, colors.content.copy(alpha = 0.35f)),
     ) {
         Column(Modifier.padding(Spacing.x2), verticalArrangement = Arrangement.spacedBy(Spacing.x1)) {
-            Row(
+            // FlowRow: at large font sizes the timestamp drops under the badge instead of wrapping mid-date.
+            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+            androidx.compose.foundation.layout.FlowRow(
                 Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(Spacing.x05),
                 horizontalArrangement = Arrangement.SpaceBetween,
+                itemVerticalAlignment = Alignment.CenterVertically,
             ) {
                 TierBadge(alert.tier)
                 Text(
                     formatTimestamp(alert.createdAt),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = Spacing.x1),
                 )
             }
             Text(alert.headline, style = MaterialTheme.typography.titleMedium)
@@ -98,6 +126,8 @@ fun AlertCard(alert: Alert, onClick: () -> Unit, modifier: Modifier = Modifier) 
                 stringResource(R.string.alert_next_step, alert.nextStep),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 3,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
         }
     }
@@ -144,16 +174,20 @@ fun ErrorState(message: String, onRetry: () -> Unit, modifier: Modifier = Modifi
     )
 }
 
-/** Pulsing placeholder rows; announced once as "Loading". */
+/** Pulsing placeholder rows (static when animations are off); announced once as "Loading". */
 @Composable
 fun LoadingSkeleton(modifier: Modifier = Modifier, rows: Int = 3) {
-    val transition = rememberInfiniteTransition(label = "skeleton")
-    val alpha = transition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 0.9f,
-        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
-        label = "alpha",
-    )
+    val reduced = rememberReducedMotion()
+    val alpha = if (reduced) {
+        0.7f
+    } else {
+        rememberInfiniteTransition(label = "skeleton").animateFloat(
+            initialValue = 0.4f,
+            targetValue = 0.9f,
+            animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+            label = "alpha",
+        ).value
+    }
     val loading = stringResource(R.string.loading_cd)
     Column(
         modifier.fillMaxWidth().semantics { contentDescription = loading },
@@ -161,7 +195,7 @@ fun LoadingSkeleton(modifier: Modifier = Modifier, rows: Int = 3) {
     ) {
         repeat(rows) {
             Surface(
-                Modifier.fillMaxWidth().height(88.dp).alpha(alpha.value),
+                Modifier.fillMaxWidth().height(88.dp).alpha(alpha),
                 shape = MaterialTheme.shapes.medium,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
             ) {}
@@ -170,22 +204,47 @@ fun LoadingSkeleton(modifier: Modifier = Modifier, rows: Int = 3) {
 }
 
 @Composable
-fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+fun PrimaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    iconRes: Int? = null,
+) {
     Button(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.heightIn(min = Spacing.minTouchTarget),
         shape = MaterialTheme.shapes.medium,
-    ) { Text(text, style = MaterialTheme.typography.labelLarge) }
+    ) {
+        if (iconRes != null) {
+            Icon(painterResource(iconRes), contentDescription = null, modifier = Modifier.size(18.dp))
+            androidx.compose.foundation.layout.Spacer(Modifier.size(Spacing.x1))
+        }
+        Text(text, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
+    }
 }
 
 @Composable
-fun SecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun SecondaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    iconRes: Int? = null,
+) {
     OutlinedButton(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier.heightIn(min = Spacing.minTouchTarget),
         shape = MaterialTheme.shapes.medium,
-    ) { Text(text, style = MaterialTheme.typography.labelLarge) }
+    ) {
+        if (iconRes != null) {
+            Icon(painterResource(iconRes), contentDescription = null, modifier = Modifier.size(18.dp))
+            androidx.compose.foundation.layout.Spacer(Modifier.size(Spacing.x1))
+        }
+        Text(text, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
+    }
 }
 
 @Composable

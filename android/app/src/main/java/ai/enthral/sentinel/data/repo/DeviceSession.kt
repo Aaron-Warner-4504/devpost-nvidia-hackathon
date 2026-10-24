@@ -8,10 +8,28 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /** Owns "is this install registered": registers once, stores the token encrypted, can reset after a 401. */
-class DeviceSession(private val api: SentinelApi, private val tokens: SecureTokenStore) {
+interface DeviceSession {
+    suspend fun isRegistered(): Boolean
+
+    /** Registers if needed. Only the onboarding finish step (after consent) calls this directly. */
+    suspend fun ensureRegistered(): ApiResult<Unit>
+
+    /** Drops the stored token (e.g. delete-my-data, or the server rejected it). */
+    suspend fun reset()
+
+    /**
+     * Runs an authenticated call. A 401 means the token is stale: re-register once and retry once.
+     * Never registers on its own for an install that has not finished onboarding (the caller guarantees that).
+     */
+    suspend fun <T> authed(block: suspend () -> ApiResult<T>): ApiResult<T>
+}
+
+class ApiDeviceSession(private val api: SentinelApi, private val tokens: SecureTokenStore) : DeviceSession {
     private val lock = Mutex()
 
-    suspend fun ensureRegistered(): ApiResult<Unit> = lock.withLock {
+    override suspend fun isRegistered(): Boolean = safeToken() != null
+
+    override suspend fun ensureRegistered(): ApiResult<Unit> = lock.withLock {
         if (safeToken() != null) return ApiResult.Success(Unit)
         when (val r = api.register()) {
             is ApiResult.Success -> try {
@@ -25,8 +43,24 @@ class DeviceSession(private val api: SentinelApi, private val tokens: SecureToke
         }
     }
 
-    /** Drops the stored token (e.g. after the server answered 401) so the next call registers again. */
-    suspend fun reset() = lock.withLock { tokens.clear() }
+    override suspend fun reset() = lock.withLock { tokens.clear() }
+
+    override suspend fun <T> authed(block: suspend () -> ApiResult<T>): ApiResult<T> {
+        when (val reg = ensureRegistered()) {
+            is ApiResult.HttpError -> return reg
+            is ApiResult.NetworkError -> return reg
+            is ApiResult.Success -> Unit
+        }
+        val first = block()
+        if (first !is ApiResult.HttpError || !first.isUnauthorized) return first
+        reset()
+        when (val reg = ensureRegistered()) {
+            is ApiResult.HttpError -> return reg
+            is ApiResult.NetworkError -> return reg
+            is ApiResult.Success -> Unit
+        }
+        return block()
+    }
 
     private suspend fun safeToken(): String? = try {
         tokens.token()

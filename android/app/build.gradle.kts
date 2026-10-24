@@ -27,12 +27,15 @@ android {
             // and override with -PsentinelApiBaseUrl=http://localhost:8000
             val url = (project.findProperty("sentinelApiBaseUrl") as String?) ?: "http://10.0.2.2:8000"
             buildConfigField("String", "API_BASE_URL", "\"$url\"")
+            buildConfigField("boolean", "DEMO_ENABLED", "true")
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
         }
         release {
             // TODO(release): replace with the real production API origin (must be https).
             buildConfigField("String", "API_BASE_URL", "\"https://api.example.invalid\"")
+            // In-app demo mode posts sample scam messages to the signed-in account: never ship it.
+            buildConfigField("boolean", "DEMO_ENABLED", "false")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -57,6 +60,12 @@ android {
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
+
+    // Fakes shared by JVM unit tests and instrumented Compose tests.
+    sourceSets {
+        getByName("test").java.srcDir("src/sharedTest/java")
+        getByName("androidTest").java.srcDir("src/sharedTest/java")
+    }
 }
 
 kotlin {
@@ -76,6 +85,8 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.lifecycle.viewmodel.savedstate)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
@@ -93,4 +104,11 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.okhttp.logging)
+
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    debugImplementation(libs.compose.ui.test.manifest)
 }
