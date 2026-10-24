@@ -4,50 +4,54 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
 import ai.enthral.sentinel.R
-import ai.enthral.sentinel.ui.common.AdaptiveBox
+import ai.enthral.sentinel.domain.Tier
 import ai.enthral.sentinel.ui.common.graphViewModel
+import ai.enthral.sentinel.ui.components.GroupedDivider
+import ai.enthral.sentinel.ui.components.IconAction
+import ai.enthral.sentinel.ui.components.LargeTitleList
 import ai.enthral.sentinel.ui.components.NoteCard
+import ai.enthral.sentinel.ui.components.PlainButton
 import ai.enthral.sentinel.ui.components.PrimaryButton
-import ai.enthral.sentinel.ui.components.SecondaryButton
+import ai.enthral.sentinel.ui.components.SentinelIcons
+import ai.enthral.sentinel.ui.components.SentinelTextField
+import ai.enthral.sentinel.ui.components.TierGlyph
+import ai.enthral.sentinel.ui.theme.Radii
+import ai.enthral.sentinel.ui.theme.SentinelTheme
 import ai.enthral.sentinel.ui.theme.Spacing
 
 @Composable
@@ -90,6 +94,12 @@ fun checkErrorMessage(e: CheckError): String = stringResource(
     },
 )
 
+private val Inset = Modifier.padding(horizontal = Spacing.inset)
+
+/**
+ * Focused composer: one large text area with paste / photo as icon actions inside it, an optional sender, one
+ * primary "Check". Picking a photo swaps the text area for the screenshot preview; removing it swaps back.
+ */
 @Composable
 fun CheckContent(
     state: CheckUiState,
@@ -103,152 +113,167 @@ fun CheckContent(
     onCancel: () -> Unit,
 ) {
     val clipboard = LocalClipboardManager.current
-    AdaptiveBox(Modifier.statusBarsPadding()) {
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = Spacing.gutter, vertical = Spacing.x2),
-            verticalArrangement = Arrangement.spacedBy(Spacing.x2),
-        ) {
-            item {
-                Text(
-                    stringResource(R.string.check_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.semantics { heading() },
+    val paste: () -> Unit = {
+        if (state.mode != CheckMode.Text) onMode(CheckMode.Text)
+        clipboard.getText()?.text?.let(onText)
+    }
+    val photo: () -> Unit = {
+        if (state.mode != CheckMode.Screenshot) onMode(CheckMode.Screenshot)
+        onPickImage()
+    }
+    LargeTitleList(title = stringResource(R.string.check_title), subtitle = stringResource(R.string.check_intro)) {
+        item(key = "composer") {
+            Column(
+                Inset.fillMaxWidth().clip(RoundedCornerShape(Radii.large)).background(SentinelTheme.palette.elevated),
+            ) {
+                if (state.mode == CheckMode.Text) {
+                    SentinelTextField(
+                        value = state.text,
+                        onValueChange = onText,
+                        label = stringResource(R.string.check_text_label),
+                        placeholder = stringResource(R.string.check_text_hint),
+                        enabled = !state.loading,
+                        isError = state.error == CheckError.TextTooLong,
+                        minLines = 6,
+                        maxLines = 14,
+                        shape = RoundedCornerShape(0.dp),
+                        modifier = Modifier.heightIn(min = 180.dp),
+                    )
+                } else {
+                    ScreenshotArea(state, onPickImage)
+                }
+                ComposerToolbar(state, paste, photo, onClearText, onRemoveImage = { onClearImage(); onMode(CheckMode.Text) })
+            }
+        }
+        if (state.mode == CheckMode.Text) {
+            item(key = "sender") {
+                SentinelTextField(
+                    value = state.sender,
+                    onValueChange = onSender,
+                    label = stringResource(R.string.check_sender_label),
+                    supporting = stringResource(R.string.check_sender_hint),
+                    enabled = !state.loading,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    modifier = Inset.padding(top = Spacing.x15),
                 )
             }
-            item {
-                Text(
-                    stringResource(R.string.check_intro),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            item {
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    val modes = CheckMode.entries
-                    modes.forEachIndexed { i, mode ->
-                        SegmentedButton(
-                            selected = state.mode == mode,
-                            onClick = { onMode(mode) },
-                            shape = SegmentedButtonDefaults.itemShape(i, modes.size),
-                            enabled = !state.loading,
-                        ) {
-                            Text(stringResource(if (mode == CheckMode.Text) R.string.check_mode_text else R.string.check_mode_screenshot))
-                        }
-                    }
-                }
-            }
-            if (state.mode == CheckMode.Text) {
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.x1)) {
-                        OutlinedTextField(
-                            value = state.text,
-                            onValueChange = onText,
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp),
-                            enabled = !state.loading,
-                            label = { Text(stringResource(R.string.check_text_label)) },
-                            placeholder = { Text(stringResource(R.string.check_text_hint)) },
-                            supportingText = {
-                                Text(stringResource(R.string.check_counter, state.text.length, CheckViewModel.MAX_TEXT))
-                            },
-                            isError = state.error == CheckError.TextTooLong,
-                            minLines = 5,
-                            maxLines = 12,
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.x1)) {
-                            SecondaryButton(
-                                stringResource(R.string.check_paste),
-                                { clipboard.getText()?.text?.let(onText) },
-                                enabled = !state.loading,
-                                iconRes = R.drawable.ic_paste,
-                            )
-                            if (state.text.isNotEmpty() || state.sender.isNotEmpty()) {
-                                TextButton(onClick = onClearText, enabled = !state.loading, modifier = Modifier.heightIn(min = Spacing.minTouchTarget)) {
-                                    Text(stringResource(R.string.check_clear))
-                                }
-                            }
-                        }
-                        OutlinedTextField(
-                            value = state.sender,
-                            onValueChange = onSender,
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !state.loading,
-                            singleLine = true,
-                            label = { Text(stringResource(R.string.check_sender_label)) },
-                            supportingText = { Text(stringResource(R.string.check_sender_hint)) },
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Text),
-                        )
-                    }
-                }
-            } else {
-                item { ScreenshotPicker(state, onPickImage, onClearImage) }
-            }
-            state.error?.let { err ->
-                item {
-                    Card(
-                        Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                        ),
-                    ) {
-                        Row(Modifier.padding(Spacing.x2), horizontalArrangement = Arrangement.spacedBy(Spacing.x2)) {
-                            Icon(painterResource(R.drawable.ic_tier_high), null)
-                            Column(verticalArrangement = Arrangement.spacedBy(Spacing.x05)) {
-                                Text(stringResource(R.string.check_error_title), style = MaterialTheme.typography.titleSmall)
-                                Text(checkErrorMessage(err), style = MaterialTheme.typography.bodyMedium)
-                                if (err != CheckError.ImageUnreadable && err != CheckError.NoTextFound) {
-                                    Text(stringResource(R.string.check_error_kept), style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            item {
+        }
+        state.error?.let { err -> item(key = "error") { CheckErrorCard(err, Inset.padding(top = Spacing.x2)) } }
+        item(key = "submit") {
+            Box(Inset.padding(top = Spacing.x3)) {
                 if (state.loading) {
-                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.x1)) {
-                        LinearProgressIndicator(Modifier.fillMaxWidth())
-                        Text(stringResource(R.string.check_loading), style = MaterialTheme.typography.bodyMedium)
-                        SecondaryButton(stringResource(R.string.action_cancel), onCancel, Modifier.fillMaxWidth())
+                    Row(
+                        Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.x15),
+                    ) {
+                        CircularProgressIndicator(Modifier.size(22.dp), color = SentinelTheme.palette.accent, strokeWidth = 2.5.dp)
+                        Text(
+                            stringResource(R.string.check_loading),
+                            style = SentinelTheme.type.callout,
+                            color = SentinelTheme.palette.secondaryLabel,
+                            modifier = Modifier.weight(1f),
+                        )
+                        PlainButton(stringResource(R.string.action_cancel), onCancel)
                     }
                 } else {
                     PrimaryButton(stringResource(R.string.check_submit), onSubmit, Modifier.fillMaxWidth(), enabled = state.canSubmit)
                 }
             }
-            item { NoteCard(stringResource(R.string.check_privacy_note)) }
+        }
+        item(key = "privacy") { NoteCard(stringResource(R.string.check_privacy_note), Modifier.padding(top = Spacing.x15)) }
+    }
+}
+
+@Composable
+private fun ComposerToolbar(
+    state: CheckUiState,
+    onPaste: () -> Unit,
+    onPhoto: () -> Unit,
+    onClearText: () -> Unit,
+    onRemoveImage: () -> Unit,
+) {
+    val p = SentinelTheme.palette
+    GroupedDivider()
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.x1, vertical = Spacing.x1),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.x05),
+    ) {
+        IconAction(SentinelIcons.Paste, stringResource(R.string.check_paste), onPaste, enabled = !state.loading, filled = false)
+        IconAction(SentinelIcons.Photo, stringResource(R.string.check_choose_screenshot), onPhoto, enabled = !state.loading, filled = false)
+        Spacer(Modifier.weight(1f))
+        if (state.mode == CheckMode.Text) {
+            if (state.text.isNotEmpty() || state.sender.isNotEmpty()) {
+                PlainButton(stringResource(R.string.check_clear), onClearText, enabled = !state.loading)
+            }
+            Text(
+                stringResource(R.string.check_counter, state.text.length, CheckViewModel.MAX_TEXT),
+                style = SentinelTheme.type.footnote,
+                color = if (state.error == CheckError.TextTooLong) SentinelTheme.colors[Tier.Critical].content else p.secondaryLabel,
+                modifier = Modifier.padding(end = Spacing.x1),
+            )
+        } else if (state.imageUri != null) {
+            IconAction(SentinelIcons.Close, stringResource(R.string.check_remove_screenshot), onRemoveImage, enabled = !state.loading, filled = false)
+        } else {
+            PlainButton(stringResource(R.string.check_mode_text), onRemoveImage, enabled = !state.loading)
         }
     }
 }
 
 @Composable
-private fun ScreenshotPicker(state: CheckUiState, onPick: () -> Unit, onClear: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.x1)) {
-        if (state.imageUri == null) {
-            SecondaryButton(stringResource(R.string.check_choose_screenshot), onPick, Modifier.fillMaxWidth(), enabled = !state.loading, iconRes = R.drawable.ic_image)
+private fun ScreenshotArea(state: CheckUiState, onPick: () -> Unit) {
+    val p = SentinelTheme.palette
+    val bmp = state.thumbnail
+    if (state.imageUri != null && bmp != null) {
+        Column(Modifier.fillMaxWidth().padding(Spacing.x15), horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                bmp.asImageBitmap(),
+                contentDescription = stringResource(R.string.check_preview_cd),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxWidth().heightIn(max = 340.dp).clip(RoundedCornerShape(Radii.medium)),
+            )
+            PlainButton(stringResource(R.string.check_change_screenshot), onPick, enabled = !state.loading)
+        }
+    } else {
+        Column(
+            Modifier.fillMaxWidth().heightIn(min = 180.dp)
+                .clickable(enabled = !state.loading, role = Role.Button, onClick = onPick)
+                .padding(Spacing.x3),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Box(Modifier.size(52.dp).background(p.accentSoft, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
+                Icon(SentinelIcons.Photo, null, tint = p.accent, modifier = Modifier.size(28.dp))
+            }
+            Spacer(Modifier.size(Spacing.x15))
+            Text(stringResource(R.string.check_choose_screenshot), style = SentinelTheme.type.headline, color = p.accent)
+            Spacer(Modifier.size(Spacing.x05))
             Text(
                 stringResource(R.string.check_screenshot_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = SentinelTheme.type.footnote,
+                color = p.secondaryLabel,
+                textAlign = TextAlign.Center,
             )
-        } else {
-            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest)) {
-                Column(Modifier.padding(Spacing.x1), verticalArrangement = Arrangement.spacedBy(Spacing.x1)) {
-                    val bmp = state.thumbnail
-                    if (bmp != null) {
-                        Image(
-                            bmp.asImageBitmap(),
-                            contentDescription = stringResource(R.string.check_preview_cd),
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp),
-                        )
-                    }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        SecondaryButton(stringResource(R.string.check_change_screenshot), onPick, enabled = !state.loading)
-                        IconButton(onClick = onClear, enabled = !state.loading) {
-                            Icon(Icons.Filled.Close, stringResource(R.string.check_remove_screenshot))
-                        }
-                    }
-                }
+        }
+    }
+}
+
+/** Calm error: caution glyph, a title, the reason, and a reassurance that nothing typed was lost. */
+@Composable
+private fun CheckErrorCard(err: CheckError, modifier: Modifier) {
+    val p = SentinelTheme.palette
+    Row(
+        modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.large)).background(p.elevated).padding(Spacing.x2),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.x15),
+    ) {
+        TierGlyph(Tier.Caution, size = 32.dp, pulse = false)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.x05)) {
+            Text(stringResource(R.string.check_error_title), style = SentinelTheme.type.headline, color = p.label, modifier = Modifier.semantics { heading() })
+            Text(checkErrorMessage(err), style = SentinelTheme.type.subhead, color = p.label)
+            if (err != CheckError.ImageUnreadable && err != CheckError.NoTextFound) {
+                Text(stringResource(R.string.check_error_kept), style = SentinelTheme.type.footnote, color = p.secondaryLabel)
             }
         }
     }
