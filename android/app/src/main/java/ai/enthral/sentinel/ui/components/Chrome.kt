@@ -318,7 +318,7 @@ fun <T> SegmentedControl(
         val x by animateDpAsState(segment * index, if (reduced) androidx.compose.animation.core.snap() else Motion.standard(), label = "thumb")
         Box(Modifier.matchParentSize()) {
             Box(
-                Modifier.offset(x = x).width(segment).fillMaxHeight()
+                Modifier.offset { androidx.compose.ui.unit.IntOffset(x.roundToPx(), 0) }.width(segment).fillMaxHeight()
                     .softShadow(RoundedCornerShape(Radii.medium - 3.dp))
                     .background(thumb, RoundedCornerShape(Radii.medium - 3.dp)),
             )

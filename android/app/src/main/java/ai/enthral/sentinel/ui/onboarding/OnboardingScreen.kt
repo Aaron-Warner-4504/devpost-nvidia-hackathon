@@ -208,7 +208,7 @@ private fun CenteredPage(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun PageTitle(text: String, center: Boolean = false, modifier: Modifier = Modifier) {
+private fun PageTitle(text: String, modifier: Modifier = Modifier, center: Boolean = false) {
     Text(
         text,
         style = SentinelTheme.type.largeTitle,
@@ -219,7 +219,7 @@ private fun PageTitle(text: String, center: Boolean = false, modifier: Modifier 
 }
 
 @Composable
-private fun PageBody(text: String, center: Boolean = false, modifier: Modifier = Modifier) {
+private fun PageBody(text: String, modifier: Modifier = Modifier, center: Boolean = false) {
     Text(
         text,
         style = SentinelTheme.type.body,

@@ -45,7 +45,6 @@
     <string name="onboarding_sources_body">Turn on only what you are comfortable with. Tap “What we read” to see exactly what is and is not used.</string>
     <string name="onboarding_alerts_title">Alert notifications</string>
     <string name="onboarding_alerts_body">Allow notifications so Sentinel can warn you right away about high-risk and critical alerts.</string>
-    <string name="onboarding_alerts_allow">Allow alert notifications</string>
     <string name="onboarding_finish">Finish setup</string>
     <string name="onboarding_registering">Setting up your private account…</string>
     <string name="onboarding_register_failed">Setup could not finish. %1$s</string>
@@ -99,7 +98,6 @@
     <string name="home_offline_note">You are offline. These alerts may be out of date.</string>
     <string name="home_today">What Sentinel did today</string>
     <string name="home_today_none">Nothing suspicious was flagged today.</string>
-    <string name="home_today_some">Alerts raised today:</string>
     <string name="home_latest_alert">Latest alert</string>
     <string name="home_empty_title">No alerts yet</string>
     <string name="home_empty_body">When Sentinel spots something suspicious, it will show up here with the reasons and what to do next.</string>
@@ -156,7 +154,6 @@
     <string name="check_title">Check something</string>
     <string name="check_intro">Not sure about a message? Paste it or pick a screenshot and Sentinel will tell you whether it looks like a scam.</string>
     <string name="check_mode_text">Text</string>
-    <string name="check_mode_screenshot">Screenshot</string>
     <string name="check_text_label">Message to check</string>
     <string name="check_text_hint">Paste or type the message here</string>
     <string name="check_counter">%1$d / %2$d</string>
@@ -252,7 +249,6 @@
     <string name="settings_privacy">Data and privacy</string>
     <string name="settings_privacy_summary">Message text stays on your phone. Only masked text and a risk score are analysed.</string>
     <string name="settings_privacy_show">Show details</string>
-    <string name="settings_privacy_hide">Hide details</string>
     <string name="privacy_leaves_title">What leaves your phone</string>
     <string name="privacy_leaves_body">Masked text (OTPs, card and account numbers hidden), sender, time and a risk score, plus anything you choose to check.</string>
     <string name="privacy_stays_title">What stays on your phone</string>
