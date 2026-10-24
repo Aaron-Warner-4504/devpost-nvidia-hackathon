@@ -323,7 +323,7 @@ def process_event(db: Session, user, ev: EventIn, force_agent: bool = False, *, 
         _run_hooks(db, user, out.alert, out.decision, deps)
     if job is not None:  # stage 2 runs after the response is decided, off the request path
         review.submit(job, session_factory=deps.session_factory or sessionmaker(bind=db.get_bind()),
-                      llm=llm, deps=deps)
+                      llm=llm, deps=deps, user_id=user.id)
     return EventResult(event_id=stored.id, duplicate=False,
                        alert=out.alert if out.decision.show else None)
 

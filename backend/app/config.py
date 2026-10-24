@@ -52,7 +52,8 @@ class Settings(BaseSettings):
     agent_review_daily_cap: int = 200  # stage-2 agent runs per user per rolling 24 h
     review_workers: int = 2
     review_queue_size: int = 256
-    review_sweep_minutes: int = 5
+    review_sweep_minutes: int = 5  # sweeper period and stale-`running` age
+    review_max_queued_per_user: int = 20  # in-queue + running stage-2 jobs per user (0 = unlimited)
     # Family push (Task 11): path to a Firebase service-account JSON; unset -> notifications are no-ops.
     firebase_credentials_file: str = ""
     # Server-side secret mixed into stored pairing-code hashes. Required (>= 16 chars) when ENVIRONMENT=prod:

@@ -114,12 +114,17 @@ entity links only; semantic neighbours exist from stage 2 on.
 - Hooks are unchanged: own-device push and family pushes act only when `decision.interrupt` is true, family
   only for `critical`.
 - Safety: one job per event (unique), per-event advisory lock held on a dedicated connection, at most 2
-  attempts, a full queue (`REVIEW_QUEUE_SIZE`) drops the job to `failed` without blocking the request, an
-  LLM or embedding failure finishes the job with no upgrade, a job whose user was deleted exits quietly,
-  and a startup sweeper resubmits `queued` / `running` jobs older than `REVIEW_SWEEP_MINUTES`. Jobs are only
+  attempts, a full queue (`REVIEW_QUEUE_SIZE`) or a user over `REVIEW_MAX_QUEUED_PER_USER` never blocks the request
+  and never drops the job: it stays `queued` in the DB, a periodic sweeper (every `REVIEW_SWEEP_MINUTES`,
+  never two at once) submits it later, round-robin across users and oldest first, so one flooding user
+  cannot starve another; an LLM or embedding failure finishes the job with no upgrade, a job whose user was
+  deleted exits quietly, and the sweeper also resubmits `running` jobs older than `REVIEW_SWEEP_MINUTES`
+  (crash). Jobs are only
   created by the pipeline for the event it just stored; no request parameter can trigger one.
 - Cost: with `AGENT_REVIEW=all` the agent runs on every event, at most `AGENT_REVIEW_DAILY_CAP` stage-2 runs
-  per user per 24 h; beyond the cap stage 2 does embedding + rules only.
+  per user per 24 h; beyond the cap stage 2 does embedding + rules only. The slot is reserved before the
+  LLM call (`agent_ran=true` committed under a per-user advisory lock), so concurrent jobs cannot exceed the
+  cap; a failed agent run keeps its slot (it was spent) and a retry of that job does not call the agent again.
 - `review.flush_background()` runs pending jobs synchronously (tests and the eval).
 
 ## 5. Linked history for the agent
@@ -144,7 +149,8 @@ allowlisting is unchanged: history text never widens the allowed tool targets.
 | `STORY_PROGRESSION` | true | story signal on/off |
 | `AGENT_REVIEW` | escalated | `escalated` or `all` |
 | `AGENT_REVIEW_DAILY_CAP` | 200 | stage-2 agent runs per user per 24 h |
-| `REVIEW_WORKERS` / `REVIEW_QUEUE_SIZE` / `REVIEW_SWEEP_MINUTES` | 2 / 256 / 5 | worker pool, bound, sweeper age |
+| `REVIEW_WORKERS` / `REVIEW_QUEUE_SIZE` / `REVIEW_SWEEP_MINUTES` | 2 / 256 / 5 | worker pool, in-memory bound, sweeper period and stale-`running` age |
+| `REVIEW_MAX_QUEUED_PER_USER` | 20 | in-queue + running jobs per user; more stay `queued` in the DB (0 = unlimited) |
 
 With no key and no provider configured, semantic memory is off, stage 2 does not run and behaviour is the
 single-stage pipeline plus the story signal over entity links.

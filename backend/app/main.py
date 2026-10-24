@@ -29,23 +29,18 @@ async def lifespan(_: FastAPI):
 
 
 def _start_review() -> None:
-    """Stage-2 worker pool from settings; resume jobs a crash / restart left behind (background thread)."""
-    import threading
+    """Stage-2 worker pool from settings; a periodic sweeper submits jobs that did not fit the queue or
+    that a crash / restart left behind (background thread, also runs once at startup)."""
     from datetime import timedelta
 
     from app.db import SessionLocal
     from app.pipeline import review
-    review.configure(workers=settings.review_workers, queue_size=settings.review_queue_size)
+    review.configure(workers=settings.review_workers, queue_size=settings.review_queue_size,
+                     max_per_user=settings.review_max_queued_per_user)
     if not review.enabled(settings) or settings.environment == "test":
         return
-
-    def run():
-        try:
-            review.sweep(SessionLocal, older_than=timedelta(minutes=settings.review_sweep_minutes))
-        except Exception as exc:
-            logging.getLogger("app").warning("review sweeper failed (%s)", type(exc).__name__)
-
-    threading.Thread(target=run, name="review-sweeper", daemon=True).start()
+    period = timedelta(minutes=max(1, settings.review_sweep_minutes))
+    review.start_sweeper(SessionLocal, interval=period, older_than=period)
 
 
 app = FastAPI(title="Sentinel API", version="0.1.0", lifespan=lifespan)
