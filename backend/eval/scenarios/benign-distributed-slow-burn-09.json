@@ -1,0 +1,87 @@
+{
+  "id": "benign-distributed-slow-burn-09",
+  "label": "benign",
+  "category": "distributed_slow_burn",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "dsb_b_society",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-distributed-slow-burn-09-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-23T11:00:00+05:30",
+      "sender": "Mrs Kapoor (Society)",
+      "text": "Diwali planning ke liye aapko society group mein add kar rahi hoon.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-09-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-23T22:43:00+05:30",
+      "sender": "Mummy",
+      "text": "Reached home?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-09-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-24T16:15:00+05:30",
+      "sender": "Didi",
+      "text": "Ok 👍",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-09-e03",
+      "source": "whatsapp",
+      "ts": "2026-07-25T19:00:00+05:30",
+      "sender": "Mr Iyer (Society)",
+      "text": "Saturday 7 baje Diwali party hai, sab aana.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-09-e04",
+      "source": "whatsapp",
+      "ts": "2026-07-27T10:00:00+05:30",
+      "sender": "Treasurer Green Park",
+      "text": "October ka maintenance 3,000 due hai, society account mein bhej dena.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-09-e05",
+      "source": "whatsapp",
+      "ts": "2026-07-27T11:07:00+05:30",
+      "sender": "Mummy",
+      "text": "Happy birthday to Chintu! 🎂",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn",
+      "is_contact": true
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

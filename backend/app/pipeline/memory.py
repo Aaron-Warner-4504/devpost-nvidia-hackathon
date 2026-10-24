@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from itertools import combinations
 from typing import Protocol
 
@@ -183,22 +183,149 @@ def related_entities(db: Session, user: _HasId, entity: Entity, *, depth: int = 
     return [e for d in sorted(by) for e in by[d]][:limit]
 
 
-def store_embedding(db: Session, user: _HasId, event_id: str, vector: list[float]) -> None:
-    db.add(Embedding(user_id=user.id, event_id=event_id, vector=vector))
+def store_embedding(db: Session, user: _HasId, event_id: str, vector: list[float], *,
+                    model: str = "") -> None:
+    """One vector per event: storing again replaces it (upsert on event_id)."""
+    ins = pg_insert(Embedding).values(user_id=user.id, event_id=event_id, vector=vector, model=model)
+    db.execute(ins.on_conflict_do_update(constraint="uq_embeddings_event",
+                                         set_={"vector": ins.excluded.vector, "model": ins.excluded.model}))
     db.flush()
 
 
 def recall(db: Session, user: _HasId, text: str, k: int = 5, *, llm,
-           vector: list[float] | None = None) -> list[HistoryItem]:
-    """Nearest events by cosine distance (k clamped to 1..50), one row per event."""
+           vector: list[float] | None = None, model: str | None = None) -> list[HistoryItem]:
+    """Nearest events by cosine distance (k clamped to 1..50), one row per event. With `model`, only
+    vectors produced by that provider are compared."""
     k = max(1, min(k, 50))
     vec = vector if vector is not None else llm.embed([text])[0]
     dist = func.min(Embedding.vector.cosine_distance(vec))
-    rows = db.execute(
-        select(Event.id, Event.ts, Event.source, Event.redacted_text)
-        .join(Embedding, Embedding.event_id == Event.id)
-        .where(Embedding.user_id == user.id, Event.user_id == user.id)
-        .group_by(Event.id)
-        .order_by(dist, Event.ts)
-        .limit(k)).all()
+    q = (select(Event.id, Event.ts, Event.source, Event.redacted_text)
+         .join(Embedding, Embedding.event_id == Event.id)
+         .where(Embedding.user_id == user.id, Event.user_id == user.id))
+    if model is not None:
+        q = q.where(Embedding.model == model)
+    rows = db.execute(q.group_by(Event.id).order_by(dist, Event.ts).limit(k)).all()
     return [HistoryItem(*r) for r in rows]
+
+
+# ---------------------------------------------------------------- semantic links between events
+# Two events with similar (redacted) text but no shared entity are linked by an edge `similar` between
+# per-event graph nodes: an entity row of type "event" whose canonical is the event id. The node has no
+# edges to phone/domain/org/claim entities, so entity traversal (related_entities) never crosses it.
+EVENT_NODE = "event"
+SIMILAR = "similar"
+
+
+@dataclass(frozen=True)
+class Neighbour:
+    item: HistoryItem
+    similarity: float
+
+
+def _shares_entity_with(user_id: str, event_id: str):
+    """Event ids sharing a non-amount, non-node entity with `event_id` (already linked by entities)."""
+    mine = (select(EventEntity.entity_id).join(EntityRow, EntityRow.id == EventEntity.entity_id)
+            .where(EventEntity.user_id == user_id, EventEntity.event_id == event_id,
+                   EntityRow.user_id == user_id, EntityRow.type.not_in(("amount", EVENT_NODE))))
+    return select(EventEntity.event_id).where(EventEntity.user_id == user_id, EventEntity.entity_id.in_(mine))
+
+
+def semantic_neighbours(db: Session, user: _HasId, event_id: str, vector: list[float], *, model: str,
+                        now: datetime, window: timedelta, k: int, threshold: float) -> list[Neighbour]:
+    """Up to k (<= 5) PRIOR events of the same user within `window` before `now` whose stored vector
+    (same model) has cosine similarity >= threshold. Excludes the event itself, events already linked
+    by a shared entity and exact text duplicates. Most similar first."""
+    k = max(1, min(int(k), 5))
+    now = now if now.tzinfo else now.replace(tzinfo=timezone.utc)
+    own_hash = select(Event.hash).where(Event.id == event_id, Event.user_id == user.id).scalar_subquery()
+    dist = Embedding.vector.cosine_distance(vector)
+    rows = db.execute(
+        select(Event.id, Event.ts, Event.source, Event.redacted_text, dist.label("d"))
+        .join(Embedding, Embedding.event_id == Event.id)
+        .where(Embedding.user_id == user.id, Event.user_id == user.id, Embedding.model == model,
+               Event.id != event_id, Event.ts <= now, Event.ts >= now - window,
+               Event.hash != own_hash,
+               Event.id.not_in(_shares_entity_with(user.id, event_id)),
+               dist <= 1.0 - threshold)
+        .order_by(dist, Event.ts.desc(), Event.id).limit(k)).all()
+    return [Neighbour(HistoryItem(r[0], r[1], r[2], r[3]), round(1.0 - float(r[4]), 4)) for r in rows]
+
+
+def _node_ids(db: Session, user: _HasId, event_ids: list[str]) -> dict[str, str]:
+    return {e.canonical: i for e, i in _entity_ids(
+        db, user, [Entity(EVENT_NODE, eid) for eid in event_ids]).items()}  # type: ignore[arg-type]
+
+
+def link_similar(db: Session, user: _HasId, event_id: str, neighbour_ids: list[str]) -> int:
+    """Persist `similar` edges between this event and each neighbour (evidence = both event ids).
+    Idempotent. Returns the number of edges written."""
+    ids = [n for n in dict.fromkeys(neighbour_ids) if n != event_id]
+    if not ids:
+        return 0
+    ts = dict(db.execute(select(Event.id, Event.ts).where(
+        Event.user_id == user.id, Event.id.in_([event_id, *ids]))).all())
+    if event_id not in ts:
+        return 0
+    ids = [n for n in ids if n in ts]
+    nodes = _node_ids(db, user, [event_id, *ids])
+    pending = []
+    for n in ids:
+        a, b = sorted((nodes[event_id], nodes[n]))
+        pending.append((a, b, min(ts[event_id], ts[n]), n))
+    for a, b, valid_from, n in sorted(pending):  # canonical lock order
+        ins = pg_insert(Edge).values(user_id=user.id, a=a, b=b, relation=SIMILAR, valid_from=valid_from,
+                                     evidence_event_ids=sorted([event_id, n]))
+        db.execute(ins.on_conflict_do_nothing(constraint="uq_edges_user_a_b_relation"))
+    return len(pending)
+
+
+def similar_events(db: Session, user: _HasId, event_id: str, *, now: datetime,
+                   window: timedelta) -> list[HistoryItem]:
+    """Events linked to `event_id` by a `similar` edge, with ts in [now - window, now], oldest first."""
+    node = db.scalar(select(EntityRow.id).where(EntityRow.user_id == user.id, EntityRow.type == EVENT_NODE,
+                                                EntityRow.canonical == event_id))
+    if node is None:
+        return []
+    pairs = db.execute(select(Edge.a, Edge.b).where(
+        Edge.user_id == user.id, Edge.relation == SIMILAR, (Edge.a == node) | (Edge.b == node))).all()
+    others = {b if a == node else a for a, b in pairs}
+    if not others:
+        return []
+    other_events = select(EntityRow.canonical).where(EntityRow.user_id == user.id, EntityRow.type == EVENT_NODE,
+                                                     EntityRow.id.in_(others))
+    now = now if now.tzinfo else now.replace(tzinfo=timezone.utc)
+    rows = db.execute(select(Event.id, Event.ts, Event.source, Event.redacted_text).where(
+        Event.user_id == user.id, Event.id.in_(other_events), Event.id != event_id,
+        Event.ts <= now, Event.ts >= now - window).order_by(Event.ts, Event.id)).all()
+    return [HistoryItem(*r) for r in rows]
+
+
+@dataclass(frozen=True)
+class EventMeta:
+    sender_key: str | None
+    signals: frozenset[str]
+    stages: frozenset[str] | None  # None when no assessment stored stages (older rows)
+
+
+def event_meta(db: Session, user: _HasId, event_ids: list[str]) -> dict[str, EventMeta]:
+    """Hashed sender, stored signal names and story stages (union over the event's assessments)."""
+    from app.models import Assessment  # local: keeps the import graph of this module small
+    ids = list(dict.fromkeys(event_ids))
+    if not ids:
+        return {}
+    senders = dict(db.execute(select(Event.id, Event.sender_key).where(
+        Event.user_id == user.id, Event.id.in_(ids))).all())
+    sig: dict[str, set[str]] = {}
+    stg: dict[str, set[str] | None] = {}
+    for eid, names, payload in db.execute(select(Assessment.event_id, Assessment.signals, Assessment.payload).where(
+            Assessment.user_id == user.id, Assessment.event_id.in_(ids))).all():
+        sig.setdefault(eid, set()).update(names or [])
+        st = payload.get("stages") if isinstance(payload, dict) else None
+        if isinstance(st, list):
+            cur = stg.get(eid) or set()
+            stg[eid] = cur | {x for x in st if isinstance(x, str)}
+        else:
+            stg.setdefault(eid, None)
+    return {eid: EventMeta(senders.get(eid), frozenset(sig.get(eid, ())),
+                           frozenset(stg[eid]) if stg.get(eid) is not None else None)
+            for eid in ids if eid in senders}

@@ -1,0 +1,61 @@
+{
+  "id": "scam-distributed-slow-burn-10",
+  "label": "scam",
+  "category": "distributed_slow_burn",
+  "lang": "en",
+  "shape": "distributed",
+  "template": "dsb_crypto_en",
+  "harm_index": 3,
+  "events": [
+    {
+      "device_event_id": "scam-distributed-slow-burn-10-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-12T15:03:00+05:30",
+      "sender": "8991070264",
+      "text": "Hey, sorry wrong number! I was looking for my friend Meera. Nice talking to you anyway 🙂",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-10-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-14T08:11:00+05:30",
+      "sender": "+91 94168 98051",
+      "text": "My uncle is a crypto mentor, his students make steady weekly income. I can introduce you if you like.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-10-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-15T12:17:00+05:30",
+      "sender": "+918921753959",
+      "text": "Welcome to the mentor's trading desk. Your account is ready; withdrawals open after the first top-up.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-10-e03",
+      "source": "whatsapp",
+      "ts": "2026-07-16T09:21:00+05:30",
+      "sender": "7195294535",
+      "text": "To unlock your withdrawal, a verification deposit of Rs 11,900 is needed.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 3,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

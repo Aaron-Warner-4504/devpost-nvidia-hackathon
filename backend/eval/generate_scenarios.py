@@ -1140,6 +1140,278 @@ BENIGN_BUILDERS = {
 BENIGN_LANGS = ["en", "hi", "hinglish"]
 
 
+# ---------------------------------------------------------------- distributed slow burn (memory upgrade)
+# Scam stories told by DIFFERENT numbers over days, with NO shared phone / domain / org / claim entity;
+# each message looks harmless alone. Benign look-alikes: real group invites, recruiter headers, family
+# money requests from saved contacts, local services that introduce themselves. Generated last with
+# their own RNG and split stream, so the original 123 scenarios and their splits are unchanged.
+DSB_CATEGORY = "distributed_slow_burn"
+DSB_SCAMS = 12
+DSB_BENIGN = 12
+COMPANIES = ["TalentBridge", "HireNest", "WorkSphere", "JobKart"]
+CLUBS = ["Alpha Traders", "Bull Run Circle", "Nifty Masters", "Wealth Wave"]
+
+
+def _nums(s: Slots, n: int) -> list[str]:
+    out: list[str] = []
+    while len(out) < n:
+        p = s.phone10()
+        if p not in out:
+            out.append(p)
+    return out
+
+
+def dsb_inv_en(s: Slots):
+    a, b, c = _nums(s, 3)
+    amt = s.amount(2999, 9999, 1000) - 1
+    return dict(lang="en", shape="distributed", harm=2, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", s.phone_fmt(a), f"Hi {s.pick(NAMES_EN)}, I got your number from the {s.pick(CITIES)} "
+                                            f"investors meetup. Hope you are doing well! I share market updates sometimes.")),
+        (s.r.randrange(20, 40), msg("whatsapp", s.phone_fmt(b),
+                                    f"Good morning! Our members booked {s.r.randrange(15, 35)}% profit this month with "
+                                    f"expert stock tips. Guaranteed returns, only for serious members.")),
+        (s.r.randrange(24, 50), msg("whatsapp", s.phone_fmt(c),
+                                    f"Only {s.r.randrange(2, 6)} VIP seats left in the premium batch. The membership fee "
+                                    f"of Rs {inr(amt)} is required to secure your slot.")),
+    ])
+
+
+def dsb_job_en(s: Slots):
+    a, b, c = _nums(s, 3)
+    return dict(lang="en", shape="distributed", harm=2, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", s.phone_fmt(a), f"Hello, this is {s.pick(NAMES_EN)} from {s.pick(COMPANIES)} HR. We saw "
+                                            f"your profile on a job portal and have a remote opening for you.")),
+        (s.r.randrange(20, 30), msg("whatsapp", s.phone_fmt(b),
+                                    f"Work from home opportunity: rate hotels online and earn Rs {inr(s.amount(2000, 5000, 500))} "
+                                    f"daily. Many members are already earning.")),
+        (s.r.randrange(20, 48), msg("whatsapp", s.phone_fmt(c),
+                                    f"Your onboarding is approved. A refundable training kit fee of Rs "
+                                    f"{inr(s.amount(999, 2999, 500))} is needed to activate your employee ID.")),
+    ])
+
+
+def dsb_relative_en(s: Slots):
+    a, b, c, d = _nums(s, 4)
+    who = s.pick(["Chachu", "Mama", "Uncle", "Fufa ji"])
+    return dict(lang="en", shape="distributed", harm=3, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", s.phone_fmt(a), f"Hi beta, this is {who}. My phone fell in water, this is my new number. Save it.")),
+        (s.r.randrange(20, 30), call("+91" + b, s.r.randrange(60, 300))),
+        (s.r.randrange(2, 20), msg("whatsapp", s.phone_fmt(c),
+                                   f"I am Dr. {s.pick(['Mehta', 'Rao', 'Khanna'])}'s assistant at City Hospital. Your "
+                                   f"{who.lower()} is admitted and asked me to message you.")),
+        (s.r.randrange(1, 4), msg("whatsapp", s.phone_fmt(d),
+                                  f"The advance deposit of Rs {inr(s.amount(15000, 40000, 5000))} is required before the "
+                                  f"procedure. Please arrange it, he will return it.")),
+    ])
+
+
+def dsb_crypto_en(s: Slots):
+    a, b, c, d = _nums(s, 4)
+    return dict(lang="en", shape="distributed", harm=3, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", s.phone_fmt(a), f"Hey, sorry wrong number! I was looking for my friend {s.pick(NAMES_EN)}. "
+                                            f"Nice talking to you anyway 🙂")),
+        (s.r.randrange(24, 48), msg("whatsapp", s.phone_fmt(b),
+                                    "My uncle is a crypto mentor, his students make steady weekly income. I can introduce "
+                                    "you if you like.")),
+        (s.r.randrange(24, 48), msg("whatsapp", s.phone_fmt(c),
+                                    "Welcome to the mentor's trading desk. Your account is ready; withdrawals open after the "
+                                    "first top-up.")),
+        (s.r.randrange(20, 30), msg("whatsapp", s.phone_fmt(d),
+                                    f"To unlock your withdrawal, a verification deposit of Rs {inr(s.amount(5000, 15000, 100))} "
+                                    f"is needed.")),
+    ])
+
+
+def dsb_inv_hi(s: Slots):
+    a, b, c = _nums(s, 3)
+    return dict(lang="hi", shape="distributed", harm=2, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", s.phone_fmt(a), f"नमस्ते, मुझे आपका नंबर {s.pick(CITIES_HI)} के निवेशक ग्रुप से मिला। मैं "
+                                            f"कभी-कभी बाज़ार की जानकारी भेजता हूँ।")),
+        (s.r.randrange(20, 40), msg("whatsapp", s.phone_fmt(b),
+                                    f"हमारे सदस्यों को इस महीने {s.r.randrange(15, 35)}% मुनाफा हुआ। विशेषज्ञ टिप्स, गारंटी के साथ।")),
+        (s.r.randrange(24, 50), msg("whatsapp", s.phone_fmt(c),
+                                    f"प्रीमियम बैच में सिर्फ {s.r.randrange(2, 6)} सीटें बाकी हैं। अपनी सीट पक्की करने के लिए "
+                                    f"₹{inr(s.amount(2999, 9999, 1000) - 1)} सदस्यता शुल्क देना होगा।")),
+    ])
+
+
+def dsb_job_hi(s: Slots):
+    a, b, c = _nums(s, 3)
+    return dict(lang="hi", shape="distributed", harm=2, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", s.phone_fmt(a), f"नमस्ते, मैं {s.pick(COMPANIES)} से {s.pick(NAMES_HI)} बोल रही हूँ। हमें आपकी "
+                                            f"प्रोफ़ाइल जॉब पोर्टल पर मिली।")),
+        (s.r.randrange(20, 30), msg("whatsapp", s.phone_fmt(b),
+                                    f"घर बैठे होटल रेटिंग का काम, रोज़ ₹{inr(s.amount(2000, 5000, 500))} तक कमाई। कई लोग जुड़ चुके हैं।")),
+        (s.r.randrange(20, 48), msg("whatsapp", s.phone_fmt(c),
+                                    f"आपका चयन हो गया है। कर्मचारी आईडी चालू करने के लिए ₹{inr(s.amount(999, 2999, 500))} "
+                                    f"प्रशिक्षण किट फीस लगेगी।")),
+    ])
+
+
+def dsb_relative_hi(s: Slots):
+    a, b, c, d = _nums(s, 4)
+    return dict(lang="hi", shape="distributed", harm=3, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", s.phone_fmt(a), "बेटा, मैं चाचा बोल रहा हूँ। पुराना फ़ोन खराब हो गया, यह मेरा नया नंबर है।")),
+        (s.r.randrange(20, 30), call("+91" + b, s.r.randrange(60, 300))),
+        (s.r.randrange(2, 20), msg("whatsapp", s.phone_fmt(c),
+                                   "मैं सिटी अस्पताल से डॉक्टर का सहायक बोल रहा हूँ। आपके चाचा यहाँ भर्ती हैं, उन्होंने आपको "
+                                   "संदेश भेजने को कहा।")),
+        (s.r.randrange(1, 4), msg("whatsapp", s.phone_fmt(d),
+                                  f"ऑपरेशन से पहले ₹{inr(s.amount(15000, 40000, 5000))} एडवांस जमा कराना ज़रूरी है, वे बाद "
+                                  f"में लौटा देंगे।")),
+    ])
+
+
+def dsb_crypto_hi(s: Slots):
+    a, b, c, d = _nums(s, 4)
+    return dict(lang="hi", shape="distributed", harm=3, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", s.phone_fmt(a), "माफ़ कीजिए, गलत नंबर लग गया। वैसे आपसे बात करके अच्छा लगा।")),
+        (s.r.randrange(24, 48), msg("whatsapp", s.phone_fmt(b),
+                                    "मेरे भैया क्रिप्टो सिखाते हैं, उनके छात्र हर हफ्ते अच्छी कमाई करते हैं।")),
+        (s.r.randrange(24, 48), msg("whatsapp", s.phone_fmt(c),
+                                    "आपका ट्रेडिंग खाता तैयार है, पहली राशि के बाद निकासी शुरू होगी।")),
+        (s.r.randrange(20, 30), msg("whatsapp", s.phone_fmt(d),
+                                    f"निकासी के लिए ₹{inr(s.amount(5000, 15000, 100))} सत्यापन शुल्क आज ही भरना होगा।")),
+    ])
+
+
+def dsb_inv_hinglish(s: Slots):
+    a, b, c = _nums(s, 3)
+    return dict(lang="hinglish", shape="distributed", harm=2, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", s.phone_fmt(a), f"Hello ji, aapka number {s.pick(CITIES)} investors group se mila. Main market "
+                                            f"updates share karta hoon kabhi kabhi.")),
+        (s.r.randrange(20, 40), msg("whatsapp", s.phone_fmt(b),
+                                    f"Is mahine members ko {s.r.randrange(15, 35)}% munafa hua, expert tips guaranteed hai. "
+                                    f"Aapko add karu?")),
+        (s.r.randrange(24, 50), msg("whatsapp", s.phone_fmt(c),
+                                    f"Premium batch mein sirf {s.r.randrange(2, 6)} seat bachi hai. Seat pakki karne ke liye "
+                                    f"{inr(s.amount(2999, 9999, 1000) - 1)} membership fees bharni hogi.")),
+    ])
+
+
+def dsb_job_hinglish(s: Slots):
+    a, b, c = _nums(s, 3)
+    return dict(lang="hinglish", shape="distributed", harm=2, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", s.phone_fmt(a), f"Hi, main {s.pick(COMPANIES)} HR se {s.pick(NAMES_EN)}. Aapki profile job "
+                                            f"portal pe dekhi, ek remote opening hai.")),
+        (s.r.randrange(20, 30), msg("whatsapp", s.phone_fmt(b),
+                                    f"Ghar baithe hotel rating ka kaam, roz {inr(s.amount(2000, 5000, 500))} tak kamai. Bahut log "
+                                    f"jud chuke hain.")),
+        (s.r.randrange(20, 48), msg("whatsapp", s.phone_fmt(c),
+                                    f"Aapka selection ho gaya. Employee ID activate karne ke liye {inr(s.amount(999, 2999, 500))} "
+                                    f"training kit fees deni hogi.")),
+    ])
+
+
+def dsb_relative_hinglish(s: Slots):
+    a, b, c, d = _nums(s, 4)
+    return dict(lang="hinglish", shape="distributed", harm=3, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", s.phone_fmt(a), "Beta main Mama bol raha hoon, purana phone kharab ho gaya, ye mera naya number hai.")),
+        (s.r.randrange(20, 30), call("+91" + b, s.r.randrange(60, 300))),
+        (s.r.randrange(2, 20), msg("whatsapp", s.phone_fmt(c),
+                                   "Main City Hospital se doctor ka assistant bol raha hoon, aapke mama yahan admit hain.")),
+        (s.r.randrange(1, 4), msg("whatsapp", s.phone_fmt(d),
+                                  f"Operation se pehle {inr(s.amount(15000, 40000, 5000))} advance ka intezaam karna padega, "
+                                  f"baad mein lauta denge.")),
+    ])
+
+
+def dsb_task_hinglish(s: Slots):
+    a, b, c, d = _nums(s, 4)
+    return dict(lang="hinglish", shape="distributed", harm=3, fixtures=_fx(), steps=[
+        (0, msg("whatsapp", s.phone_fmt(a), "Hello dear, aap kaise ho? Main aapke purane school group se hoon.")),
+        (s.r.randrange(24, 48), msg("whatsapp", s.phone_fmt(b),
+                                    "Ek part time kaam hai, YouTube videos like karo aur commission kamao.")),
+        (s.r.randrange(20, 40), msg("whatsapp", s.phone_fmt(c),
+                                    "Aapka task account ready hai, aaj hi start karo, slots limited hain.")),
+        (s.r.randrange(20, 30), msg("whatsapp", s.phone_fmt(d),
+                                    f"Bonus nikalne ke liye {inr(s.amount(1500, 5000, 500))} ka upgrade amount bharna padega.")),
+    ])
+
+
+DSB_SCAM_TEMPLATES = [dsb_inv_en, dsb_inv_hi, dsb_inv_hinglish, dsb_job_en, dsb_job_hi, dsb_job_hinglish,
+                      dsb_relative_en, dsb_relative_hi, dsb_relative_hinglish, dsb_crypto_en, dsb_crypto_hi,
+                      dsb_task_hinglish]
+
+
+def dsb_b_society(s: Slots, lang: str):
+    admin, host, treas = "Mrs Kapoor (Society)", "Mr Iyer (Society)", "Treasurer Green Park"
+    if lang == "hi":
+        lines = ["दिवाली की तैयारी के लिए आपको सोसाइटी ग्रुप में जोड़ रही हूँ।", "शनिवार शाम 7 बजे दिवाली पार्टी, सब आइए।",
+                 f"अक्टूबर का रखरखाव शुल्क ₹{inr(s.amount(1500, 4000, 500))} देय है, सोसाइटी खाते में जमा करें।"]
+    elif lang == "hinglish":
+        lines = ["Diwali planning ke liye aapko society group mein add kar rahi hoon.", "Saturday 7 baje Diwali party hai, sab aana.",
+                 f"October ka maintenance {inr(s.amount(1500, 4000, 500))} due hai, society account mein bhej dena."]
+    else:
+        lines = ["Hi, adding you to the Green Park residents group for Diwali planning.",
+                 "Diwali party on Saturday at 7 pm, everyone welcome!",
+                 f"Maintenance fee of Rs {inr(s.amount(1500, 4000, 500))} for October is due, please pay to the society account."]
+    evs = [(0, 11.0, msg("whatsapp", admin, lines[0], contact=True)), (2, 19.0, msg("whatsapp", host, lines[1], contact=True)),
+           (4, 10.0, msg("whatsapp", treas, lines[2], contact=True))]
+    return evs + filler(s, lang, 3), _fx()
+
+
+def dsb_b_recruiter(s: Slots, lang: str):
+    co = s.pick(["Infosys", "Wipro", "TCS", "Accenture"])
+    if lang == "hi":
+        lines = [f"आपकी प्रोफ़ाइल {co} में डेवलपर पद के लिए चयनित हुई है।", "आपका इंटरव्यू मंगलवार सुबह 11 बजे तय है।",
+                 "बधाई! ऑफ़र लेटर जारी कर दिया गया है, पोर्टल पर दस्तावेज़ पूरे करें।"]
+    else:
+        lines = [f"Your profile was shortlisted by {co} for a developer role.",
+                 "Your interview is scheduled for Tuesday 11 AM; the HR team will share the meeting link.",
+                 "Congratulations! Your offer letter is released. Complete onboarding documents on the portal."]
+        if lang == "hinglish":
+            lines = [x + " All the best ji!" for x in lines]
+    evs = [(0, 10.0, msg("sms", "VM-NAUKRI", lines[0])), (2, 12.0, msg("sms", "JD-HRMAIL", lines[1])),
+           (5, 16.0, msg("sms", "JD-HRMAIL", lines[2]))]
+    return evs + filler(s, lang, 3), _fx()
+
+
+def dsb_b_family(s: Slots, lang: str):
+    amt = s.pick(["2,000", "3,000", "5,000"])
+    if lang == "hi":
+        lines = ["बेटा, आज पापा के फ़ोन से बात कर रही हूँ, मेरा फ़ोन ठीक नहीं चल रहा।", "अस्पताल में चेकअप था, सब ठीक है।",
+                 f"दवाई के लिए ₹{amt} भेज दो, घर आकर दे दूँगी।"]
+    elif lang == "hinglish":
+        lines = ["Beta aaj Papa ke phone se baat kar rahi hoon, mera phone kharab hai.", "Hospital mein checkup tha, sab theek hai.",
+                 f"Dawai ke liye ₹{amt} bhej do, ghar aake de dungi."]
+    else:
+        lines = ["Beta, my phone is acting up, using Papa's phone today.", "Had a checkup at the hospital, all fine.",
+                 f"Can you send ₹{amt} for the medicines? Will return when you visit."]
+    evs = [(0, 9.0, msg("whatsapp", "Mummy", lines[0], contact=True)), (1, 18.0, msg("whatsapp", "Papa", lines[1], contact=True)),
+           (2, 20.0, msg("whatsapp", "Papa", lines[2], contact=True)),
+           (3, 20.0, call(s.phone_fmt(), s.r.randrange(60, 600), contact=True))]
+    return evs + filler(s, lang, 3), _fx()
+
+
+def dsb_b_local_service(s: Slots, lang: str):
+    p = s.phone_fmt()
+    if lang == "hi":
+        lines = ["नमस्ते, मुझे आपका नंबर शर्मा जी से मिला। मैं कक्षा 8 के लिए गणित पढ़ाता हूँ।", "कक्षाएँ सोमवार शाम 5 बजे से।",
+                 f"मासिक फीस ₹{inr(s.amount(1500, 3000, 500))} है, पहली कक्षा के बाद दे सकते हैं।"]
+    elif lang == "hinglish":
+        lines = ["Hello ji, aapka number reception se mila, Fit Zone gym ke liye.", "Is hafte joining pe 20% off hai.",
+                 f"Monthly charge {inr(s.amount(1500, 3000, 500))} hai, cash ya UPI dono chalega."]
+    else:
+        lines = ["Hi, I got your number from Mrs Sharma. I teach maths for class 8, she said your son needs help.",
+                 "Classes start Monday at 5 pm.", f"The monthly charge is Rs {inr(s.amount(1500, 3000, 500))}, you can pay after the first class."]
+    evs = [(0, 10.0, msg("whatsapp", p, lines[0])), (1, 17.0, msg("whatsapp", p, lines[1])),
+           (3, 12.0, msg("whatsapp", p, lines[2]))]
+    return evs + filler(s, lang, 3), _fx()
+
+
+DSB_BENIGN_BUILDERS = [dsb_b_society, dsb_b_recruiter, dsb_b_family, dsb_b_local_service]
+
+
+def build_dsb_benign(sid: str, k: int, rng: random.Random, start: datetime) -> dict:
+    lang = BENIGN_LANGS[(k // len(DSB_BENIGN_BUILDERS)) % len(BENIGN_LANGS)]
+    fn = DSB_BENIGN_BUILDERS[k % len(DSB_BENIGN_BUILDERS)]
+    evs, fixtures = fn(Slots(rng), lang)
+    sc = _assemble_benign(sid, DSB_CATEGORY, lang, sorted(evs, key=lambda x: (x[0], x[1])), fixtures, rng, start)
+    sc["template"] = fn.__name__
+    return sc
+
+
 # ---------------------------------------------------------------- assembly
 def _ts(t: datetime) -> str:
     return t.isoformat(timespec="seconds")
@@ -1167,8 +1439,8 @@ def _event_lang(ev: dict, scen_lang: str) -> str | None:
     return "hi-Latn" if scen_lang == "hinglish" else "en"
 
 
-def build_scam(sid: str, category: str, k: int, rng: random.Random, start: datetime) -> dict:
-    tpl = SCAM_TEMPLATES[category][k % len(SCAM_TEMPLATES[category])]
+def build_scam(sid: str, category: str, k: int, rng: random.Random, start: datetime, tpl=None) -> dict:
+    tpl = tpl or SCAM_TEMPLATES[category][k % len(SCAM_TEMPLATES[category])]
     spec = tpl(Slots(rng))
     t = start
     events = []
@@ -1188,6 +1460,12 @@ def build_benign(sid: str, category: str, k: int, rng: random.Random, start: dat
     lang = BENIGN_LANGS[k % len(BENIGN_LANGS)]
     evs, fixtures = BENIGN_BUILDERS[category](Slots(rng), lang)
     evs = sorted(evs, key=lambda x: (x[0], x[1]))
+    sc = _assemble_benign(sid, category, lang, evs, fixtures, rng, start)
+    sc["template"] = BENIGN_BUILDERS[category].__name__
+    return sc
+
+
+def _assemble_benign(sid, category, lang, evs, fixtures, rng, start) -> dict:
     events, last = [], None
     for i, (day, hour, ev) in enumerate(evs):
         t = start + timedelta(days=day, hours=hour)
@@ -1198,7 +1476,7 @@ def build_benign(sid: str, category: str, k: int, rng: random.Random, start: dat
         ev["_lang"] = _event_lang(ev, lang)
         events.append(_event(sid, i, ev, t))
     return {"id": sid, "label": "benign", "category": category, "lang": lang, "shape": "user_week",
-            "template": BENIGN_BUILDERS[category].__name__, "harm_index": None, "events": events,
+            "template": None, "harm_index": None, "events": events,
             "expect": {"first_alert_at_index": None, "min_tier": None},
             "fixtures": fixtures, "split": None, "source": "synthetic"}
 
@@ -1206,13 +1484,13 @@ def build_benign(sid: str, category: str, k: int, rng: random.Random, start: dat
 def assign_splits(scenarios: list[dict], seed: int) -> None:
     """Stratified by (label, category): within each group (sorted by id) a seeded shuffle puts
     round(30%) (at least 1 when the group has >= 3) in holdout."""
-    rng, xrng = random.Random(seed + 1), random.Random(seed + 2)
+    rng, xrng, drng = random.Random(seed + 1), random.Random(seed + 2), random.Random(seed + 12)
     groups: dict[tuple, list[dict]] = {}
     for sc in scenarios:
         groups.setdefault((sc["label"], sc["category"]), []).append(sc)
     for key in sorted(groups):
         g = sorted(groups[key], key=lambda x: x["id"])
-        (xrng if key[1] in EXTRA_SCAM_COUNTS else rng).shuffle(g)
+        (drng if key[1] == DSB_CATEGORY else xrng if key[1] in EXTRA_SCAM_COUNTS else rng).shuffle(g)
         n = round(len(g) * HOLDOUT_FRACTION)
         if n == 0 and len(g) >= 3:
             n = 1
@@ -1243,6 +1521,15 @@ def generate(seed: int = SEED) -> list[dict]:
             start = BASE + timedelta(days=day, hours=xrng.randrange(8, 20), minutes=xrng.randrange(0, 60))
             out.append(build_scam(sid, category, k, xrng, start))
             day += 1
+    drng = random.Random(seed + 11)  # distributed slow burn: own stream, appended last
+    slug = DSB_CATEGORY.replace("_", "-")
+    for k, tpl in enumerate(DSB_SCAM_TEMPLATES[:DSB_SCAMS]):
+        start = BASE + timedelta(days=day, hours=drng.randrange(8, 20), minutes=drng.randrange(0, 60))
+        out.append(build_scam(f"scam-{slug}-{k + 1:02d}", DSB_CATEGORY, k, drng, start, tpl=tpl))
+        day += 1
+    for k in range(DSB_BENIGN):
+        out.append(build_dsb_benign(f"benign-{slug}-{k + 1:02d}", k, drng, BASE + timedelta(days=day)))
+        day += 1
     assign_splits(out, seed)
     return out
 

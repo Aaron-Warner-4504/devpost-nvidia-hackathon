@@ -1,0 +1,51 @@
+{
+  "id": "scam-distributed-slow-burn-05",
+  "label": "scam",
+  "category": "distributed_slow_burn",
+  "lang": "hi",
+  "shape": "distributed",
+  "template": "dsb_job_hi",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-distributed-slow-burn-05-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-07T15:32:00+05:30",
+      "sender": "6280565706",
+      "text": "नमस्ते, मैं TalentBridge से राहुल बोल रही हूँ। हमें आपकी प्रोफ़ाइल जॉब पोर्टल पर मिली।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-05-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-08T16:38:00+05:30",
+      "sender": "+919854717141",
+      "text": "घर बैठे होटल रेटिंग का काम, रोज़ ₹5,000 तक कमाई। कई लोग जुड़ चुके हैं।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-05-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-09T16:44:00+05:30",
+      "sender": "7121666469",
+      "text": "आपका चयन हो गया है। कर्मचारी आईडी चालू करने के लिए ₹1,500 प्रशिक्षण किट फीस लगेगी।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

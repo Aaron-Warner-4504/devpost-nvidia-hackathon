@@ -8,7 +8,11 @@ cd backend
 docker compose up -d db
 export DATABASE_URL=postgresql+psycopg://sentinel:sentinel@localhost:5440/sentinel   # as in .env.example
 uv run python eval/generate_scenarios.py            # regenerate eval/scenarios (byte-identical, seeded)
-uv run python eval/run_eval.py                      # 123 scenarios x 3 modes, writes report.json/report.md
+uv run python eval/run_eval.py                      # 147 scenarios x 3 modes, single stage (review off)
+uv sync --extra semantic                            # local multilingual embedding model (471 MB download on first use)
+uv run python eval/run_eval.py --review two-stage   # stage-2 review after every event (local embeddings)
+uv run python eval/run_eval.py --ablation           # memory ablation: baseline / memory+progression / two-stage
+uv run python eval/run_eval.py --ablation --embeddings fake   # without the model: semantic linking NOT measured
 uv run python eval/run_eval.py --split tune --no-fail --out-dir /tmp/x   # tuning loop: tune split only
 uv run python eval/run_eval.py --holdout-only       # held-out split only
 uv run python eval/run_eval.py --llm live           # real Token Factory model (skips if no key)
@@ -35,6 +39,22 @@ user-week, on the holdout split AND overall), `2` invalid scenarios. `--no-fail`
   measure the plumbing, the tool-confirmed raise caps and the rules floor, NOT real model quality.**
   `--llm live` uses the real model with the same offline tool fixtures.
 
+## Memory ablation and `--review`
+
+- `--review off` (default) is the single-stage pipeline. `--review two-stage` enables the stage-2 background
+  review (docs/memory.md): after each event `review.flush_background()` runs the job synchronously, and an
+  upgrade alert counts at that event's index (so it counts for recall if at/before `harm_index`, and as a
+  false interrupt in a benign week if it interrupts).
+- `--ablation` runs four configurations (`baseline_rules`, `baseline_hybrid`, `memory_rules`,
+  `two_stage_hybrid`, see `CONFIGS` in run_eval.py), reports recall / false interrupts per subset
+  (`original` = the 123 pre-existing scenarios, `dsb` = distributed slow burn) and split, writes
+  `report_memory.json` and the "MEMORY ABLATION" block of `report.md`, in its own database `<db>_evalmem`.
+- `--embeddings local` (default) needs `uv sync --extra semantic` and the model download; if the package is
+  missing the runner falls back to `fake` and says so: the fake provider is lexical, so semantic linking is
+  then NOT measured. `--semantic-threshold` overrides `SEMANTIC_THRESHOLD` (tuning loop on `--split tune`).
+- With `--review off`, the 147-scenario run fails the hybrid gate overall, because the single-stage
+  pipeline misses every distributed slow-burn scam (that is the point of the category).
+
 ## Metrics
 
 - **Scam recall**: fraction of scam timelines with a SHOWN alert >= `high` at an event index <=
@@ -49,6 +69,11 @@ user-week, on the holdout split AND overall), `2` invalid scenarios. `--no-fail`
 - Failures (missed scams, false interrupts) are listed with ids and the signals present.
 
 ## Scenarios: what they are and are not
+
+- 24 more scenarios (memory upgrade): `distributed_slow_burn`, 12 scam timelines told by 3-4 DIFFERENT
+  numbers over 1-4 days with no shared entity, each message harmless alone (en / hi / hinglish), and 12
+  benign look-alike weeks. Generated last with their own random streams (generation and split), so the 123
+  files below are byte-identical. See report.md "Memory upgrade" for the holdout caveat.
 
 - 123 scenarios in `eval/scenarios/`: 43 scam timelines in ten categories (digital arrest,
   courier/customs, KYC/bank, UPI collect, job/task, electricity bill, remote access, sextortion,
@@ -68,7 +93,7 @@ user-week, on the holdout split AND overall), `2` invalid scenarios. `--no-fail`
 
 ### Honesty statement
 
-- **All 123 scenarios are synthetic** (`source: "synthetic"`), produced by a seeded template generator
+- **All 147 scenarios are synthetic** (`source: "synthetic"`), produced by a seeded template generator
   because no LLM key was available. They were written by the same team / agent that tuned the rules,
   with knowledge of how the rules work. **Reported numbers are therefore optimistic** and say little
   about real-world recall or false-alarm rates. Real traffic is messier: more variety in phrasing,

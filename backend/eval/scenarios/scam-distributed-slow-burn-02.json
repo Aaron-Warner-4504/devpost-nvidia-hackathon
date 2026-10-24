@@ -1,0 +1,51 @@
+{
+  "id": "scam-distributed-slow-burn-02",
+  "label": "scam",
+  "category": "distributed_slow_burn",
+  "lang": "hi",
+  "shape": "distributed",
+  "template": "dsb_inv_hi",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-distributed-slow-burn-02-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-04T11:18:00+05:30",
+      "sender": "+919645235157",
+      "text": "नमस्ते, मुझे आपका नंबर जयपुर के निवेशक ग्रुप से मिला। मैं कभी-कभी बाज़ार की जानकारी भेजता हूँ।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-02-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-05T17:22:00+05:30",
+      "sender": "+919117884200",
+      "text": "हमारे सदस्यों को इस महीने 33% मुनाफा हुआ। विशेषज्ञ टिप्स, गारंटी के साथ।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-02-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-07T18:28:00+05:30",
+      "sender": "+918285240146",
+      "text": "प्रीमियम बैच में सिर्फ 5 सीटें बाकी हैं। अपनी सीट पक्की करने के लिए ₹5,999 सदस्यता शुल्क देना होगा।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

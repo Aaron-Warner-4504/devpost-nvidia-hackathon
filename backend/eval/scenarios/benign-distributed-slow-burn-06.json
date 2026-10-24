@@ -1,0 +1,82 @@
+{
+  "id": "benign-distributed-slow-burn-06",
+  "label": "benign",
+  "category": "distributed_slow_burn",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "dsb_b_recruiter",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-distributed-slow-burn-06-e00",
+      "source": "sms",
+      "ts": "2026-07-20T10:00:00+05:30",
+      "sender": "VM-NAUKRI",
+      "text": "आपकी प्रोफ़ाइल Wipro में डेवलपर पद के लिए चयनित हुई है।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-06-e01",
+      "source": "sms",
+      "ts": "2026-07-22T12:00:00+05:30",
+      "sender": "JD-HRMAIL",
+      "text": "आपका इंटरव्यू मंगलवार सुबह 11 बजे तय है।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-06-e02",
+      "source": "sms",
+      "ts": "2026-07-23T12:36:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "आपके आईसीआईसीआई बैंक खाते XX1424 से ₹5,143 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹72,101। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-06-e03",
+      "source": "whatsapp",
+      "ts": "2026-07-23T17:59:00+05:30",
+      "sender": "Nani",
+      "text": "Call me when free",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-06-e04",
+      "source": "sms",
+      "ts": "2026-07-25T16:00:00+05:30",
+      "sender": "JD-HRMAIL",
+      "text": "बधाई! ऑफ़र लेटर जारी कर दिया गया है, पोर्टल पर दस्तावेज़ पूरे करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-06-e05",
+      "source": "sms",
+      "ts": "2026-07-26T13:36:00+05:30",
+      "sender": "JD-ICICIB",
+      "text": "868636 आपके आईसीआईसीआई बैंक खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

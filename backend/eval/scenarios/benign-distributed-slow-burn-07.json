@@ -1,0 +1,99 @@
+{
+  "id": "benign-distributed-slow-burn-07",
+  "label": "benign",
+  "category": "distributed_slow_burn",
+  "lang": "hi",
+  "shape": "user_week",
+  "template": "dsb_b_family",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-distributed-slow-burn-07-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-21T09:00:00+05:30",
+      "sender": "Mummy",
+      "text": "बेटा, आज पापा के फ़ोन से बात कर रही हूँ, मेरा फ़ोन ठीक नहीं चल रहा।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-07-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-22T18:00:00+05:30",
+      "sender": "Papa",
+      "text": "अस्पताल में चेकअप था, सब ठीक है।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-07-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-23T20:00:00+05:30",
+      "sender": "Papa",
+      "text": "दवाई के लिए ₹5,000 भेज दो, घर आकर दे दूँगी।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-07-e03",
+      "source": "sms",
+      "ts": "2026-07-23T20:19:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "आपके एसबीआई खाते XX5665 से ₹337 UPI द्वारा डेबिट किए गए। उपलब्ध शेष ₹43,442। यदि यह आपने नहीं किया तो बैंक को सूचित करें।",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-07-e04",
+      "source": "call",
+      "ts": "2026-07-24T20:00:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "+91 83836 65156",
+        "duration_s": 178,
+        "is_contact": true,
+        "direction": "in"
+      },
+      "triage_score": 0.1,
+      "lang": null
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-07-e05",
+      "source": "sms",
+      "ts": "2026-07-26T08:18:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "034876 आपके एसबीआई खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-07-e06",
+      "source": "sms",
+      "ts": "2026-07-27T08:24:00+05:30",
+      "sender": "AD-SBIINB",
+      "text": "706600 आपके एसबीआई खाते में लॉगिन के लिए ओटीपी है। यह 5 मिनट के लिए मान्य है। इसे किसी के साथ साझा न करें।",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}
