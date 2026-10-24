@@ -1,4 +1,4 @@
-# Production stack: caddy (HTTPS) -> api -> db, api -> inspector (sandboxed link fetcher).
+# Production stack: caddy (HTTPS) -> api -> hosted Postgres (external, DATABASE_URL), api -> inspector (sandboxed link fetcher).
 # Run from the repository root:
 #   docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml up -d --build
 # (--env-file feeds the ${...} interpolation below; the api also receives the file via env_file)
@@ -6,22 +6,6 @@
 name: sentinel
 
 services:
-  db:
-    image: pgvector/pgvector:pg16
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-sentinel}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env.prod}
-      POSTGRES_DB: ${POSTGRES_DB:-sentinel}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    networks: [data]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      retries: 20
-    # no `ports:`: reachable only by the api on the internal `data` network
-
   api:
     build:
       context: ../backend
@@ -31,7 +15,7 @@ services:
       - path: .env.prod
         required: true
     environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-sentinel}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-sentinel}
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL to the hosted Postgres URL}
       ENVIRONMENT: prod
       FAMILY_CODE_PEPPER: ${FAMILY_CODE_PEPPER:?set FAMILY_CODE_PEPPER (>= 16 chars) in deploy/.env.prod}
       TRUST_PROXY_HEADERS: "true"
@@ -40,10 +24,7 @@ services:
       INSPECTOR_SECRET: ${INSPECTOR_SECRET:?set INSPECTOR_SECRET (>= 16 chars) in deploy/.env.prod}
       DEMO_ENABLED: ${DEMO_ENABLED:-false}
     expose: ["8000"]
-    networks: [data, edge, inspector_net]
-    depends_on:
-      db:
-        condition: service_healthy
+    networks: [edge, inspector_net]
     read_only: true
     tmpfs: ["/tmp:size=64m,mode=1777,nosuid,nodev"]
     cap_drop: [ALL]
@@ -53,13 +34,13 @@ services:
     # volumes: ["./firebase.json:/run/secrets/firebase.json:ro"]
 
   # Sandboxed link inspector (fetches attacker-supplied URLs). Same hardening and networks as
-  # backend/docker-compose.yml: internal link to the api only, own egress network, not on `data`.
+  # backend/docker-compose.yml: internal link to the api only, own egress network.
   # Also apply the host egress firewall in deploy/README.md (the compose network alone does not stop it
   # reaching RFC1918 / link-local / cloud-metadata addresses).
   inspector:
     build: ../inspector
     restart: unless-stopped
-    # deliberately NO env_file: it fetches attacker-controlled pages and must not see the DB password,
+    # deliberately NO env_file: it fetches attacker-controlled pages and must not see the DB credentials,
     # the LLM key or any other secret
     environment:
       INSPECTOR_SECRET: ${INSPECTOR_SECRET:?set INSPECTOR_SECRET in deploy/.env.prod}
@@ -97,14 +78,11 @@ services:
     security_opt: ["no-new-privileges:true"]
 
 networks:
-  data:
-    internal: true  # db <-> api only, no internet
   edge: {}          # caddy <-> api (api needs outbound access to Token Factory / Tavily)
   inspector_net:
     internal: true  # api -> inspector only
   inspector_egress: {}
 
 volumes:
-  pgdata:
   caddy_data:
   caddy_config:
