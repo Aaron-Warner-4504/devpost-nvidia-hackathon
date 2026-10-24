@@ -27,8 +27,26 @@ def _now():
     return sa.Column("created_at", TS, server_default=sa.func.now(), nullable=False)
 
 
+def _ensure_vector() -> None:
+    """Managed Postgres (Supabase): the app user may lack the right to CREATE EXTENSION, which is fine when
+    the provider already enabled pgvector (Supabase installs it in schema `extensions`; the connection's
+    search_path must include it, see app.db.connect_args). Probe in a savepoint so a failure does not
+    abort the migration."""
+    bind = op.get_bind()
+    try:
+        with bind.begin_nested():
+            bind.execute(sa.text("CREATE EXTENSION IF NOT EXISTS vector"))
+    except sa.exc.DBAPIError as exc:
+        if bind.execute(sa.text("SELECT 1 FROM pg_extension WHERE extname = 'vector'")).scalar():
+            return
+        raise RuntimeError(
+            "pgvector extension is not enabled and this database user cannot create it "
+            "(enable it in the provider console or run `CREATE EXTENSION vector;` as an admin)"
+        ) from exc
+
+
 def upgrade() -> None:
-    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    _ensure_vector()
     op.create_table("users", sa.Column("id", sa.String, primary_key=True), _now())
     op.create_table(
         "devices", sa.Column("id", sa.String, primary_key=True), _uid(),

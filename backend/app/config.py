@@ -6,6 +6,16 @@ class Settings(BaseSettings):
 
     # Required: set DATABASE_URL in the environment or .env (see .env.example).
     database_url: str
+    # Pool sizing: keep small behind a pooler (Supabase free tier has few connections).
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
+    db_pool_recycle: int = 1800
+    # Startup search_path so the pgvector `vector` type resolves where Supabase installs it (schema
+    # `extensions`). Nonexistent schemas are harmless. Empty string = leave the server default.
+    db_search_path: str = "public,extensions"
+    # Set true when DATABASE_URL points at a TRANSACTION pooler (Supabase port 6543): disables psycopg
+    # server-side prepared statements, which break across pooled connections.
+    db_disable_prepared_statements: bool = False
     llm_model: str = ""
     embed_model: str = ""
     vision_model: str = ""
