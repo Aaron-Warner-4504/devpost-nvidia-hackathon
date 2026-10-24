@@ -42,7 +42,8 @@ Registers this device's own FCM registration token so Sentinel can push your own
 Request (device bearer token): `{"token": "<FCM registration token>"}` (1-4096 chars, else `422`). Response 200:
 `{"ok": true}`. Re-posting replaces the token for this device (and re-enables pushes if FCM had reported the old
 one unregistered). Tokens are never returned or logged. A push token belongs to one device at a time: posting a token that is
-already registered on another device (any user) moves it here and clears it there.
+already registered on another device (any user) moves it here and clears it there. If two devices claim the same token at the same instant the loser gets
+`409 {"detail": "token already in use"}` (retry).
 
 Push to your own devices: when an alert of tier `high` or `critical` is shown **and interrupts** (see `/v1/events`),
 every device of the user with a token gets one FCM push: `notification.title` = `"Sentinel alert"`,

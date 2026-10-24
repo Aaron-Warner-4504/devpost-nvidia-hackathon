@@ -216,3 +216,27 @@ def test_deleting_user_frees_token(client, register, db):
     db.expire_all()
     assert db.get(Device, d2).fcm_token == "gone"
     assert db.get(Device, d1) is None
+
+
+def test_concurrent_token_claim_returns_409(client, register, db, monkeypatch):
+    """The unique index trips when two devices claim one token at the same moment: 409, not 500."""
+    from sqlalchemy.exc import IntegrityError
+    from sqlalchemy.orm import Session
+    d1, h1 = register()
+    real_commit = Session.commit
+    state = {"n": 0}
+
+    def commit(self):
+        state["n"] += 1
+        if state["n"] == 1:
+            raise IntegrityError("INSERT", {}, Exception("uq_devices_fcm_token"))
+        return real_commit(self)
+
+    monkeypatch.setattr(Session, "commit", commit)
+    r = client.post("/v1/devices/fcm", json={"token": "raced"}, headers=h1)
+    assert r.status_code == 409 and r.json() == {"detail": "token already in use"}
+    assert "raced" not in r.text.replace("token already in use", "")
+    db.expire_all()
+    assert db.get(Device, d1).fcm_token is None
+    # retrying works
+    assert client.post("/v1/devices/fcm", json={"token": "raced"}, headers=h1).status_code == 200

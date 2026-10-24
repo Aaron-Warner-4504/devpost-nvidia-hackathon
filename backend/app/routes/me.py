@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import delete, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import ratelimit
@@ -53,7 +54,11 @@ def set_fcm_token(body: FcmIn, device: Device = Depends(current_device), session
                     .values(fcm_token=None, fcm_invalid_at=None))
     device.fcm_token = body.token
     device.fcm_invalid_at = None
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError:  # another device claimed the same token concurrently (unique index)
+        session.rollback()
+        raise HTTPException(status_code=409, detail="token already in use")
     return {"ok": True}
 
 
