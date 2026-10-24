@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from app import family, push
 from app.config import settings
+from app.cors import apply_cors
 from app.db_url import check_database_url
 from app.pipeline import orchestrator
 from app.routes import alerts, dashboard, events, me
@@ -49,6 +50,7 @@ app.include_router(events.router)
 app.include_router(alerts.router)
 app.include_router(family_routes.router)
 app.include_router(dashboard.router)
+apply_cors(app, settings.cors_allow_origins, settings.environment)  # invalid value -> refuses to start
 log = logging.getLogger("app")
 
 
