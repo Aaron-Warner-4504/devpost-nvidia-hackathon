@@ -168,11 +168,15 @@ def _linked_events(db: Session, user, event_id: str, now: datetime, by_entity: d
 
 
 def history_for_agent(ctx: HistoryCtx) -> list[HistoryItem]:
-    """Distinct prior events the agent may cite (newest AGENT_HISTORY_MAX, oldest first)."""
+    """Distinct prior events the agent may cite (newest AGENT_HISTORY_MAX, oldest first): entity-linked
+    history plus linked events (incl. semantic neighbours), each with its real event id. Their text is
+    attacker-controlled and goes to the model only inside the untrusted data block."""
     seen: dict[str, HistoryItem] = {}
     for items in ctx.events_by_entity.values():
         for h in items:
             seen.setdefault(h.event_id, h)
+    for le in ctx.linked_events:
+        seen.setdefault(le.event_id, HistoryItem(le.event_id, le.ts, le.source, le.redacted_text))
     return sorted(seen.values(), key=lambda h: (h.ts, h.event_id))[-AGENT_HISTORY_MAX:]
 
 
