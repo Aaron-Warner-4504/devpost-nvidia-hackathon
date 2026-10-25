@@ -5,12 +5,15 @@
 #   bash deploy/shared-host/preflight.sh            # as your normal user
 #   sudo bash deploy/shared-host/preflight.sh       # optional: lets `nginx -T` read root-only configs
 #
-# Env: SENTINEL_HOST_PORT (default 8100), SENTINEL_DOMAIN (default interns.enthral.ai)
+# Env: SENTINEL_HOST_PORT (default 8100), SENTINEL_DOMAIN (default interns.enthral.ai),
+#      SENTINEL_API_MEM (768m), SENTINEL_INSPECTOR_MEM (1g) = the memory caps compose will apply
+# Disk verdict: FAIL below 3 GB free, WARN below 10 GB (images are loaded from the laptop, never built here).
 set -u
 
 PORT="${SENTINEL_HOST_PORT:-8100}"
 DOMAIN="${SENTINEL_DOMAIN:-interns.enthral.ai}"
-MIN_DISK_GB=10
+FAIL_DISK_GB=3
+WARN_DISK_GB=10
 MIN_RAM_MB=4096
 
 FAILS=0
@@ -87,7 +90,7 @@ if [ -r /proc/meminfo ]; then
   swap_free=$(awk '/^SwapFree:/ {printf "%d", $2/1024}' /proc/meminfo)
   info "RAM: ${avail_mb} MB available of ${total_mb} MB; swap: ${swap_free} MB free of ${swap_total} MB"
   if [ "$avail_mb" -ge "$MIN_RAM_MB" ]; then
-    pass "available RAM >= ${MIN_RAM_MB} MB (Sentinel limits: api 1 GB + inspector 1.5 GB, plus build)"
+    pass "available RAM >= ${MIN_RAM_MB} MB (Sentinel caps: api ${SENTINEL_API_MEM:-768m} + inspector ${SENTINEL_INSPECTOR_MEM:-1g})"
   else
     warn "available RAM ${avail_mb} MB < ${MIN_RAM_MB} MB: the neighbour could be squeezed; the image build also needs ~1 GB"
   fi
@@ -106,7 +109,7 @@ if [ "$cpus" != "?" ] && [ -r /proc/loadavg ]; then
     pass "CPU load is comfortable"
   fi
   if [ "$cpus" -lt 3 ]; then
-    warn "only ${cpus} CPU(s): Sentinel's limits total 2.5 CPUs; they are caps, not reservations, but expect contention under load"
+    warn "only ${cpus} CPU(s): Sentinel's default limits total 2 CPUs; they are caps, not reservations, but expect contention under load"
   fi
 fi
 
@@ -118,17 +121,36 @@ check_disk() {
     d="$(dirname "$d")"
     [ -d "$d" ] || d=/
   fi
-  free_gb=$(df -Pk "$d" 2>/dev/null | awk 'NR==2 {printf "%d", $4/1048576}')
-  if [ -z "$free_gb" ]; then
+  free_mb=$(df -Pk "$d" 2>/dev/null | awk 'NR==2 {printf "%d", $4/1024}')
+  if [ -z "$free_mb" ]; then
     warn "cannot determine free space for $1"
-  elif [ "$free_gb" -lt "$MIN_DISK_GB" ]; then
-    warn "$1: only ${free_gb} GB free (< ${MIN_DISK_GB} GB)"
+    return
+  fi
+  free_gb=$((free_mb / 1024))
+  if [ "$free_gb" -lt "$FAIL_DISK_GB" ]; then
+    fail "$1: only ${free_mb} MB free: below ${FAIL_DISK_GB} GB, do not install (free space first; load images with build-images.sh, never build here)"
+  elif [ "$free_gb" -lt "$WARN_DISK_GB" ]; then
+    warn "$1: ${free_gb} GB free: OK for the pre-built images (api ~0.4 GB, + inspector ~1 GB) but below ${WARN_DISK_GB} GB; do not build on this host"
   else
-    pass "$1: ${free_gb} GB free"
+    pass "$1: ${free_gb} GB free (>= ${WARN_DISK_GB} GB)"
   fi
 }
+info "disk thresholds: FAIL < ${FAIL_DISK_GB} GB free, WARN < ${WARN_DISK_GB} GB free"
+docker_root=""
+if have docker; then docker_root="$(docker info -f '{{.DockerRootDir}}' 2>/dev/null || true)"; fi
 check_disk /opt
-check_disk /var/lib/docker
+check_disk "${docker_root:-/var/lib/docker}"
+
+# --- memory caps in effect ---
+info "memory caps compose will apply: api ${SENTINEL_API_MEM:-768m}, inspector ${SENTINEL_INSPECTOR_MEM:-1g} (set SENTINEL_API_MEM / SENTINEL_INSPECTOR_MEM to change)"
+if have docker && docker info >/dev/null 2>&1; then
+  for c in sentinel-api sentinel-inspector; do
+    if docker inspect "$c" >/dev/null 2>&1; then
+      lim="$(docker inspect -f '{{.HostConfig.Memory}}' "$c" 2>/dev/null || echo 0)"
+      if [ "${lim:-0}" -gt 0 ] 2>/dev/null; then info "running ${c}: memory cap $((lim / 1048576)) MB"; else info "running ${c}: NO memory cap"; fi
+    fi
+  done
+fi
 
 # --- nginx ---
 if have nginx; then
