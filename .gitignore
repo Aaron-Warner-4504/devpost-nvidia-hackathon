@@ -10,3 +10,8 @@ deploy/.env
 deploy/.env.prod
 deploy/*.env
 backend/eval/.embed_cache/
+
+# Android release signing material
+android/keystore.properties
+*.jks
+*.keystore

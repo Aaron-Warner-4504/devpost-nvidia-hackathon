@@ -1,8 +1,29 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+}
+
+// Optional release signing: android/keystore.properties (gitignored). Absent => release stays unsigned.
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword").all { !keystoreProps.getProperty(it).isNullOrBlank() }
+
+// Release API base URL: -PsentinelApiBaseUrl=https://host/path. https only, trailing slashes are stripped.
+// Unset keeps an invalid placeholder so an unconfigured release build fails visibly at startup.
+val releaseApiBaseUrl: String = run {
+    val raw = (project.findProperty("sentinelApiBaseUrl") as String?)?.trim()
+    if (raw.isNullOrEmpty()) return@run "https://api.example.invalid"
+    val url = raw.trimEnd('/')
+    if (!url.startsWith("https://") || url.length <= "https://".length || url.any { it.isWhitespace() || it == '"' || it == '\\' }) {
+        throw GradleException("sentinelApiBaseUrl must be an https:// URL without spaces or quotes (got '$raw')")
+    }
+    url
 }
 
 android {
@@ -21,6 +42,18 @@ android {
         androidResources.localeFilters += listOf("en", "hi")
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile")).takeIf { it.exists() }
+                    ?: file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             // 10.0.2.2 = host loopback as seen from the emulator. Physical phone: `adb reverse tcp:8000 tcp:8000`
@@ -32,8 +65,8 @@ android {
             versionNameSuffix = "-debug"
         }
         release {
-            // TODO(release): replace with the real production API origin (must be https).
-            buildConfigField("String", "API_BASE_URL", "\"https://api.example.invalid\"")
+            buildConfigField("String", "API_BASE_URL", "\"$releaseApiBaseUrl\"")
+            if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
             // In-app demo mode posts sample scam messages to the signed-in account: never ship it.
             buildConfigField("boolean", "DEMO_ENABLED", "false")
             isMinifyEnabled = true
