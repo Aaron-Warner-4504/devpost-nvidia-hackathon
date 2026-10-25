@@ -1,6 +1,11 @@
 .venv
+.git
 __pycache__
+*.pyc
 .pytest_cache
 tests
-*.pyc
 .env
+.env.*
+*.md
+docs
+screenshots
