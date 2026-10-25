@@ -50,3 +50,9 @@ fun rememberReducedMotion(): Boolean {
         Settings.Global.getFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
     }
 }
+
+/** Set by the sidebar's "Data and privacy" item; Settings opens its privacy sheet and clears it. */
+val LocalPrivacyRequest = androidx.compose.runtime.staticCompositionLocalOf { androidx.compose.runtime.mutableStateOf(false) }
+
+/** The current window's width class (compact / medium / expanded), for screens that adapt (Alerts two-pane). */
+val LocalWidthClass = androidx.compose.runtime.staticCompositionLocalOf { ai.enthral.sentinel.ui.components.WidthClass.Compact }
