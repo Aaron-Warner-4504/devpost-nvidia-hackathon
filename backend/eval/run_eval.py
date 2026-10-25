@@ -687,8 +687,10 @@ def main(argv: list[str] | None = None, *, session_factory: Callable | None = No
     ap.add_argument("--ablation", action="store_true",
                     help="memory ablation: baseline vs memory+progression (rules) vs full two-stage (fake agent)")
     ap.add_argument("--configs", default=",".join(CONFIGS), help="subset of ablation configs")
-    ap.add_argument("--embeddings", choices=("local", "fake", "none"), default="local",
-                    help="embedding provider for two-stage runs (local needs `uv sync --extra semantic`)")
+    ap.add_argument("--embeddings", "--embedding-provider", dest="embeddings",
+                    choices=("local", "token_factory", "fake", "none"), default="local",
+                    help="embedding provider for two-stage runs (local needs `uv sync --extra semantic`; "
+                         "token_factory uses TOKEN_FACTORY_API_KEY + EMBED_MODEL from backend/.env and costs tokens)")
     ap.add_argument("--semantic-threshold", type=float, default=None)
     a = ap.parse_args(argv)
 
@@ -715,6 +717,10 @@ def main(argv: list[str] | None = None, *, session_factory: Callable | None = No
         print("NOTE: sentence-transformers not installed (uv sync --extra semantic): falling back to the FAKE "
               "lexical embedding provider; semantic linking is NOT measured.")
         emb = "fake"
+    if emb == "token_factory" and not (default_settings.token_factory_api_key and default_settings.embed_model):
+        print("SKIPPED: --embedding-provider token_factory needs TOKEN_FACTORY_API_KEY and EMBED_MODEL "
+              "(backend/.env); nothing was run.")
+        return 0
     mem_overrides: dict[str, Any] = {"embedding_provider": "" if emb == "none" else emb}
     if emb == "none":
         mem_overrides["semantic_memory"] = False
