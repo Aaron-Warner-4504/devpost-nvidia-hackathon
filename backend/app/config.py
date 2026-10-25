@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     semantic_memory: bool | None = None
     local_embed_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     embed_timeout_s: float = 5.0
+    # Send the OpenAI-compatible `dimensions=EMBED_DIM` parameter (Matryoshka models such as Qwen3-Embedding).
+    # Auto-disabled per process if the server rejects it; vectors are truncated + normalised either way.
+    embed_send_dimensions: bool = True
     # cosine similarity (1 - distance) needed to link two events as `similar`; tuned on the eval TUNE split
     semantic_threshold: float = 0.25
     semantic_k: int = 5

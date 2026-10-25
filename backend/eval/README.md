@@ -13,6 +13,8 @@ uv sync --extra semantic                            # local multilingual embeddi
 uv run python eval/run_eval.py --review two-stage   # stage-2 review after every event (local embeddings)
 uv run python eval/run_eval.py --ablation           # memory ablation: baseline / memory+progression / two-stage
 uv run python eval/run_eval.py --ablation --embeddings fake   # without the model: semantic linking NOT measured
+uv run python eval/run_eval.py --ablation --embedding-provider token_factory --semantic-threshold 0.3   # hosted model (costs tokens; key in .env)
+uv run python scripts/tune_semantic_threshold.py --yes   # re-tune SEMANTIC_THRESHOLD on TUNE only (docs/memory.md)
 uv run python eval/run_eval.py --split tune --no-fail --out-dir /tmp/x   # tuning loop: tune split only
 uv run python eval/run_eval.py --holdout-only       # held-out split only
 uv run python eval/run_eval.py --llm live           # real Token Factory model (skips if no key)

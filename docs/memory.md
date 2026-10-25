@@ -28,10 +28,28 @@ Every query filters on `user_id`; neighbours, links and history never cross user
 
 | provider | setting | where text goes | notes |
 |---|---|---|---|
-| `token_factory` | `EMBEDDING_PROVIDER=token_factory` (auto when `TOKEN_FACTORY_API_KEY` + `EMBED_MODEL` are set) | Nebius Token Factory | hosted; live embeddings NOT verified (no key in this environment) |
+| `token_factory` | `EMBEDDING_PROVIDER=token_factory` (auto when `TOKEN_FACTORY_API_KEY` + `EMBED_MODEL` are set) | Nebius Token Factory | hosted; production model `Qwen/Qwen3-Embedding-8B`; live embeddings NOT verified (no key in this environment) |
 | `local` | `EMBEDDING_PROVIDER=local`, `uv sync --extra semantic` | stays on the host | default model `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` |
 | `fake` | tests only | stays in process | hashed bag of words; lexical, not semantic |
 | none | default without key / extra | nowhere | semantic memory off |
+
+### Production embedding model (Token Factory)
+
+Nebius Token Factory's only public embedding model is `Qwen/Qwen3-Embedding-8B` (multilingual including
+Hindi, 4096 dimensions natively, trained with Matryoshka representation learning so a prefix of the vector
+is itself a valid embedding). Confirm the exact ID with `GET {TOKEN_FACTORY_BASE_URL}/models`. Settings:
+`EMBEDDING_PROVIDER=token_factory`, `EMBED_MODEL=Qwen/Qwen3-Embedding-8B`, `EMBED_DIM=1024`.
+
+Dimension handling (token_factory provider):
+- With `EMBED_SEND_DIMENSIONS=true` (default) requests carry `dimensions=EMBED_DIM`. If the server rejects it
+  (HTTP 400/422 or an error naming dimensions) the request is retried once without it and the parameter is
+  not sent again for the rest of the process.
+- Whatever comes back is post-processed: a vector longer than `EMBED_DIM` is truncated to its first
+  `EMBED_DIM` values and L2-normalised (cosine stays meaningful); a shorter one is unit-normalised and
+  zero-padded; non-finite or all-zero vectors are rejected (no embedding for that event, never an error
+  for the pipeline).
+- Requests hold at most 16 texts and use `EMBED_TIMEOUT_S`. Text is redacted again before sending and is
+  never logged.
 
 Local model: paraphrase-multilingual-MiniLM-L12-v2, Apache-2.0, 118M parameters, 471 MB safetensors download
 (fp32), 384 dimensions, 50+ languages including Hindi; about 20 ms per message on a laptop CPU after a few
@@ -51,7 +69,28 @@ Rules:
   `SEMANTIC_K` (<= 5), cosine >= `SEMANTIC_THRESHOLD`, excluding the event itself, events already linked
   by a shared entity and exact text duplicates. They are persisted as `similar` edges.
 - `SEMANTIC_THRESHOLD = 0.25` was tuned on the eval TUNE split for the local model (sweep below). Other
-  models need their own threshold.
+  models need their own threshold: the value was NOT tuned for Qwen3-Embedding-8B and must be re-tuned
+  (below) before semantic links are relied on. Until then set `SEMANTIC_MEMORY=false` if unsure.
+
+### Re-tuning the threshold for a new model
+
+```bash
+cd backend && docker compose up -d db
+export DATABASE_URL=postgresql+psycopg://sentinel:sentinel@localhost:5440/sentinel   # as in .env.example
+export TOKEN_FACTORY_API_KEY=...            # or in backend/.env; never printed or stored by the script
+uv run python scripts/tune_semantic_threshold.py          # prints the token estimate, sends nothing
+uv run python scripts/tune_semantic_threshold.py --yes    # embeds, caches, sweeps, recommends
+```
+
+It reads the TUNE split only (no flag for the holdout), embeds every event the pipeline would embed
+(order of 10^3 short messages, roughly 10^5 tokens: the script prints the exact estimate and refuses to call
+the API without `--yes`), caches vectors in `backend/eval/.embed_cache/` (gitignored, keyed by
+sha256(model + redacted text), so reruns are free), sweeps 0.10 to 0.60 in steps of 0.025 and reports
+distributed_slow_burn scam-timeline recall and false upgrades on benign TUNE scenarios. The recommendation
+is the highest-recall threshold with zero benign upgrades, centred in its plateau for margin; it is printed
+and written to `backend/eval/threshold_<model>.json`. Set `SEMANTIC_THRESHOLD` to it, then check the
+holdout once with `uv run python eval/run_eval.py --ablation --embedding-provider token_factory
+--semantic-threshold <t>`.
 
 ## 3. Story progression (rules, no LLM)
 
@@ -144,7 +183,8 @@ allowlisting is unchanged: history text never widens the allowed tool targets.
 | `LOCAL_EMBED_MODEL` | paraphrase-multilingual-MiniLM-L12-v2 | local sentence-transformers model |
 | `EMBED_TIMEOUT_S` | 5 | per embedding call |
 | `EMBED_DIM` | 1024 | pgvector column width |
-| `SEMANTIC_THRESHOLD` | 0.25 | cosine needed for a `similar` link (tuned for the local model) |
+| `EMBED_SEND_DIMENSIONS` | true | send `dimensions=EMBED_DIM`; auto-off per process if rejected |
+| `SEMANTIC_THRESHOLD` | 0.25 | cosine needed for a `similar` link (tuned for the local model; re-tune for Qwen3) |
 | `SEMANTIC_K` / `SEMANTIC_WINDOW_DAYS` | 5 / 14 | neighbours per event / look-back |
 | `STORY_PROGRESSION` | true | story signal on/off |
 | `AGENT_REVIEW` | escalated | `escalated` or `all` |

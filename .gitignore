@@ -9,3 +9,4 @@ __pycache__/
 deploy/.env
 deploy/.env.prod
 deploy/*.env
+backend/eval/.embed_cache/
