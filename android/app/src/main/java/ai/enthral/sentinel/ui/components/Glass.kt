@@ -74,9 +74,10 @@ fun Modifier.atmosphere(): Modifier {
     }
 }
 
+/** Content over the atmosphere (the blur source, if any, goes inside, never around the atmosphere). */
 @Composable
 fun AtmosphereBox(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) =
-    Box(modifier.fillMaxSize().atmosphere(), content = content)
+    Box(modifier.fillMaxSize().atmosphere()) { content() }
 
 enum class GlassTone { Card, Sheet }
 
@@ -108,11 +109,13 @@ fun Modifier.glass(shape: Shape, glow: Color? = null, tone: GlassTone = GlassTon
         )
         else -> null
     }
-    var base = shadowed.clip(shape).background(fill, shape)
-    if (on) {
-        // Vibrancy: a soft light sheen across the top of the glass (frost in light mode, a faint glint in dark).
-        val sheen = p.glassSheen
-        base = base.background(Brush.verticalGradient(0f to sheen, 0.5f to sheen.copy(alpha = 0f)), shape)
+    // Vibrancy: the tint carries a soft light sheen across its top half, composited into ONE gradient fill
+    // (one blend per pixel instead of two: glass is fill-rate bound on weak GPUs).
+    val base = if (on) {
+        val top = p.glassSheen.compositeOverTint(fill)
+        shadowed.clip(shape).background(Brush.verticalGradient(0f to top, 0.5f to fill, 1f to fill), shape)
+    } else {
+        shadowed.clip(shape).background(fill, shape)
     }
     return if (edge != null) base.border(if (glow != null) 1.5.dp else 1.dp, edge, shape) else base
 }
@@ -137,7 +140,11 @@ fun Modifier.glassBar(shape: Shape? = null, alpha: Float = 1f): Modifier {
                 blurRadius = 24.dp,
                 noiseFactor = 0f,
             ),
-        ) { this.alpha = alpha }
+        ) {
+            this.alpha = alpha
+            // Blur a 1/3-scale copy: a 24-dp blur hides the lower resolution and it is ~9x fewer pixels.
+            inputScale = dev.chrisbanes.haze.HazeInputScale.Fixed(0.33f)
+        }
     } else {
         clipped.background(p.glassBar.copy(alpha = (p.glassBar.alpha + 0.14f).coerceAtMost(1f) * alpha))
     }
@@ -183,3 +190,14 @@ fun Modifier.outerHalo(shape: Shape, color: Color, radius: androidx.compose.ui.u
     }
 
 private fun Color.toArgbInt(): Int = toArgb()
+
+/** [this] (a translucent sheen) composited over a translucent [tint], as one colour with the tint's coverage. */
+private fun Color.compositeOverTint(tint: Color): Color {
+    val a = alpha
+    return Color(
+        red = red * a + tint.red * (1 - a),
+        green = green * a + tint.green * (1 - a),
+        blue = blue * a + tint.blue * (1 - a),
+        alpha = tint.alpha,
+    )
+}

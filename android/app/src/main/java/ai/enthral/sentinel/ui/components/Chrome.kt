@@ -180,9 +180,10 @@ fun LargeTitleList(
     }
     val top = topContentInset(onBack != null)
     val bottom = bottomPadding + LocalBottomBarInset.current
+    HoldAtmosphereWhile(state.isScrollInProgress)
     Box(modifier.fillMaxSize()) {
         val list: @Composable () -> Unit = {
-            Box(Modifier.fillMaxSize().atmosphere().glassSource(), contentAlignment = Alignment.TopCenter) {
+            AtmosphereBox { Box(Modifier.fillMaxSize().glassSource(), contentAlignment = Alignment.TopCenter) {
                 LazyColumn(
                     state = state,
                     modifier = Modifier.widthIn(max = MaxContentWidth).fillMaxSize(),
@@ -191,7 +192,7 @@ fun LargeTitleList(
                     if (showLargeTitle) item(key = "large-title", contentType = "title") { LargeTitle(title, subtitle = subtitle) }
                     content()
                 }
-            }
+            } }
         }
         if (onRefresh != null) SentinelRefreshBox(refreshing, onRefresh, topInset = top) { list() } else list()
         CollapsingTopBar(title, collapsed, scrolled = scrolled, onBack = onBack, actions = actions)
@@ -213,9 +214,12 @@ fun LargeTitleColumn(
     val collapsed by remember(scroll) { derivedStateOf { scroll.value > threshold } }
     val scrolled by remember(scroll) { derivedStateOf { scroll.value > 0 } }
     val top = topContentInset(onBack != null)
+    HoldAtmosphereWhile(scroll.isScrollInProgress)
     Box(modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxSize().atmosphere().glassSource()) {
-            content(PaddingValues(top = top, bottom = LocalBottomBarInset.current))
+        AtmosphereBox {
+            Box(Modifier.fillMaxSize().glassSource()) {
+                content(PaddingValues(top = top, bottom = LocalBottomBarInset.current))
+            }
         }
         CollapsingTopBar(title, collapsed, scrolled = scrolled, onBack = onBack, actions = actions)
     }
@@ -400,5 +404,15 @@ fun SentinelSnackbarHost(state: androidx.compose.material3.SnackbarHostState, mo
             contentColor = p.groupedBackground,
             actionColor = Color(if (p.isDark) ai.enthral.sentinel.ui.theme.Palettes.light.accent else ai.enthral.sentinel.ui.theme.Palettes.dark.accent),
         )
+    }
+}
+
+/** Holds the atmosphere still while [active] (e.g. a list is scrolling). */
+@Composable
+fun HoldAtmosphereWhile(active: Boolean) {
+    val hold = ai.enthral.sentinel.ui.theme.LocalAtmosphereHold.current
+    androidx.compose.runtime.DisposableEffect(active) {
+        if (active) hold.intValue++
+        onDispose { if (active) hold.intValue-- }
     }
 }

@@ -57,7 +57,8 @@ fun SentinelTheme(
     content: @Composable () -> Unit,
 ) {
     val glass = rememberGlassSettings(reduceTransparency)
-    val clock = rememberAtmosphereClock(glass.motion)
+    val hold = remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val clock = rememberAtmosphereClock(glass.motion, hold)
     val palette = when {
         !darkTheme -> Palettes.light
         trueBlack -> Palettes.trueBlack
@@ -78,6 +79,7 @@ fun SentinelTheme(
         LocalType provides type,
         LocalGlass provides glass,
         LocalAtmosphereClock provides clock,
+        LocalAtmosphereHold provides hold,
     ) {
         MaterialTheme(colorScheme = scheme, typography = typography, shapes = SentinelShapes) {
             CompositionLocalProvider(
@@ -89,6 +91,9 @@ fun SentinelTheme(
     }
 }
 
+/** Number of lists currently being scrolled/flung; the atmosphere holds still while > 0 (saves redraw + re-blur). */
+val LocalAtmosphereHold = staticCompositionLocalOf { androidx.compose.runtime.mutableIntStateOf(0) }
+
 /** Seconds since the atmosphere started drifting; shared so every screen's background is in the same position. */
 val LocalAtmosphereClock = staticCompositionLocalOf<androidx.compose.runtime.State<Float>> { androidx.compose.runtime.mutableFloatStateOf(0f) }
 
@@ -98,7 +103,7 @@ val LocalAtmosphereClock = staticCompositionLocalOf<androidx.compose.runtime.Sta
  * tests never wait for it.
  */
 @Composable
-private fun rememberAtmosphereClock(motion: Boolean): androidx.compose.runtime.State<Float> {
+private fun rememberAtmosphereClock(motion: Boolean, hold: androidx.compose.runtime.IntState): androidx.compose.runtime.State<Float> {
     val t = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
     if (motion) {
         androidx.compose.runtime.LaunchedEffect(Unit) {
@@ -107,7 +112,10 @@ private fun rememberAtmosphereClock(motion: Boolean): androidx.compose.runtime.S
             while (true) {
                 androidx.compose.animation.core.withInfiniteAnimationFrameMillis { now ->
                     if (start < 0) start = now - (t.floatValue * 1000).toLong()
-                    if (now - last >= 66) {
+                    if (hold.intValue > 0) {
+                        // Held while scrolling: freeze in place and resume from the same position afterwards.
+                        start = now - (t.floatValue * 1000).toLong()
+                    } else if (now - last >= 66) {
                         last = now
                         t.floatValue = (now - start) / 1000f
                     }
