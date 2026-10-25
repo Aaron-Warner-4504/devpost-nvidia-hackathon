@@ -62,3 +62,39 @@ def test_default_trusted_proxy_count_is_one():
     from app.config import Settings
     s = Settings(database_url="postgresql://x/y")
     assert s.trusted_proxy_count == 1 and s.trust_proxy_headers is False
+
+
+def test_public_peer_cannot_forge_forwarded_for(trusted):
+    assert ratelimit.client_ip(req(peer="203.0.113.9", xff="6.6.6.6")) == "203.0.113.9"
+    assert ratelimit.client_ip(req(peer="2001:db8::1", xff="6.6.6.6")) == "2001:db8::/64"
+    assert ratelimit.client_ip(req(peer="::ffff:203.0.113.9", xff="6.6.6.6")) == "203.0.113.9"
+
+
+@pytest.mark.parametrize("peer", ["127.0.0.1", "::1", "10.1.2.3", "172.18.0.1", "192.168.1.5", "::ffff:127.0.0.1"])
+def test_private_or_loopback_peer_xff_is_honoured(trusted, peer):
+    # docker bridge scenario: a NAT'd loopback connection appears from the bridge gateway, e.g. 172.18.0.1
+    assert ratelimit.client_ip(req(peer=peer, xff="1.2.3.4, 5.6.7.8")) == "5.6.7.8"
+
+
+def test_custom_cidrs(trusted, monkeypatch):
+    monkeypatch.setattr(settings, "trusted_proxy_cidrs", "203.0.113.0/24")
+    assert ratelimit.client_ip(req(peer="203.0.113.9", xff="5.6.7.8")) == "5.6.7.8"
+    assert ratelimit.client_ip(req(peer="10.0.0.1", xff="5.6.7.8")) == "10.0.0.1"
+
+
+def test_non_ip_peer_is_not_trusted(trusted):
+    assert ratelimit.client_ip(req(peer="testclient", xff="5.6.7.8")) == "testclient"
+
+
+def test_invalid_cidr_is_a_clear_startup_error():
+    from pydantic import ValidationError
+
+    from app.config import Settings
+    with pytest.raises(ValidationError, match="TRUSTED_PROXY_CIDRS.*not-a-cidr"):
+        Settings(database_url="postgresql://x/y", trusted_proxy_cidrs="10.0.0.0/8,not-a-cidr")
+
+
+def test_default_cidrs_cover_loopback_and_private():
+    from app.config import Settings
+    s = Settings(database_url="postgresql://x/y")
+    assert s.trusted_proxy_cidrs.split(",") == ["127.0.0.0/8", "::1/128", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]

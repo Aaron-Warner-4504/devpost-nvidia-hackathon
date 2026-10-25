@@ -1,0 +1,93 @@
+# Sentinel on a SHARED host: api + inspector only. No Caddy (an existing nginx terminates TLS and proxies
+# https://interns.enthral.ai/sentinel/ -> 127.0.0.1:8100), no db container (external Supabase Postgres).
+#
+# Run from the repo root on the VM (normally /opt/sentinel/app; install.sh does this for you):
+#   docker compose -f deploy/shared-host/docker-compose.yml --env-file /opt/sentinel/.env.prod -p sentinel up -d --build
+#
+# Isolation from the neighbouring stack:
+#   * compose project `sentinel`; every network is `sentinel_*`, every container `sentinel-*`
+#   * the only host port is 127.0.0.1:${SENTINEL_HOST_PORT:-8100} (never 80/443, never 0.0.0.0)
+#   * no network_mode: host, nothing attached to the default bridge or to other stacks' networks
+#   * CPU / memory / pids limits and log rotation so a runaway Sentinel cannot starve the other app
+name: sentinel
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  api:
+    container_name: sentinel-api
+    build:
+      context: ../../backend        # resolves to <repo>/backend, e.g. /opt/sentinel/app/backend
+      target: prod
+    restart: unless-stopped
+    env_file:
+      # SENTINEL_ENV_FILE is only overridden for local tests; on the VM it is /opt/sentinel/.env.prod
+      - path: ${SENTINEL_ENV_FILE:-/opt/sentinel/.env.prod}
+        required: true
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL to the Supabase Postgres URL in /opt/sentinel/.env.prod}
+      ENVIRONMENT: prod
+      FAMILY_CODE_PEPPER: ${FAMILY_CODE_PEPPER:?set FAMILY_CODE_PEPPER (>= 16 chars) in /opt/sentinel/.env.prod}
+      # nginx REPLACES X-Forwarded-For with $remote_addr, so the rightmost (only) entry is the real client
+      TRUST_PROXY_HEADERS: "true"
+      TRUSTED_PROXY_COUNT: "1"
+      # nginx strips /sentinel before proxying; ROOT_PATH only fixes generated URLs (OpenAPI, docs)
+      ROOT_PATH: /sentinel
+      INSPECTOR_URL: http://inspector:8080
+      INSPECTOR_SECRET: ${INSPECTOR_SECRET:?set INSPECTOR_SECRET (>= 16 chars) in /opt/sentinel/.env.prod}
+      DEMO_ENABLED: "false"   # fixed off: /sentinel/dashboard stays a 404 on a shared public host
+    ports:
+      # Loopback only. To let an nginx that runs INSIDE Docker reach it, set SENTINEL_BIND_ADDR to the
+      # docker0 gateway IP AND SENTINEL_ALLOW_NON_LOOPBACK=1 (install.sh refuses a non-loopback bind without it;
+      # see README "nginx inside Docker"). The default never leaves the host. Never 0.0.0.0.
+      - "${SENTINEL_BIND_ADDR:-127.0.0.1}:${SENTINEL_HOST_PORT:-8100}:8000"
+    networks: [edge, inspector_net]
+    read_only: true
+    tmpfs: ["/tmp:size=64m,mode=1777,nosuid,nodev"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1g
+    memswap_limit: 1g
+    cpus: 1.0
+    pids_limit: 256
+    logging: *logging
+    # image HEALTHCHECK (Dockerfile prod target) probes 127.0.0.1:8000/health inside the container
+
+  # Sandboxed link inspector (fetches attacker-supplied URLs). Mirrors deploy/docker-compose.prod.yml:
+  # internal link to the api only, own egress network, hardened.
+  inspector:
+    container_name: sentinel-inspector
+    build:
+      context: ../../inspector
+    restart: unless-stopped
+    # deliberately NO env_file: it fetches attacker-controlled pages and must not see the DB credentials,
+    # the LLM key or any other secret
+    environment:
+      INSPECTOR_SECRET: ${INSPECTOR_SECRET:?set INSPECTOR_SECRET in /opt/sentinel/.env.prod}
+      SAFE_BROWSING_API_KEY: ${SAFE_BROWSING_API_KEY:-}
+      URLHAUS_AUTH_KEY: ${URLHAUS_AUTH_KEY:-}
+    expose: ["8080"]
+    networks: [inspector_net, inspector_egress]
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777,nosuid,nodev
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1536m
+    memswap_limit: 1536m
+    cpus: 1.5
+    pids_limit: 256
+    logging: *logging
+    # image HEALTHCHECK (inspector/Dockerfile) probes 127.0.0.1:8080/health
+
+# Compose prefixes the project name, so on the VM these are sentinel_edge, sentinel_inspector_net and
+# sentinel_inspector_egress. Nothing here touches the default bridge or another stack's networks.
+networks:
+  edge: {}                # api: published loopback port + outbound access (Supabase, Token Factory, Tavily)
+  inspector_net:
+    internal: true        # api -> inspector only, no egress
+  inspector_egress: {}    # inspector's own outbound internet; see README for the optional egress firewall

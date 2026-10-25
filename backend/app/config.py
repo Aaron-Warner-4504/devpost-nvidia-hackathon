@@ -1,4 +1,9 @@
+import ipaddress
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_TRUSTED_PROXY_CIDRS = "127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
 
 
 class Settings(BaseSettings):
@@ -77,11 +82,31 @@ class Settings(BaseSettings):
     # Number of trusted proxies appending to X-Forwarded-For: the client is the entry this many positions
     # from the RIGHT (1 = the entry our Caddy appended). Entries further left are client-controlled.
     trusted_proxy_count: int = 1
+    # URL path prefix when served behind a reverse proxy that strips it (e.g. /sentinel). Routes stay
+    # unprefixed; this only affects generated URLs (OpenAPI servers, docs). Empty = served at the root.
+    root_path: str = ""
+    # X-Forwarded-For is honoured only when the socket peer is inside one of these comma-separated CIDRs
+    # (default: loopback + private ranges, which covers a proxy on the same host or the docker bridge
+    # gateway). A peer outside them is used as the client address and the header is ignored.
+    trusted_proxy_cidrs: str = DEFAULT_TRUSTED_PROXY_CIDRS
     # Demo web dashboard (/dashboard and GET /v1/dashboard/timeline). Off by default: both return 404.
     demo_enabled: bool = False
     # Dev-only: comma-separated browser origins allowed by CORS (e.g. http://localhost:5173). Empty = no CORS
     # middleware. '*' only in dev/test; in prod every origin must be https. See app/cors.py.
     cors_allow_origins: str = ""
+
+    @field_validator("trusted_proxy_cidrs")
+    @classmethod
+    def _check_cidrs(cls, v: str) -> str:
+        for part in v.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            try:
+                ipaddress.ip_network(part, strict=False)
+            except ValueError:
+                raise ValueError(f"TRUSTED_PROXY_CIDRS: {part!r} is not a valid CIDR network") from None
+        return v
 
 
 settings = Settings()
