@@ -53,11 +53,11 @@ fun Modifier.pressScale(interaction: InteractionSource, pressed: Float = 0.97f):
     return graphicsLayer { scaleX = scale; scaleY = scale }
 }
 
-/** The one soft, diffuse shadow (light mode only; in dark mode surfaces lift by being lighter). */
+/** The soft, diffuse shadow (light mode only; dark surfaces lift by being lighter). Outer halo, never under glass. */
 @Composable
 fun Modifier.softShadow(shape: Shape): Modifier {
     val p = SentinelTheme.palette
-    return if (p.isDark) this else shadow(14.dp, shape, clip = false, ambientColor = p.shadow, spotColor = p.shadow)
+    return if (p.isDark) this else outerHalo(shape, p.shadow, 14.dp, offsetY = 3.dp)
 }
 
 /** Skeleton fill with a slow highlight sweep (plain fill when animations are off). */
@@ -81,4 +81,23 @@ fun Modifier.shimmer(shape: Shape): Modifier {
         ),
         shape,
     )
+}
+
+/**
+ * List entrance: a row fades and rises 12 dp with a 45 ms stagger by [index] (capped), once per [key] for the life of
+ * [seen] (so scrolling back never replays it). Static when animations are off.
+ */
+@Composable
+fun Modifier.staggerIn(key: Any, index: Int, seen: MutableSet<Any>): Modifier {
+    if (rememberReducedMotion() || key in seen) return this
+    val progress = remember(key) { androidx.compose.animation.core.Animatable(0f) }
+    androidx.compose.runtime.LaunchedEffect(key) {
+        kotlinx.coroutines.delay(45L * index.coerceAtMost(6))
+        progress.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.85f, stiffness = 380f))
+        seen += key
+    }
+    return graphicsLayer {
+        alpha = progress.value
+        translationY = (1f - progress.value) * 12.dp.toPx()
+    }
 }

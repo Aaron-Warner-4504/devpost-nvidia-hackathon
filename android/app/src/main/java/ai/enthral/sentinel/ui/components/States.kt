@@ -71,7 +71,7 @@ fun ErrorState(message: String, onRetry: () -> Unit, modifier: Modifier = Modifi
         body = message,
         modifier = modifier,
         illustration = {
-            Box(Modifier.size(72.dp).background(SentinelTheme.palette.elevated, CircleShape), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(72.dp).glass(CircleShape), contentAlignment = Alignment.Center) {
                 Icon(SentinelIcons.CloudOff, null, tint = SentinelTheme.palette.secondaryLabel, modifier = Modifier.size(32.dp))
             }
         },

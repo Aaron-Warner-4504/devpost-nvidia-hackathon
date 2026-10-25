@@ -34,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
@@ -98,7 +97,7 @@ fun FloatingTabBar(items: List<NavItem>, selected: Int, onSelect: (Int) -> Unit,
         Box(modifier.fillMaxWidth().navigationBarsPadding().padding(start = Spacing.inset, end = Spacing.inset, bottom = FloatingBarMargin)) {
             BoxWithConstraints(
                 Modifier.fillMaxWidth().heightIn(min = FloatingBarHeight)
-                    .shadow(18.dp, BarShape, clip = false, ambientColor = p.shadow, spotColor = p.shadow)
+                    .then(if (p.isDark) Modifier else Modifier.outerHalo(BarShape, p.shadow, 18.dp, offsetY = 4.dp))
                     .glassBar(BarShape).glassEdge(BarShape)
                     .padding(6.dp),
             ) {

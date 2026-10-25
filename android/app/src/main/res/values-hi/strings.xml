@@ -108,6 +108,7 @@
     <string name="filter_show_all">सभी अलर्ट दिखाएँ</string>
     <string name="alerts_filtered_title">इस फ़िल्टर से कोई अलर्ट नहीं मिला</string>
     <string name="alerts_filtered_body">कोई दूसरा स्तर चुनें या सब कुछ दिखाएँ।</string>
+    <string name="alerts_pick_one">कोई अलर्ट चुनें और देखें कि उसे क्यों चिह्नित किया गया।</string>
     <string name="alerts_empty_body">आपके अलर्ट का इतिहास यहाँ दिखेगा, सबसे नया सबसे ऊपर।</string>
     <string name="detail_title">अलर्ट</string>
     <string name="detail_title_result">नतीजा</string>

@@ -86,7 +86,7 @@ fun CodeEntry(
                     val shape = RoundedCornerShape(Radii.medium)
                     Box(
                         Modifier.weight(1f).heightIn(min = 60.dp)
-                            .background(p.elevated, shape)
+                            .background(glassFill(), shape)
                             .then(
                                 when {
                                     isError -> Modifier.border(1.5.dp, critical, shape)

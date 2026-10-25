@@ -10,7 +10,10 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -86,9 +89,9 @@ fun Modifier.glass(shape: Shape, glow: Color? = null, tone: GlassTone = GlassTon
         else -> p.glassCard
     }
     val shadowed = when {
-        glow != null -> shadow(28.dp, shape, clip = false, ambientColor = glow, spotColor = glow)
+        glow != null -> outerHalo(shape, glow, 22.dp)
         p.isDark -> this
-        else -> shadow(14.dp, shape, clip = false, ambientColor = p.shadow, spotColor = p.shadow)
+        else -> outerHalo(shape, p.shadow, 16.dp, offsetY = 4.dp)
     }
     val edge = when {
         glow != null -> Brush.linearGradient(listOf(glow.copy(alpha = 0.9f), glow.copy(alpha = 0.25f), glow.copy(alpha = 0.6f)))
@@ -151,3 +154,23 @@ fun Modifier.glassFlat(shape: Shape): Modifier = clip(shape).background(glassFil
 
 /** Height the floating bottom bar occupies over content (0 when there is none), so lists can scroll clear of it. */
 val LocalBottomBarInset = staticCompositionLocalOf { 0.dp }
+
+/**
+ * A soft halo drawn only OUTSIDE [shape] (BlurMaskFilter.OUTER), so it never shows through translucent glass the way
+ * a platform elevation shadow does. Used for the diffuse card shadow and the critical glow. API 28+ (where blur mask
+ * filters are hardware accelerated); nothing below.
+ */
+fun Modifier.outerHalo(shape: Shape, color: Color, radius: androidx.compose.ui.unit.Dp, offsetY: androidx.compose.ui.unit.Dp = 0.dp): Modifier =
+    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.P) this else drawBehind {
+        val outline = shape.createOutline(size, layoutDirection, this)
+        val path = androidx.compose.ui.graphics.Path().apply { addOutline(outline) }
+        path.translate(Offset(0f, offsetY.toPx()))
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = color.copy(alpha = 1f).toArgbInt()
+            this.alpha = (color.alpha * 255).toInt()
+            maskFilter = android.graphics.BlurMaskFilter(radius.toPx(), android.graphics.BlurMaskFilter.Blur.OUTER)
+        }
+        drawContext.canvas.nativeCanvas.drawPath(path.asAndroidPath(), paint)
+    }
+
+private fun Color.toArgbInt(): Int = toArgb()

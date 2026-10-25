@@ -108,6 +108,7 @@
     <string name="filter_show_all">Show all alerts</string>
     <string name="alerts_filtered_title">No alerts match this filter</string>
     <string name="alerts_filtered_body">Try another level or show everything.</string>
+    <string name="alerts_pick_one">Choose an alert to see why it was flagged.</string>
     <string name="alerts_empty_body">Your alert history will appear here, newest first.</string>
     <string name="detail_title">Alert</string>
     <string name="detail_title_result">Result</string>
