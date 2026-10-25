@@ -35,7 +35,7 @@ import ai.enthral.sentinel.ui.components.NavItem
 import ai.enthral.sentinel.ui.components.NavRail
 import ai.enthral.sentinel.ui.components.NavSidebar
 import ai.enthral.sentinel.ui.components.WidthClass
-import ai.enthral.sentinel.ui.components.atmosphere
+import ai.enthral.sentinel.ui.components.AtmosphereBox
 import ai.enthral.sentinel.ui.components.widthClassOf
 import ai.enthral.sentinel.ui.theme.LocalGlass
 import dev.chrisbanes.haze.rememberHazeState
@@ -195,7 +195,7 @@ fun SentinelRoot(graph: AppGraph, startOnboarded: Boolean) {
         }
 
         CompositionLocalProvider(LocalHaze provides haze, LocalPrivacyRequest provides privacyRequest) {
-            BoxWithConstraints(Modifier.fillMaxSize().atmosphere().imePadding()) {
+            AtmosphereBox { BoxWithConstraints(Modifier.fillMaxSize().imePadding()) {
                 val widthClass = widthClassOf(maxWidth)
                 CompositionLocalProvider(LocalWidthClass provides widthClass) {
                     if (widthClass == WidthClass.Compact) {
@@ -241,7 +241,7 @@ fun SentinelRoot(graph: AppGraph, startOnboarded: Boolean) {
                         }
                     }
                 }
-            }
+            } }
         }
     }
 }

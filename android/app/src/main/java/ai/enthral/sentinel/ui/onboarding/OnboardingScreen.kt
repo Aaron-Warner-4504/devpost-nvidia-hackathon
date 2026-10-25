@@ -66,7 +66,7 @@ import ai.enthral.sentinel.ui.components.ShieldIllustration
 import ai.enthral.sentinel.ui.components.SourceRow
 import ai.enthral.sentinel.ui.components.StatusLine
 import ai.enthral.sentinel.ui.components.apiErrorMessage
-import ai.enthral.sentinel.ui.components.atmosphere
+import ai.enthral.sentinel.ui.components.AtmosphereBox
 import ai.enthral.sentinel.ui.components.glass
 import ai.enthral.sentinel.ui.theme.Radii
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -99,7 +99,7 @@ fun OnboardingScreen() {
     androidx.activity.compose.BackHandler(enabled = pager.currentPage > 0) { go(pager.currentPage - 1) }
     val p = SentinelTheme.palette
 
-    Box(Modifier.fillMaxSize().atmosphere(), contentAlignment = Alignment.TopCenter) {
+    AtmosphereBox { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         Column(Modifier.widthIn(max = MaxContentWidth).fillMaxSize().safeDrawingPadding()) {
             // Top: back on the left, skip (language only) on the right. Quiet chrome.
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = Spacing.x05), verticalAlignment = Alignment.CenterVertically) {
@@ -183,7 +183,7 @@ fun OnboardingScreen() {
                 PageIndicator(PAGES, pager.currentPage, stringResource(R.string.onboarding_step, pager.currentPage + 1, PAGES))
             }
         }
-    }
+    } }
 
     sheet?.let { name ->
         val source = ConsentSource.valueOf(name)

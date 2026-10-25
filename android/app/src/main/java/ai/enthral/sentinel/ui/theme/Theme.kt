@@ -98,8 +98,8 @@ val LocalAtmosphereHold = staticCompositionLocalOf { androidx.compose.runtime.mu
 val LocalAtmosphereClock = staticCompositionLocalOf<androidx.compose.runtime.State<Float>> { androidx.compose.runtime.mutableFloatStateOf(0f) }
 
 /**
- * Ticks ~15 times a second while the UI is visible and motion is allowed: the drift is glacial, so 15 fps is smooth
- * and keeps the bars' blur from re-rendering every vsync. Uses the infinite-animation frame clock so Compose UI
+ * Ticks 5 times a second while the UI is visible and motion is allowed: the drift is glacial (~5 px/s), so each tick
+ * moves the aurora by about a pixel, and the screen is re-composited 5 times a second instead of every vsync. Uses the infinite-animation frame clock so Compose UI
  * tests never wait for it.
  */
 @Composable
@@ -115,7 +115,7 @@ private fun rememberAtmosphereClock(motion: Boolean, hold: androidx.compose.runt
                     if (hold.intValue > 0) {
                         // Held while scrolling: freeze in place and resume from the same position afterwards.
                         start = now - (t.floatValue * 1000).toLong()
-                    } else if (now - last >= 66) {
+                    } else if (now - last >= 200) {
                         last = now
                         t.floatValue = (now - start) / 1000f
                     }

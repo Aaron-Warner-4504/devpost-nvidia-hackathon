@@ -74,10 +74,17 @@ fun Modifier.atmosphere(): Modifier {
     }
 }
 
-/** Content over the atmosphere (the blur source, if any, goes inside, never around the atmosphere). */
+/**
+ * Content over the atmosphere. The atmosphere is a SIBLING node behind the content: its clock ticks then only
+ * re-record the gradients, never the content (a drawBehind on the container re-records everything inside it).
+ * The blur source, if any, goes inside the content, never around the atmosphere.
+ */
 @Composable
 fun AtmosphereBox(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) =
-    Box(modifier.fillMaxSize().atmosphere()) { content() }
+    Box(modifier.fillMaxSize()) {
+        Box(Modifier.matchParentSize().atmosphere())
+        content()
+    }
 
 enum class GlassTone { Card, Sheet }
 
