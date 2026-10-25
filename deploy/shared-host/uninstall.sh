@@ -22,7 +22,8 @@ read -r answer
 # env file may be absent at this point: give compose a dummy only for interpolation of required vars
 tmp_env=""
 if [ ! -f "$ENV_FILE" ]; then
-  tmp_env="$(mktemp)"
+  tmp_env="$(mktemp)"   # mode 600, unpredictable name
+  trap 'rm -f "$tmp_env"' EXIT
   printf 'DATABASE_URL=x\nFAMILY_CODE_PEPPER=x\nINSPECTOR_SECRET=x\n' >"$tmp_env"
   ENV_FILE="$tmp_env"; export SENTINEL_ENV_FILE="$tmp_env"
 fi

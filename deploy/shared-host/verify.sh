@@ -9,9 +9,10 @@ fails=0
 ok()  { echo "PASS  $*"; }
 bad() { echo "FAIL  $*"; fails=$((fails + 1)); }
 
-code="$(curl -sS -o /tmp/.sentinel_verify_health.$$ -w '%{http_code}' --max-time 10 "$BASE/health" 2>&1)" || code="curl-error"
-if [ "$code" = 200 ] && grep -q '"ok"' /tmp/.sentinel_verify_health.$$; then ok "GET /health -> 200 ok"; else bad "GET $BASE/health -> $code (see README troubleshooting)"; fi
-rm -f /tmp/.sentinel_verify_health.$$
+# response bodies are captured into variables: no temp files at all
+resp="$(curl -sS -w '\n%{http_code}' --max-time 10 "$BASE/health" 2>&1)" || resp="curl-error"
+code="${resp##*$'\n'}"; body="${resp%$'\n'*}"
+if [ "$code" = 200 ] && printf '%s' "$body" | grep -q '"ok"'; then ok "GET /health -> 200 ok"; else bad "GET $BASE/health -> $code (see README troubleshooting)"; fi
 
 code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$BASE/openapi.json" 2>&1)" || code="curl-error"
 if [ "$code" = 200 ]; then ok "GET /openapi.json -> 200"; else bad "GET /openapi.json -> $code"; fi
