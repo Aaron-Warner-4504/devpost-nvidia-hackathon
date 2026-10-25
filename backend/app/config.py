@@ -91,9 +91,17 @@ class Settings(BaseSettings):
     trusted_proxy_cidrs: str = DEFAULT_TRUSTED_PROXY_CIDRS
     # Demo web dashboard (/dashboard and GET /v1/dashboard/timeline). Off by default: both return 404.
     demo_enabled: bool = False
+    # Interactive API docs (/docs, /redoc) and /openapi.json. Unset = on, except when ENVIRONMENT=prod (off).
+    # DOCS_ENABLED=true/false overrides either way.
+    docs_enabled: bool | None = None
     # Dev-only: comma-separated browser origins allowed by CORS (e.g. http://localhost:5173). Empty = no CORS
     # middleware. '*' only in dev/test; in prod every origin must be https. See app/cors.py.
     cors_allow_origins: str = ""
+
+    @field_validator("docs_enabled", mode="before")
+    @classmethod
+    def _blank_docs_enabled(cls, v):
+        return None if isinstance(v, str) and not v.strip() else v
 
     @field_validator("trusted_proxy_cidrs")
     @classmethod
@@ -107,6 +115,10 @@ class Settings(BaseSettings):
             except ValueError:
                 raise ValueError(f"TRUSTED_PROXY_CIDRS: {part!r} is not a valid CIDR network") from None
         return v
+
+
+def docs_are_enabled(s: "Settings") -> bool:
+    return s.docs_enabled if s.docs_enabled is not None else s.environment != "prod"
 
 
 settings = Settings()
