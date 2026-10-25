@@ -180,8 +180,15 @@ that docker subnet to the port in the host firewall if it is blocked. Details ar
 ```bash
 bash /opt/sentinel/app/deploy/shared-host/verify.sh          # or from the laptop; pass a URL to override
 ```
-Checks `/health`, `/openapi.json`, that `/dashboard` is 404, registers a test device and deletes it again via `DELETE /v1/me`
+Checks `/health`, that `/openapi.json` is 404 (API docs are off in prod), that `/dashboard` is 404, registers a test device and deletes it again via `DELETE /v1/me`
 (no test data remains), and confirms the deleted token returns 401. Also confirm the neighbour: open its usual URL and compare.
+
+Expected output includes `PASS  GET /openapi.json -> 404 (docs off in prod, as intended)`.
+
+**API docs are off in production.** `/docs`, `/redoc` and `/openapi.json` (also under `/sentinel/`) return 404 whenever
+`ENVIRONMENT=prod`, which this compose file sets. To enable them temporarily, add `DOCS_ENABLED=true` to `/opt/sentinel/.env.prod`,
+re-run `install.sh --api-only` (recreates the container so it re-reads the env file),
+and run `VERIFY_EXPECT_DOCS=1 bash verify.sh`. Remove the line (or set `false`) and restart to turn them off again.
 
 ## 7. Rollback in 30 seconds
 
@@ -242,7 +249,8 @@ change `DATABASE_URL`). Use the **session pooler** string (IPv4) and `sslmode=re
 | Client IP looks like nginx's/bridge's address | Expected for the proxy hop; the app trusts `X-Forwarded-For` only from peers inside `TRUSTED_PROXY_CIDRS` (default loopback + private ranges). A proxy on a public address must be added there |
 | Rate limit never triggers / forged IPs counted | `TRUSTED_PROXY_COUNT` must be 1 and nginx must **replace** X-Forwarded-For (the snippet does); never use `$proxy_add_x_forwarded_for` |
 | CORS errors | Not needed: the Android app is not a browser. Leave `CORS_ALLOW_ORIGINS` empty |
-| `/sentinel/docs` assets 404 | `ROOT_PATH` is not `/sentinel` in the running container (`docker exec sentinel-api env \| grep ROOT_PATH`) |
+| `/sentinel/docs` or `/openapi.json` is 404 | Intended: docs are off in prod. Set `DOCS_ENABLED=true` in `.env.prod` and re-run `install.sh --api-only` (and `VERIFY_EXPECT_DOCS=1 verify.sh`) to enable temporarily |
+| `/sentinel/docs` page loads but assets 404 | `ROOT_PATH` is not `/sentinel` in the running container (`docker exec sentinel-api env \| grep ROOT_PATH`) |
 | Port in use on install | Set `SENTINEL_HOST_PORT` and edit the port in the snippet |
 
 ## What was NOT verified (no access to the VM)
