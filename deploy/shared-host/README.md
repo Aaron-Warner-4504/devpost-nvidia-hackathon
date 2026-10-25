@@ -91,16 +91,26 @@ here. Recommended before relying on link checks; ask whoever owns the host if yo
 
 ## 5. Add the nginx include (the only change to existing config)
 
-1. Find the file holding the `interns.enthral.ai` server block (preflight prints it), say `/etc/nginx/sites-enabled/interns`.
-2. Back it up: `sudo cp -a /etc/nginx/sites-enabled/interns /etc/nginx/sites-enabled/interns.bak.$(date +%F-%H%M)`
-   (put the backup **outside** `sites-enabled`/`conf.d` if nginx includes `*` from there, e.g. `/root/` or `/etc/nginx/backup/`, otherwise nginx loads it twice).
-3. Inside that `server { ... }` block add this single line:
+On this VM the `interns.enthral.ai` server blocks live in `/etc/nginx/sites-enabled/fastapi`: one `listen 80;` block and one
+`listen 443 ssl;` block (`ssl_certificate` is configured in the 443 block only). Put the include **only inside the `listen 443 ssl;` block**.
+The app is HTTPS-only: leave the port-80 block alone. If it does not redirect to https, the API is simply not reachable over plain http, which is what we want.
+
+Find the right place:
+```bash
+sudo grep -n 'listen 443\|server {\|location /' /etc/nginx/sites-enabled/fastapi
+```
+
+1. Back up the file **outside** `sites-enabled`/`conf.d` (nginx would load a copy there twice):
+   `sudo mkdir -p /etc/nginx/backup && sudo cp -a /etc/nginx/sites-enabled/fastapi /etc/nginx/backup/fastapi.$(date +%F-%H%M)`
+2. Inside the `server { ... }` block that has `listen 443 ssl;` add this single line:
    `include /opt/sentinel/app/deploy/shared-host/nginx-sentinel.conf;`
-4. `sudo nginx -t`
-5. **Only if** it prints `syntax is ok` and `test is successful`: `sudo systemctl reload nginx`
+3. `sudo nginx -t`
+4. **Only if** it prints `syntax is ok` and `test is successful`: `sudo systemctl reload nginx`
    (graceful: workers finish current requests; no connection is dropped). If `-t` fails, remove the line and re-run `-t`; nothing was reloaded, nothing changed.
 
-The snippet only adds `/sentinel` locations. Read its comments for why each directive is there.
+The snippet only adds `/sentinel` locations. It uses `location ^~ /sentinel/` (plus an exact `location = /sentinel` redirect): the `^~`
+modifier makes the prefix match beat any REGEX location in the neighbour's block (e.g. `location ~* \.css$` or `~ ^/(api|docs)`), which would
+otherwise capture `/sentinel/dashboard/dashboard.css` or similar. Read the snippet's comments for why each directive is there.
 
 ### nginx inside Docker (alternative)
 If the neighbour's nginx is a container, `127.0.0.1` is that container. Preferred fix: none needed if you can run nginx on the host. Otherwise
