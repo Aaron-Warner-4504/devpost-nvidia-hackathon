@@ -44,7 +44,8 @@ def _start_review() -> None:
     review.start_sweeper(SessionLocal, interval=period, older_than=period)
 
 
-app = FastAPI(title="Sentinel API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Sentinel API", version="0.1.0", lifespan=lifespan,
+              root_path=settings.root_path.strip().rstrip("/"))
 app.include_router(me.router)
 app.include_router(events.router)
 app.include_router(alerts.router)

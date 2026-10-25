@@ -77,6 +77,9 @@ class Settings(BaseSettings):
     # Number of trusted proxies appending to X-Forwarded-For: the client is the entry this many positions
     # from the RIGHT (1 = the entry our Caddy appended). Entries further left are client-controlled.
     trusted_proxy_count: int = 1
+    # URL path prefix when served behind a reverse proxy that strips it (e.g. /sentinel). Routes stay
+    # unprefixed; this only affects generated URLs (OpenAPI servers, docs). Empty = served at the root.
+    root_path: str = ""
     # Demo web dashboard (/dashboard and GET /v1/dashboard/timeline). Off by default: both return 404.
     demo_enabled: bool = False
     # Dev-only: comma-separated browser origins allowed by CORS (e.g. http://localhost:5173). Empty = no CORS
