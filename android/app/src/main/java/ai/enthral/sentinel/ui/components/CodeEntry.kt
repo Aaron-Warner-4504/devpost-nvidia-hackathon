@@ -119,14 +119,15 @@ fun CodeDisplay(code: String, modifier: Modifier = Modifier, dimmed: Boolean = f
         lineHeight = (base * 1.2f * scale / density.fontScale).sp,
         letterSpacing = 0.sp,
     )
-    val cell = (base * scale * 0.8f).dp
+    // Wide enough for the widest glyphs in the alphabet (W, M) at this size, so letters never touch.
+    val cell = (base * scale * 1.0f).dp
     val spoken = code.toCharArray().joinToString(" ")
     Row(
         modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = spoken },
         horizontalArrangement = Arrangement.Center,
     ) {
         code.forEachIndexed { i, ch ->
-            if (i == code.length / 2 && code.length > 3) Spacer(Modifier.width(cell * 0.35f))
+            if (i == code.length / 2 && code.length > 3) Spacer(Modifier.width(cell * 0.3f))
             Box(Modifier.width(cell), contentAlignment = Alignment.Center) {
                 Text(
                     ch.toString(),
