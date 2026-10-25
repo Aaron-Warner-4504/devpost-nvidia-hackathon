@@ -30,6 +30,12 @@ fun groupByDay(alerts: List<Alert>, now: Instant, zone: ZoneId): List<AlertGroup
         .groupBy { bucketFor(it.createdAt, now, zone) }
         .map { (bucket, list) -> AlertGroup(bucket, list) }
 
+/** Today's most serious alert worth the user's attention (critical before high; newest first). Null if none. */
+fun attentionToday(alerts: List<Alert>, now: Instant, zone: ZoneId): Alert? =
+    alerts.filter { (it.tier == Tier.Critical || it.tier == Tier.High) && bucketFor(it.createdAt, now, zone) == DayBucket.Today }
+        .sortedWith(compareByDescending<Alert> { it.tier.ordinal }.thenByDescending { it.createdAt })
+        .firstOrNull()
+
 fun countsToday(alerts: List<Alert>, now: Instant, zone: ZoneId): Map<Tier, Int> =
     alerts.filter { bucketFor(it.createdAt, now, zone) == DayBucket.Today }
         .groupingBy { it.tier }.eachCount()

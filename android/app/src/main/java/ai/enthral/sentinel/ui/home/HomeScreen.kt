@@ -106,10 +106,7 @@ fun HomeContent(
     ) {
         item(key = "hero") {
             // A critical/high-risk alert from today turns "Protected" into "Needs your attention" (opens that alert).
-            val latest = state.latest
-            val attention = latest?.takeIf {
-                (it.tier == Tier.Critical || it.tier == Tier.High) && (state.todayCounts[it.tier] ?: 0) > 0
-            }
+            val attention = state.attention
             StatusHero(
                 status = state.protection,
                 sourcesOn = sourcesOn,
