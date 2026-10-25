@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app import family, push
-from app.config import settings
+from app.config import docs_are_enabled, settings
 from app.cors import apply_cors
 from app.db_url import check_database_url
 from app.pipeline import orchestrator
@@ -44,8 +44,10 @@ def _start_review() -> None:
     review.start_sweeper(SessionLocal, interval=period, older_than=period)
 
 
+# /docs, /redoc and /openapi.json are off in prod by default (see DOCS_ENABLED); nothing in the app uses them.
+_docs_kw = {} if docs_are_enabled(settings) else {"docs_url": None, "redoc_url": None, "openapi_url": None}
 app = FastAPI(title="Sentinel API", version="0.1.0", lifespan=lifespan,
-              root_path=settings.root_path.strip().rstrip("/"))
+              root_path=settings.root_path.strip().rstrip("/"), **_docs_kw)
 app.include_router(me.router)
 app.include_router(events.router)
 app.include_router(alerts.router)
