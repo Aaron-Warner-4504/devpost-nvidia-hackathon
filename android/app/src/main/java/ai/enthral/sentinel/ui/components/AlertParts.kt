@@ -69,7 +69,7 @@ fun AlertCard(alert: Alert, onClick: () -> Unit, modifier: Modifier = Modifier, 
     val interaction = remember { MutableInteractionSource() }
     Column(
         modifier.fillMaxWidth().pressScale(interaction, 0.98f)
-            .glass(shape, glow = if (alert.tier == ai.enthral.sentinel.domain.Tier.Critical) tier.content.copy(alpha = 0.55f) else null)
+            .glass(shape) // the luminous edge is reserved for hero surfaces, never stacked
             .clickable(interactionSource = interaction, indication = androidx.compose.material3.ripple(), role = Role.Button, onClick = onClick)
             .semantics(mergeDescendants = true) {}
             .padding(Spacing.x25),

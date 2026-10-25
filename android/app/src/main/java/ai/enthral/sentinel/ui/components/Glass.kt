@@ -10,6 +10,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.toArgb
@@ -53,16 +55,20 @@ fun Modifier.atmosphere(): Modifier {
     val clock = LocalAtmosphereClock.current
     val blobs = p.atmosphereBlobs
     val base = p.atmosphereBase
-    return drawBehind {
+    // Drawn in WINDOW coordinates: every pane (sidebar, list, detail) shows its slice of one continuous aurora.
+    val root = androidx.compose.ui.platform.LocalView.current.rootView
+    val origin = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(Offset.Zero) }
+    return onGloballyPositioned { origin.value = it.positionInWindow() }.drawBehind {
         drawRect(base)
         val t = clock.value // read in draw: drifting only re-draws, never recomposes
-        val w = size.width
-        val h = size.height
+        val w = if (root.width > 0) root.width.toFloat() else size.width
+        val h = if (root.height > 0) root.height.toFloat() else size.height
+        val o = origin.value
         blobs.forEachIndexed { i, c ->
             val a = Anchors[i]
             val phase = t * Speeds[i] + i * 2.1f
-            val center = Offset(w * (a.x + 0.10f * sin(phase)), h * (a.y + 0.06f * cos(phase * 0.8f)))
-            val r = w * (0.85f + 0.08f * sin(phase * 0.6f))
+            val center = Offset(w * (a.x + 0.10f * sin(phase)), h * (a.y + 0.06f * cos(phase * 0.8f))) - o
+            val r = minOf(w, h * 0.75f) * (0.85f + 0.08f * sin(phase * 0.6f))
             drawCircle(Brush.radialGradient(listOf(c, c.copy(alpha = 0f)), center, r), r, center)
         }
     }
@@ -137,7 +143,10 @@ fun Modifier.glassBar(shape: Shape? = null, alpha: Float = 1f): Modifier {
     }
 }
 
-/** Marks content (and its atmosphere) as what the bars blur. No-op when glass is off. */
+/**
+ * Marks content as what the bars blur. No-op when glass is off. Keep the atmosphere OUTSIDE the source: inside
+ * Haze's recorded layer its draw-phase clock read is not re-observed and it would stop drifting.
+ */
 @Composable
 fun Modifier.glassSource(): Modifier {
     val haze = LocalHaze.current

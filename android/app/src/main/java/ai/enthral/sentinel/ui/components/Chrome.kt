@@ -182,7 +182,7 @@ fun LargeTitleList(
     val bottom = bottomPadding + LocalBottomBarInset.current
     Box(modifier.fillMaxSize()) {
         val list: @Composable () -> Unit = {
-            Box(Modifier.fillMaxSize().glassSource().atmosphere(), contentAlignment = Alignment.TopCenter) {
+            Box(Modifier.fillMaxSize().atmosphere().glassSource(), contentAlignment = Alignment.TopCenter) {
                 LazyColumn(
                     state = state,
                     modifier = Modifier.widthIn(max = MaxContentWidth).fillMaxSize(),
@@ -214,7 +214,7 @@ fun LargeTitleColumn(
     val scrolled by remember(scroll) { derivedStateOf { scroll.value > 0 } }
     val top = topContentInset(onBack != null)
     Box(modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxSize().glassSource().atmosphere()) {
+        Box(Modifier.fillMaxSize().atmosphere().glassSource()) {
             content(PaddingValues(top = top, bottom = LocalBottomBarInset.current))
         }
         CollapsingTopBar(title, collapsed, scrolled = scrolled, onBack = onBack, actions = actions)

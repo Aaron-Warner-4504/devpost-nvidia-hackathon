@@ -127,7 +127,7 @@ private val LightGlass = GlassTokens(
     blobs = listOf(Tinted(0xFF6FC2D6, 0.26f), Tinted(0xFF9AAEF2, 0.22f), Tinted(0xFFA9DCC4, 0.26f)),
     card = Tinted(0xFFFFFFFF, 0.72f),
     bar = Tinted(0xFFFFFFFF, 0.84f),
-    sheet = Tinted(0xFFFFFFFF, 0.94f),
+    sheet = Tinted(0xFFFFFFFF, 0.98f),
     edge = Tinted(0xFFFFFFFF, 0.90f),
     sheen = Tinted(0xFFFFFFFF, 0.55f),
 )
@@ -137,7 +137,7 @@ private val DarkGlass = GlassTokens(
     blobs = listOf(Tinted(0xFF1B7A93, 0.36f), Tinted(0xFF3348A8, 0.30f), Tinted(0xFF5A3A8C, 0.22f)),
     card = Tinted(0xFF12161D, 0.74f),
     bar = Tinted(0xFF0E1217, 0.84f),
-    sheet = Tinted(0xFF161A21, 0.94f),
+    sheet = Tinted(0xFF161A21, 0.98f),
     edge = Tinted(0xFFFFFFFF, 0.26f),
     sheen = Tinted(0xFFFFFFFF, 0.045f),
 )
@@ -147,7 +147,7 @@ private val TrueBlackGlass = GlassTokens(
     blobs = listOf(Tinted(0xFF1B7A93, 0.26f), Tinted(0xFF3348A8, 0.22f), Tinted(0xFF5A3A8C, 0.16f)),
     card = Tinted(0xFF0E1116, 0.74f),
     bar = Tinted(0xFF0A0C10, 0.84f),
-    sheet = Tinted(0xFF111318, 0.94f),
+    sheet = Tinted(0xFF111318, 0.98f),
     edge = Tinted(0xFFFFFFFF, 0.22f),
     sheen = Tinted(0xFFFFFFFF, 0.04f),
 )
