@@ -30,6 +30,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ai.enthral.sentinel.R
 import ai.enthral.sentinel.domain.Guardian
@@ -69,6 +71,8 @@ private const val INVITE_LIFETIME_SECONDS = 600f
 fun FamilyScreen() {
     val vm = graphViewModel { FamilyViewModel.create(it) }
     val state by vm.state.collectAsStateWithLifecycle()
+    // Re-read the links whenever the screen is (re)entered or the app resumes, so a guardian who just accepted shows up.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.loadLinks() }
     // Countdown is driven from the UI: it only ticks while this screen is visible.
     LaunchedEffect(state.invite) {
         while (state.invite != null && !state.inviteExpired) {

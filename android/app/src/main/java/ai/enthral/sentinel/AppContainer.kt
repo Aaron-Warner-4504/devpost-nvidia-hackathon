@@ -42,6 +42,13 @@ import kotlinx.coroutines.SupervisorJob
 
 /** Hand-written DI: the one place that wires the production object graph. Everything is lazy. */
 class AppContainer(private val context: Context) : AppGraph {
+    init {
+        // An unconfigured release build carries the ".invalid" placeholder: fail loudly instead of calling a dummy host.
+        check(!BuildConfig.API_BASE_URL.substringAfter("://").substringBefore('/').endsWith(".invalid")) {
+            "Sentinel release build has no API URL. Rebuild with -PsentinelApiBaseUrl=https://your.host/path"
+        }
+    }
+
     override val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 

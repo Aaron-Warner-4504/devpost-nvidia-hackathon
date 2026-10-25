@@ -152,6 +152,7 @@
     <string name="signal_credential_form_on_new_domain">लिंक नई साइट पर लॉगिन फ़ॉर्म खोलता है</string>
     <string name="signal_apk_download">लिंक एक ऐप फ़ाइल डाउनलोड कराता है</string>
     <string name="signal_threat_feed_hit">लिंक जाने-माने धोखाधड़ी वाली साइटों की सूची में है</string>
+    <string name="signal_story_progression">कई बार संपर्क करके बढ़ने वाली धोखाधड़ी जैसा पैटर्न</string>
     <string name="check_title">कुछ जाँचें</string>
     <string name="check_intro">किसी संदेश पर शक है? उसे पेस्ट करें या स्क्रीनशॉट चुनें, सेंटिनल बताएगा कि वह धोखाधड़ी जैसा लगता है या नहीं।</string>
     <string name="check_mode_text">पाठ</string>
