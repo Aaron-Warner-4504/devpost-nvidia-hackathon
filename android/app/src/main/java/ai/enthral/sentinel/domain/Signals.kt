@@ -28,6 +28,7 @@ object Signals {
         "credential_form_on_new_domain" to R.string.signal_credential_form_on_new_domain,
         "apk_download" to R.string.signal_apk_download,
         "threat_feed_hit" to R.string.signal_threat_feed_hit,
+        "story_progression" to R.string.signal_story_progression,
     )
 
     @StringRes
