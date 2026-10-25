@@ -18,6 +18,13 @@ import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,7 +51,9 @@ import ai.enthral.sentinel.ui.components.LoadingSkeleton
 import ai.enthral.sentinel.ui.components.NoteCard
 import ai.enthral.sentinel.ui.components.SentinelIcons
 import ai.enthral.sentinel.ui.components.StatusHero
-import ai.enthral.sentinel.ui.components.TierCountRow
+import ai.enthral.sentinel.ui.components.TierGlyph
+import ai.enthral.sentinel.ui.components.glass
+import ai.enthral.sentinel.ui.components.presentation
 import ai.enthral.sentinel.ui.components.apiErrorMessage
 import ai.enthral.sentinel.ui.components.pressScale
 import ai.enthral.sentinel.ui.components.shimmer
@@ -96,11 +105,18 @@ fun HomeContent(
         onRefresh = onRefresh,
     ) {
         item(key = "hero") {
+            // A critical/high-risk alert from today turns "Protected" into "Needs your attention" (opens that alert).
+            val latest = state.latest
+            val attention = latest?.takeIf {
+                (it.tier == Tier.Critical || it.tier == Tier.High) && (state.todayCounts[it.tier] ?: 0) > 0
+            }
             StatusHero(
                 status = state.protection,
                 sourcesOn = sourcesOn,
                 onAction = if (state.protection == ProtectionStatus.Offline) onRefresh else onOpenSettings,
                 modifier = CardPadding.animateItem(),
+                attention = attention?.tier,
+                onOpenAttention = { attention?.let { onOpenAlert(it.id) } },
             )
         }
         // The hero already says "You are offline"; the note is only for when it shows another state (e.g. Paused).
@@ -160,20 +176,55 @@ fun HomeContent(
 @Composable
 private fun HomeHeader(text: String) = GroupedHeader(text, Modifier.padding(horizontal = Spacing.inset, vertical = Spacing.x05))
 
-/** Today's counts in one quiet row (or a single reassuring sentence when nothing happened). */
+/** Today as three glass tiles (count-up numbers), or one reassuring sentence when nothing happened. */
 @Composable
 private fun TodayCard(counts: Map<Tier, Int>, modifier: Modifier) {
     val p = SentinelTheme.palette
     val any = counts.values.any { it > 0 }
-    Box(modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.large)).background(p.elevated).padding(Spacing.x25)) {
-        if (any) {
-            TierCountRow(counts)
-        } else {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.x15)) {
-                IconTile(SentinelIcons.ShieldCheck)
-                Text(stringResource(R.string.home_today_none), style = SentinelTheme.type.callout, color = p.label)
-            }
+    if (!any) {
+        Row(
+            modifier.fillMaxWidth().glass(RoundedCornerShape(Radii.large)).padding(Spacing.x25),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.x15),
+        ) {
+            IconTile(SentinelIcons.ShieldCheck)
+            Text(stringResource(R.string.home_today_none), style = SentinelTheme.type.callout, color = p.label)
         }
+        return
+    }
+    Row(modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Spacing.x15)) {
+        listOf(Tier.Critical, Tier.High, Tier.Caution).forEachIndexed { i, tier ->
+            TodayTile(tier, counts[tier] ?: 0, i, Modifier.weight(1f).fillMaxHeight())
+        }
+    }
+}
+
+@Composable
+private fun TodayTile(tier: Tier, n: Int, index: Int, modifier: Modifier) {
+    val p = SentinelTheme.palette
+    val reduced = ai.enthral.sentinel.ui.common.rememberReducedMotion()
+    val shown = remember { androidx.compose.animation.core.Animatable(if (reduced) n.toFloat() else 0f) }
+    LaunchedEffect(n) {
+        if (reduced) shown.snapTo(n.toFloat())
+        else {
+            kotlinx.coroutines.delay(120L + index * 60L)
+            shown.animateTo(n.toFloat(), androidx.compose.animation.core.tween(700, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+        }
+    }
+    val label = stringResource(tier.presentation().label)
+    val description = stringResource(R.string.tier_count, n, label)
+    Column(
+        modifier.glass(RoundedCornerShape(Radii.large)).clearAndSetSemantics { contentDescription = description }
+            .padding(horizontal = Spacing.x15, vertical = Spacing.x2),
+        verticalArrangement = Arrangement.spacedBy(Spacing.x1),
+    ) {
+        TierGlyph(tier, size = 30.dp, pulse = false)
+        Text(
+            shown.value.roundToInt().toString(),
+            style = SentinelTheme.type.title1.copy(fontFeatureSettings = "tnum"),
+            color = if (n > 0) p.label else p.tertiaryLabel,
+        )
+        Text(label, style = SentinelTheme.type.footnote, color = p.secondaryLabel)
     }
 }
 
@@ -181,7 +232,7 @@ private fun TodayCard(counts: Map<Tier, Int>, modifier: Modifier) {
 private fun HomeEmpty() {
     val p = SentinelTheme.palette
     Column(
-        CardPadding.fillMaxWidth().clip(RoundedCornerShape(Radii.large)).background(p.elevated).padding(Spacing.x25),
+        CardPadding.fillMaxWidth().glass(RoundedCornerShape(Radii.large)).padding(Spacing.x25),
         verticalArrangement = Arrangement.spacedBy(Spacing.x05),
     ) {
         Text(stringResource(R.string.home_empty_title), style = SentinelTheme.type.headline, color = p.label)
@@ -195,7 +246,7 @@ private fun QuickAction(icon: ImageVector, label: String, onClick: () -> Unit, m
     val interaction = remember { MutableInteractionSource() }
     val shape = RoundedCornerShape(Radii.large)
     Column(
-        modifier.heightIn(min = 104.dp).pressScale(interaction).clip(shape).background(p.elevated)
+        modifier.heightIn(min = 104.dp).pressScale(interaction).glass(shape)
             .clickable(interactionSource = interaction, indication = ripple(), role = Role.Button, onClick = onClick)
             .padding(Spacing.x2),
         verticalArrangement = Arrangement.SpaceBetween,

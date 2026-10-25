@@ -53,8 +53,12 @@ object SentinelTheme {
 fun SentinelTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     trueBlack: Boolean = false,
+    reduceTransparency: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    val glass = rememberGlassSettings(reduceTransparency)
+    val hold = remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val clock = rememberAtmosphereClock(glass.motion, hold)
     val palette = when {
         !darkTheme -> Palettes.light
         trueBlack -> Palettes.trueBlack
@@ -73,6 +77,9 @@ fun SentinelTheme(
         LocalSentinelColors provides if (darkTheme) DarkTierColors else LightTierColors,
         LocalPalette provides composePalette,
         LocalType provides type,
+        LocalGlass provides glass,
+        LocalAtmosphereClock provides clock,
+        LocalAtmosphereHold provides hold,
     ) {
         MaterialTheme(colorScheme = scheme, typography = typography, shapes = SentinelShapes) {
             CompositionLocalProvider(
@@ -82,4 +89,39 @@ fun SentinelTheme(
             )
         }
     }
+}
+
+/** Number of lists currently being scrolled/flung; the atmosphere holds still while > 0 (saves redraw + re-blur). */
+val LocalAtmosphereHold = staticCompositionLocalOf { androidx.compose.runtime.mutableIntStateOf(0) }
+
+/** Seconds since the atmosphere started drifting; shared so every screen's background is in the same position. */
+val LocalAtmosphereClock = staticCompositionLocalOf<androidx.compose.runtime.State<Float>> { androidx.compose.runtime.mutableFloatStateOf(0f) }
+
+/**
+ * Ticks 5 times a second while the UI is visible and motion is allowed: the drift is glacial (~5 px/s), so each tick
+ * moves the aurora by about a pixel, and the screen is re-composited 5 times a second instead of every vsync. Uses the infinite-animation frame clock so Compose UI
+ * tests never wait for it.
+ */
+@Composable
+private fun rememberAtmosphereClock(motion: Boolean, hold: androidx.compose.runtime.IntState): androidx.compose.runtime.State<Float> {
+    val t = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    if (motion) {
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            var start = -1L
+            var last = 0L
+            while (true) {
+                androidx.compose.animation.core.withInfiniteAnimationFrameMillis { now ->
+                    if (start < 0) start = now - (t.floatValue * 1000).toLong()
+                    if (hold.intValue > 0) {
+                        // Held while scrolling: freeze in place and resume from the same position afterwards.
+                        start = now - (t.floatValue * 1000).toLong()
+                    } else if (now - last >= 200) {
+                        last = now
+                        t.floatValue = (now - start) / 1000f
+                    }
+                }
+            }
+        }
+    }
+    return t
 }

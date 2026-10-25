@@ -34,7 +34,8 @@ class MainActivity : AppCompatActivity() {
             startOnboarded = graph.settings.onboardingDone.first()
             setContent {
                 val trueBlack by graph.settings.useTrueBlack.collectAsState(initial = false)
-                SentinelTheme(darkTheme = isSystemInDarkTheme(), trueBlack = trueBlack) {
+                val reduceTransparency by graph.settings.reduceTransparency.collectAsState(initial = false)
+                SentinelTheme(darkTheme = isSystemInDarkTheme(), trueBlack = trueBlack, reduceTransparency = reduceTransparency) {
                     SentinelRoot(graph, startOnboarded == true)
                 }
             }

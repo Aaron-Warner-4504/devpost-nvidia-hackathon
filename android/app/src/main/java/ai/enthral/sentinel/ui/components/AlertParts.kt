@@ -24,6 +24,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,7 +68,8 @@ fun AlertCard(alert: Alert, onClick: () -> Unit, modifier: Modifier = Modifier, 
     val shape = RoundedCornerShape(Radii.large)
     val interaction = remember { MutableInteractionSource() }
     Column(
-        modifier.fillMaxWidth().pressScale(interaction, 0.98f).softShadow(shape).clip(shape).background(p.elevated)
+        modifier.fillMaxWidth().pressScale(interaction, 0.98f)
+            .glass(shape) // the luminous edge is reserved for hero surfaces, never stacked
             .clickable(interactionSource = interaction, indication = androidx.compose.material3.ripple(), role = Role.Button, onClick = onClick)
             .semantics(mergeDescendants = true) {}
             .padding(Spacing.x25),
@@ -97,12 +100,13 @@ fun AlertCard(alert: Alert, onClick: () -> Unit, modifier: Modifier = Modifier, 
 
 /** Alerts list row: tier glyph, tier word + time, headline, one quiet line of "why" (plain-language signals). */
 @Composable
-fun AlertRow(alert: Alert, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun AlertRow(alert: Alert, onClick: () -> Unit, modifier: Modifier = Modifier, selected: Boolean = false) {
     val p = SentinelTheme.palette
     val tier = SentinelTheme.colors[alert.tier]
     val why = alert.signals.distinct().take(2).map { signalLabel(it) }.joinToString(" · ").ifEmpty { alert.nextStep }
     Row(
         modifier.fillMaxWidth().heightIn(min = 72.dp)
+            .then(if (selected) Modifier.background(p.accentSoft) else Modifier)
             .clickable(role = Role.Button, onClick = onClick)
             .semantics(mergeDescendants = true) {}
             .padding(horizontal = Spacing.x2, vertical = Spacing.x15),
@@ -139,6 +143,16 @@ fun WhyTimeline(alert: Alert, now: Instant, modifier: Modifier = Modifier) {
     val hasCurrent = items.any { it.eventId == alert.eventId }
     val rows = items.map { Triple(it.timestamp, it.text, it.eventId == alert.eventId) } +
         if (hasCurrent) emptyList() else listOf(Triple(alert.createdAt, stringResource(R.string.why_this_message), true))
+    // The story draws itself: the connector fills in the tier hue from the first event to this one (~1 s),
+    // then the current event's node glows. Static when animations are off.
+    val reduced = ai.enthral.sentinel.ui.common.rememberReducedMotion()
+    val reveal = remember { androidx.compose.animation.core.Animatable(if (reduced) 1f else 0f) }
+    LaunchedEffect(alert.id) {
+        if (!reduced) reveal.animateTo(1f, androidx.compose.animation.core.tween(500 + 250 * rows.size, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+    }
+    val n = (rows.size - 1).coerceAtLeast(1)
+    fun segment(i: Int) = (reveal.value * n - i).coerceIn(0f, 1f)
+    val ink = tier.content.copy(alpha = 0.55f)
     Column(modifier.fillMaxWidth()) {
         rows.forEachIndexed { index, (time, text, current) ->
             val first = index == 0
@@ -146,15 +160,34 @@ fun WhyTimeline(alert: Alert, now: Instant, modifier: Modifier = Modifier) {
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).semantics(mergeDescendants = true) {}) {
                 // Rail: connector above, node, connector below.
                 Column(Modifier.width(28.dp).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(Modifier.width(2.dp).height(if (current) 7.dp else 11.dp).background(if (first) androidx.compose.ui.graphics.Color.Transparent else p.separator))
+                    Box(
+                        Modifier.width(2.dp).height(if (current) 7.dp else 11.dp)
+                            .background(if (first) androidx.compose.ui.graphics.Color.Transparent else if (index > 0 && segment(index - 1) >= 1f) ink else p.separator),
+                    )
                     if (current) {
-                        Box(Modifier.size(20.dp).background(tier.container, CircleShape), contentAlignment = Alignment.Center) {
+                        val glow = if (reduced) 1f else ((reveal.value - 0.85f) / 0.15f).coerceIn(0f, 1f)
+                        Box(
+                            Modifier.size(20.dp)
+                                .drawBehind {
+                                    val r = size.minDimension * 1.3f
+                                    drawCircle(androidx.compose.ui.graphics.Brush.radialGradient(listOf(tier.content.copy(alpha = 0.45f * glow), tier.content.copy(alpha = 0f)), center, r), r)
+                                }
+                                .background(tier.container, CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
                             Box(Modifier.size(10.dp).background(tier.content, CircleShape))
                         }
                     } else {
                         Box(Modifier.size(12.dp).background(p.elevated, CircleShape).padding(2.5.dp).background(p.tertiaryLabel, CircleShape))
                     }
-                    if (!last) Box(Modifier.width(2.dp).weight(1f).background(p.separator))
+                    if (!last) {
+                        val progress = segment(index)
+                        Box(
+                            Modifier.width(2.dp).weight(1f).background(p.separator).drawBehind {
+                                drawLine(ink, androidx.compose.ui.geometry.Offset(size.width / 2, 0f), androidx.compose.ui.geometry.Offset(size.width / 2, size.height * progress), size.width)
+                            },
+                        )
+                    }
                 }
                 Spacer(Modifier.width(Spacing.x1))
                 Column(
@@ -197,7 +230,7 @@ fun SignalChips(signals: List<String>, modifier: Modifier = Modifier) {
                 signalLabel(name),
                 style = SentinelTheme.type.subhead,
                 color = p.label,
-                modifier = Modifier.clip(RoundedCornerShape(Radii.small)).background(p.elevated)
+                modifier = Modifier.glassFlat(RoundedCornerShape(Radii.small))
                     .padding(horizontal = Spacing.x15, vertical = Spacing.x1),
             )
         }

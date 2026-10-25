@@ -55,7 +55,7 @@ fun GroupedSection(
     val p = SentinelTheme.palette
     Column(modifier.fillMaxWidth().padding(horizontal = Spacing.inset)) {
         if (header != null) GroupedHeader(header)
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.large)).background(p.elevated), content = content)
+        Column(Modifier.fillMaxWidth().glass(RoundedCornerShape(Radii.large)), content = content)
         if (footer != null) GroupedFooter(footer)
     }
 }
@@ -101,8 +101,7 @@ fun groupedShape(index: Int, count: Int): Shape {
 @Composable
 fun GroupedItem(index: Int, count: Int, modifier: Modifier = Modifier, dividerInset: Dp = Spacing.x2, content: @Composable () -> Unit) {
     Column(
-        modifier.fillMaxWidth().padding(horizontal = Spacing.inset).clip(groupedShape(index, count))
-            .background(SentinelTheme.palette.elevated),
+        modifier.fillMaxWidth().padding(horizontal = Spacing.inset).glassFlat(groupedShape(index, count)),
     ) {
         if (index > 0) GroupedDivider(dividerInset)
         content()
@@ -215,7 +214,7 @@ fun SentinelTextField(
     maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     shape: Shape = RoundedCornerShape(Radii.medium),
-    container: Color = SentinelTheme.palette.elevated,
+    container: Color = glassFill(),
     textStyle: androidx.compose.ui.text.TextStyle = SentinelTheme.type.body,
 ) {
     val p = SentinelTheme.palette

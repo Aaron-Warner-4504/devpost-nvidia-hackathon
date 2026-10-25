@@ -81,6 +81,7 @@ fun SettingsScreen(onOpenDemo: () -> Unit) {
         onPaused = vm::setPaused,
         onLanguage = vm::setLanguage,
         onTrueBlack = vm::setTrueBlack,
+        onReduceTransparency = vm::setReduceTransparency,
         onAllowNotifications = vm::requestPostNotifications,
         onDelete = vm::deleteEverything,
         onDismissDeleteFailure = vm::dismissDeleteFailure,
@@ -99,6 +100,7 @@ fun SettingsContent(
     onPaused: (Boolean) -> Unit,
     onLanguage: (String) -> Unit,
     onTrueBlack: (Boolean) -> Unit,
+    onReduceTransparency: (Boolean) -> Unit,
     onAllowNotifications: () -> Unit,
     onDelete: () -> Unit,
     onDismissDeleteFailure: () -> Unit,
@@ -108,6 +110,10 @@ fun SettingsContent(
     var sheet by rememberSaveable { mutableStateOf<String?>(null) }
     var showDelete by rememberSaveable { mutableStateOf(false) }
     var showPrivacy by rememberSaveable { mutableStateOf(false) }
+    val privacyRequest = ai.enthral.sentinel.ui.common.LocalPrivacyRequest.current
+    LaunchedEffect(privacyRequest.value) {
+        if (privacyRequest.value) { showPrivacy = true; privacyRequest.value = false }
+    }
 
     LargeTitleList(title = stringResource(R.string.nav_settings)) {
         item(key = "sources") {
@@ -182,6 +188,14 @@ fun SettingsContent(
 
         item(key = "appearance") {
             GroupedSection(header = stringResource(R.string.settings_appearance)) {
+                ToggleRow(
+                    title = stringResource(R.string.settings_reduce_transparency_title),
+                    subtitle = stringResource(R.string.settings_reduce_transparency_body),
+                    checked = state.reduceTransparency,
+                    onCheckedChange = onReduceTransparency,
+                    icon = SentinelIcons.Layers,
+                )
+                GroupedDivider(IconRowDividerInset)
                 ToggleRow(
                     title = stringResource(R.string.settings_true_black_title),
                     subtitle = stringResource(R.string.settings_true_black_body),

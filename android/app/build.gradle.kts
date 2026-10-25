@@ -81,6 +81,8 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
+    // Backdrop blur for the glass bars (Apache-2.0, github.com/chrisbanes/haze).
+    implementation(libs.haze)
     debugImplementation(libs.compose.ui.tooling)
 
     implementation(libs.androidx.core.ktx)

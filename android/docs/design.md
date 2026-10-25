@@ -19,6 +19,29 @@ Screens only compose those parts. If a screen needs a one-off value, the token i
 6. **Every state is designed:** loading (shimmer skeleton), empty (illustration + sentence), error (sentence +
    one retry), offline (quiet note, cached data stays visible).
 
+## Glass and atmosphere (pass 2)
+The first pass was correct but too plain. Pass 2 adds depth and atmosphere without giving up calm:
+
+* **Three layers, always in this order.** (1) A living *atmosphere*: a deep base with three slow, soft aurora blobs
+  in the brand hues (teal, harbour blue, sage in light; teal, indigo, violet in dark). (2) *Content* on translucent
+  glass cards with a 1-px light edge. (3) *Navigation glass*: the top bar and a floating bottom bar that blur the
+  content scrolling beneath them. Nothing else is glass.
+* **Blur only where something moves beneath.** Cards sit on the smooth atmosphere, where blur would be invisible, so
+  they are translucent fills, not blurred (cheap, and safe in long lists). Real backdrop blur (Haze, API 31+) is
+  reserved for the bars, at most two blurred layers per screen, radius 24 dp.
+* **Tint before blur.** Text never sits on raw blur: every glass surface has a tint layer heavy enough that every
+  text colour passes 4.5:1 against the *worst-case* backdrop (the brightest/darkest aurora overlap, or a solid
+  accent button scrolling under a bar). `PaletteContrastTest` computes these composites.
+* **Opaque fallback.** Glass turns into the pass-1 opaque surfaces (same layout, no translucency, static
+  atmosphere) when the user turns on Settings > Appearance > Reduce transparency, or the system has animations off,
+  high-contrast text, battery saver or a low-RAM device. Below API 31 the bars use a heavier tint instead of blur.
+* **Calm glow, not alarm.** A critical alert's hero card gets a crimson luminous edge and a soft glow of the same
+  hue. The screen stays dark/airy; the sentence still carries the meaning.
+* **Adaptive navigation.** Compact width (< 600 dp, phones in portrait): floating glass bottom bar in thumb reach.
+  Medium (600 to 839 dp): glass navigation rail. Expanded (>= 840 dp): labelled sidebar with a secondary group, and
+  Alerts becomes list + detail side by side. A sidebar on a portrait phone would take a third of the width away from
+  the content and put navigation out of thumb reach, so phones never get one.
+
 ## Colour
 Neutrals are near-white and near-black with a faint cool cast. Surfaces are layered, not outlined:
 
@@ -114,3 +137,52 @@ Headings carry heading semantics; tier glyphs are announced as "Risk level: X"; 
 timeline events are merged into one announcement each; the invite code is spelled out. Contrast is unit-tested.
 Font scale 1.3 and 2.0 must not clip (spot-checked on Home, Alert detail, Family, Settings). Targets ≥ 48 dp.
 Motion and shimmer respect "remove animations".
+
+## References & what we borrowed
+Read for this pass (October 2026). Each idea names the screen that uses it.
+
+1. Apple, [Adopting Liquid Glass](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass):
+   glass is "a distinct functional layer for controls and navigation", used sparingly, never stacked. We keep glass
+   for the bars and lift content on translucent cards (all screens).
+2. Same page: tab bars "recede" while scrolling, and the tab bar can adapt into a sidebar. We float the bottom bar
+   as an inset pill (all tabs) and turn it into a rail / sidebar on wider windows.
+3. Same page: "Optimize for legibility when content scrolls beneath controls" (scroll edge effect). Our bars blur and
+   tint whatever scrolls under them (top bar, bottom bar).
+4. Same page: half sheets turn "more opaque" when expanded to keep focus. Our sheets use the thickest glass tint
+   (consent, privacy, delete, unlink).
+5. Same page: test with reduce transparency / motion settings. Our Reduce transparency toggle and system fallbacks.
+6. Apple Newsroom, [new software design](https://www.apple.com/newsroom/2025/06/apple-introduces-a-delightful-and-elegant-new-software-design/):
+   glass "reacts to movement with specular highlights". We use a static 1-px specular edge (top-left highlight)
+   on every glass card instead of a live effect (cards, bars).
+7. Nielsen Norman Group, [Glassmorphism](https://www.nngroup.com/articles/glassmorphism/): check contrast against
+   every background area, keep the background simple, add a low-opacity stroke, let users reduce transparency. This
+   is why the aurora is soft blobs (no imagery), why every card has an edge stroke, and why contrast is computed on
+   worst-case composites.
+8. AOSP, [Window blurs](https://source.android.com/docs/core/display/window-blurs): blur is API 31+, the system
+   disables it in battery saver and on weak GPUs, and apps should ship a more opaque fallback. Our fallback rules.
+9. Android, [window size classes](https://developer.android.com/develop/ui/compose/layouts/adaptive/use-window-size-classes)
+   (compact < 600, medium < 840, expanded) and [adaptive navigation](https://developer.android.com/develop/ui/compose/layouts/adaptive/build-adaptive-navigation)
+   (bar on compact, rail otherwise, drawer optional on expanded). Our breakpoints; we draw our own glass rail and
+   sidebar instead of `NavigationSuiteScaffold` to keep the glass look.
+10. Google Design, [M3 Expressive research](https://design.google/library/expressive-material-design-google-research):
+    larger, contained key actions were found up to 4x faster and helped users 45+; also "doesn't suit every product,
+    such as banking" and a strong minority preferred calmer designs. We enlarge the one key action per screen
+    (hero action, Check, Share) but keep the palette calm.
+11. [Haze](https://github.com/chrisbanes/haze) (Apache-2.0) for backdrop blur: `hazeSource` on content,
+    `hazeEffect` on the bars, `blurEnabled` for the fallback. 1.6.10 is the newest version compatible with our
+    Compose 1.8 / Kotlin 2.2 toolchain.
+12. Truecaller's colour-coded full-screen caller ID ([TechRadar](https://www.techradar.com/news/truecaller-update-revamps-the-app-with-smart-features))
+    shows that a single strong hue is recognised at a glance. We use the tier hue as a glow on the critical hero
+    only, never as a full-screen fill.
+
+Deliberately not copied:
+* **Live refraction and specular motion** (Liquid Glass): expensive on mid-range Android and distracting for older
+  users; a static edge gives the same "glass" read.
+* **Full-screen red caller-ID style warnings** (Truecaller): alarming; Sentinel's principle is calm urgency.
+* **NeoPOP-style 3-D extruded buttons and playful motion** (CRED, as described in
+  [press coverage](https://analyticsindiamag.com/cred-open-sources-its-ui-design-system-neopop/)): strong brand
+  personality, wrong mood for a safety app used by parents.
+* **Icon-only toolbars without labels**: the M3 Expressive research found removing labels hurt usability; every
+  navigation item keeps its label.
+* **Busy photographic or video backgrounds behind glass**: NN/g's main legibility failure; our backdrop is abstract
+  and slow.

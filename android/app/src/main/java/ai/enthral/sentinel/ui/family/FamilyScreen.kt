@@ -1,5 +1,6 @@
 package ai.enthral.sentinel.ui.family
 
+import ai.enthral.sentinel.ui.components.glass
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -241,7 +242,7 @@ private fun InviteBlock(state: FamilyUiState, onCreate: () -> Unit, modifier: Mo
     Column(modifier.fillMaxWidth()) {
         if (invite != null) {
             Column(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.extraLarge)).background(p.elevated)
+                Modifier.fillMaxWidth().glass(RoundedCornerShape(Radii.extraLarge))
                     .padding(start = Spacing.x2, end = Spacing.x2, top = Spacing.x3, bottom = Spacing.x1),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {

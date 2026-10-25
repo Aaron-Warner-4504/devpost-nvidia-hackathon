@@ -13,12 +13,35 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import ai.enthral.sentinel.ui.common.LocalPrivacyRequest
+import ai.enthral.sentinel.ui.common.LocalWidthClass
+import ai.enthral.sentinel.ui.components.FloatingBarHeight
+import ai.enthral.sentinel.ui.components.FloatingBarMargin
+import ai.enthral.sentinel.ui.components.FloatingTabBar
+import ai.enthral.sentinel.ui.components.LocalBottomBarInset
+import ai.enthral.sentinel.ui.components.LocalHaze
+import ai.enthral.sentinel.ui.components.NavItem
+import ai.enthral.sentinel.ui.components.NavRail
+import ai.enthral.sentinel.ui.components.NavSidebar
+import ai.enthral.sentinel.ui.components.WidthClass
+import ai.enthral.sentinel.ui.components.AtmosphereBox
+import ai.enthral.sentinel.ui.components.widthClassOf
+import ai.enthral.sentinel.ui.theme.LocalGlass
+import dev.chrisbanes.haze.rememberHazeState
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.isImeVisible
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -55,14 +78,11 @@ import ai.enthral.sentinel.ui.common.LocalAppGraph
 import ai.enthral.sentinel.ui.common.findActivity
 import ai.enthral.sentinel.ui.common.rememberReducedMotion
 import ai.enthral.sentinel.ui.components.SentinelIcons
-import ai.enthral.sentinel.ui.components.TabBar
-import ai.enthral.sentinel.ui.components.TabBarItem
 import ai.enthral.sentinel.ui.demo.DemoScreen
 import ai.enthral.sentinel.ui.family.FamilyScreen
 import ai.enthral.sentinel.ui.home.HomeScreen
 import ai.enthral.sentinel.ui.onboarding.OnboardingScreen
 import ai.enthral.sentinel.ui.settings.SettingsScreen
-import ai.enthral.sentinel.ui.theme.SentinelTheme
 import kotlin.reflect.KClass
 
 private class Tab(val route: Any, val type: KClass<*>, val label: Int, val icon: ImageVector, val selectedIcon: ImageVector)
@@ -129,51 +149,99 @@ fun SentinelRoot(graph: AppGraph, startOnboarded: Boolean) {
         val backStack by nav.currentBackStackEntryAsState()
         val destination = backStack?.destination
         val selected = tabs.indexOfFirst { t -> destination?.hierarchy?.any { it.hasRoute(t.type) } == true }
+        val onboarding = destination?.hierarchy?.any { it.hasRoute(Onboarding::class) } == true || (destination == null && !startOnboarded)
         val imeVisible = WindowInsets.isImeVisible
         val reduced = rememberReducedMotion()
-        val items = tabs.map { TabBarItem(stringResource(it.label), it.icon, it.selectedIcon) }
+        val items = tabs.map { NavItem(stringResource(it.label), it.icon, it.selectedIcon) }
+        val glass = LocalGlass.current
+        val haze = if (glass.blur) rememberHazeState() else null
+        val privacyRequest = remember { mutableStateOf(false) }
 
-        Scaffold(
-            modifier = Modifier.imePadding(),
-            containerColor = SentinelTheme.palette.groupedBackground,
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            bottomBar = {
-                if (selected >= 0 && !imeVisible) {
-                    TabBar(items, selected, onSelect = { nav.navigateTab(tabs[it].route) })
-                }
-            },
-        ) { padding ->
-            NavHost(
-                nav,
-                startDestination = if (startOnboarded) Home else Onboarding,
-                modifier = Modifier.padding(padding).consumeWindowInsets(padding),
-                enterTransition = { enter(reduced, pop = false) },
-                exitTransition = { exit(reduced, pop = false) },
-                popEnterTransition = { enter(reduced, pop = true) },
-                popExitTransition = { exit(reduced, pop = true) },
-            ) {
-                composable<Onboarding> { OnboardingScreen() }
-                composable<Home> {
-                    HomeScreen(
-                        onOpenAlert = { nav.navigate(AlertDetail(it)) },
-                        onOpenSettings = { nav.navigateTab(Settings) },
-                        onOpenCheck = { nav.navigateTab(Check) },
-                        onOpenDemo = { nav.navigate(Demo) },
-                    )
-                }
-                composable<Alerts> { AlertsScreen(onOpenAlert = { nav.navigate(AlertDetail(it)) }) }
-                composable<Check> { CheckScreen(onOpenResult = { nav.navigate(AlertDetail(it)) }) }
-                composable<Family> { FamilyScreen() }
-                composable<Settings> { SettingsScreen(onOpenDemo = { nav.navigate(Demo) }) }
-                composable<AlertDetail>(
-                    deepLinks = listOf(navDeepLink<AlertDetail>(basePath = "sentinel://alert")),
-                ) { entry ->
-                    AlertDetailScreen(entry.toRoute<AlertDetail>().id, onBack = { nav.popBackStack() })
-                }
-                composable<Demo> {
-                    DemoScreen(onBack = { nav.popBackStack() }, onOpenAlert = { nav.navigate(AlertDetail(it)) })
+        // One NavHost instance, moved between the compact and rail/sidebar layouts so window resizes keep state.
+        val host = remember(nav) {
+            movableContentOf { modifier: Modifier ->
+                NavHost(
+                    nav,
+                    startDestination = if (startOnboarded) Home else Onboarding,
+                    modifier = modifier,
+                    enterTransition = { enter(reduced, pop = false) },
+                    exitTransition = { exit(reduced, pop = false) },
+                    popEnterTransition = { enter(reduced, pop = true) },
+                    popExitTransition = { exit(reduced, pop = true) },
+                ) {
+                    composable<Onboarding> { OnboardingScreen() }
+                    composable<Home> {
+                        HomeScreen(
+                            onOpenAlert = { nav.navigate(AlertDetail(it)) },
+                            onOpenSettings = { nav.navigateTab(Settings) },
+                            onOpenCheck = { nav.navigateTab(Check) },
+                            onOpenDemo = { nav.navigate(Demo) },
+                        )
+                    }
+                    composable<Alerts> { AlertsScreen(onOpenAlert = { nav.navigate(AlertDetail(it)) }) }
+                    composable<Check> { CheckScreen(onOpenResult = { nav.navigate(AlertDetail(it)) }) }
+                    composable<Family> { FamilyScreen() }
+                    composable<Settings> { SettingsScreen(onOpenDemo = { nav.navigate(Demo) }) }
+                    composable<AlertDetail>(
+                        deepLinks = listOf(navDeepLink<AlertDetail>(basePath = "sentinel://alert")),
+                    ) { entry ->
+                        AlertDetailScreen(entry.toRoute<AlertDetail>().id, onBack = { nav.popBackStack() })
+                    }
+                    composable<Demo> {
+                        DemoScreen(onBack = { nav.popBackStack() }, onOpenAlert = { nav.navigate(AlertDetail(it)) })
+                    }
                 }
             }
+        }
+
+        CompositionLocalProvider(LocalHaze provides haze, LocalPrivacyRequest provides privacyRequest) {
+            AtmosphereBox { BoxWithConstraints(Modifier.fillMaxSize().imePadding()) {
+                val widthClass = widthClassOf(maxWidth)
+                CompositionLocalProvider(LocalWidthClass provides widthClass) {
+                    if (widthClass == WidthClass.Compact) {
+                        // Phones: floating glass bar in thumb reach; content scrolls beneath it.
+                        val showBar = selected >= 0 && !imeVisible
+                        val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                        val inset = if (showBar) FloatingBarHeight + FloatingBarMargin + navInset else 0.dp
+                        CompositionLocalProvider(LocalBottomBarInset provides inset) {
+                            Box(Modifier.fillMaxSize()) {
+                                host(Modifier.fillMaxSize())
+                                if (showBar) {
+                                    FloatingTabBar(items, selected, { nav.navigateTab(tabs[it].route) }, Modifier.align(Alignment.BottomCenter))
+                                }
+                            }
+                        }
+                    } else {
+                        // Tablets, foldables, landscape: rail (medium) or labelled sidebar (expanded) at the leading edge.
+                        Row(Modifier.fillMaxSize()) {
+                            if (!onboarding) {
+                                if (widthClass == WidthClass.Medium) {
+                                    NavRail(items, selected, { nav.navigateTab(tabs[it].route) })
+                                } else {
+                                    val demoEnabled = LocalDemoEnabled.current
+                                    val secondary = buildList {
+                                        if (demoEnabled) add(NavItem(stringResource(R.string.demo_title), SentinelIcons.Sparkles) to { nav.navigate(Demo) })
+                                        add(NavItem(stringResource(R.string.settings_privacy), SentinelIcons.Lock) to {
+                                            nav.navigateTab(Settings)
+                                            privacyRequest.value = true
+                                        })
+                                    }
+                                    NavSidebar(
+                                        appName = stringResource(R.string.app_name),
+                                        items = items,
+                                        selected = selected,
+                                        onSelect = { nav.navigateTab(tabs[it].route) },
+                                        secondaryTitle = stringResource(R.string.nav_more),
+                                        secondary = secondary,
+                                        footer = "${stringResource(R.string.about_version)} ${ai.enthral.sentinel.BuildConfig.VERSION_NAME}",
+                                    )
+                                }
+                            }
+                            Box(Modifier.weight(1f).fillMaxHeight()) { host(Modifier.fillMaxSize()) }
+                        }
+                    }
+                }
+            } }
         }
     }
 }
