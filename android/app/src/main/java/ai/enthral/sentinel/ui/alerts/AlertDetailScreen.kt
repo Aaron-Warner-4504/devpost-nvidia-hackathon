@@ -57,6 +57,9 @@ import ai.enthral.sentinel.ui.components.SentinelSnackbarHost
 import ai.enthral.sentinel.ui.components.SignalChips
 import ai.enthral.sentinel.ui.components.TierGlyph
 import ai.enthral.sentinel.ui.components.WhyTimeline
+import ai.enthral.sentinel.ui.components.glass
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import ai.enthral.sentinel.ui.components.formatTimestamp
 import ai.enthral.sentinel.ui.components.presentation
 import ai.enthral.sentinel.ui.components.rememberHaptics
@@ -67,7 +70,7 @@ import java.time.Instant
 import kotlinx.coroutines.launch
 
 @Composable
-fun AlertDetailScreen(alertId: String, onBack: () -> Unit) {
+fun AlertDetailScreen(alertId: String, onBack: (() -> Unit)?) {
     val vm = graphViewModel(key = "alert-$alertId") { AlertDetailViewModel.create(it, alertId) }
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
@@ -100,7 +103,7 @@ fun AlertDetailScreen(alertId: String, onBack: () -> Unit) {
                     EmptyState(
                         stringResource(R.string.detail_not_found_title),
                         stringResource(R.string.detail_not_found_body),
-                        action = { SecondaryButton(stringResource(R.string.action_back), onBack) },
+                        action = { if (onBack != null) SecondaryButton(stringResource(R.string.action_back), onBack) },
                     )
                 }
                 is DetailState.Content -> AlertDetailBody(
@@ -144,7 +147,7 @@ fun AlertDetailBody(
     val chooser = stringResource(R.string.detail_share_chooser)
     val isInfo = alert.tier == Tier.Info
 
-    Box(Modifier.fillMaxSize().background(p.groupedBackground), contentAlignment = Alignment.TopCenter) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         Column(
             Modifier.widthIn(max = MaxContentWidth).fillMaxWidth().verticalScroll(scroll)
                 .padding(contentPadding).padding(bottom = Spacing.x6).navigationBarsPadding(),
@@ -196,10 +199,24 @@ fun AlertDetailBody(
     }
 }
 
+/**
+ * The verdict as a glass hero: tier glyph, tier word, headline as the title. A critical verdict gets a calm
+ * crimson luminous edge and glow (the screen itself stays calm); others a plain glass card.
+ */
 @Composable
 private fun VerdictHeader(alert: Alert, isInfo: Boolean, now: Instant) {
     val tier = SentinelTheme.colors[alert.tier]
-    Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.gutter).padding(top = Spacing.x1)) {
+    val glow = if (alert.tier == Tier.Critical) tier.content.copy(alpha = 0.6f) else null
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.inset).padding(top = Spacing.x1)
+            .glass(RoundedCornerShape(Radii.extraLarge), glow = glow)
+            .drawBehind {
+                val c = androidx.compose.ui.geometry.Offset(52.dp.toPx(), 52.dp.toPx())
+                val r = size.width * 0.8f
+                drawCircle(Brush.radialGradient(listOf(tier.content.copy(alpha = 0.16f), tier.content.copy(alpha = 0f)), c, r), r, c)
+            }
+            .padding(Spacing.x25),
+    ) {
         TierGlyph(alert.tier, size = 64.dp, announce = false)
         Spacer(Modifier.height(Spacing.x2))
         Text(
@@ -220,8 +237,7 @@ private fun VerdictHeader(alert: Alert, isInfo: Boolean, now: Instant) {
 @Composable
 private fun Card(content: @Composable () -> Unit) {
     Column(
-        Modifier.fillMaxWidth().padding(horizontal = Spacing.inset).clip(RoundedCornerShape(Radii.large))
-            .background(SentinelTheme.palette.elevated).padding(Spacing.x2),
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.inset).glass(RoundedCornerShape(Radii.large)).padding(Spacing.x2),
         verticalArrangement = Arrangement.Top,
     ) { content() }
 }

@@ -4,6 +4,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import ai.enthral.sentinel.ui.components.staggerIn
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
@@ -52,8 +62,34 @@ import java.util.Locale
 fun AlertsScreen(onOpenAlert: (String) -> Unit) {
     val vm = graphViewModel { AlertsViewModel.create(it) }
     val state by vm.state.collectAsStateWithLifecycle()
-    AlertsContent(state, vm::setFilter, { vm.refresh() }, onOpenAlert)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        if (maxWidth >= TwoPaneMinWidth) {
+            // Wide windows: list and detail side by side; the first alert is shown until one is picked.
+            var picked by rememberSaveable { mutableStateOf<String?>(null) }
+            val all = state.groups.flatMap { it.alerts }
+            val selected = picked?.takeIf { id -> all.any { it.id == id } } ?: all.firstOrNull()?.id
+            Row(Modifier.fillMaxSize()) {
+                Box(Modifier.width(ListPaneWidth).fillMaxHeight()) {
+                    AlertsContent(state, vm::setFilter, { vm.refresh() }, onOpenAlert = { picked = it }, selectedId = selected)
+                }
+                Box(Modifier.weight(1f).fillMaxHeight()) {
+                    if (selected != null) {
+                        key(selected) { AlertDetailScreen(selected, onBack = null) }
+                    } else {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            EmptyState(stringResource(R.string.detail_title), stringResource(R.string.alerts_pick_one))
+                        }
+                    }
+                }
+            }
+        } else {
+            AlertsContent(state, vm::setFilter, { vm.refresh() }, onOpenAlert)
+        }
+    }
 }
+
+private val TwoPaneMinWidth = 760.dp
+private val ListPaneWidth = 400.dp
 
 @Composable
 private fun filterLabel(f: AlertFilter) = stringResource(
@@ -78,7 +114,9 @@ fun AlertsContent(
     onFilter: (AlertFilter) -> Unit,
     onRefresh: () -> Unit,
     onOpenAlert: (String) -> Unit,
+    selectedId: String? = null,
 ) {
+    val seen = remember { mutableSetOf<Any>() }
     LargeTitleList(
         title = stringResource(R.string.nav_alerts),
         refreshing = state.refreshing,
@@ -112,8 +150,8 @@ fun AlertsContent(
                 val count = group.alerts.size
                 group.alerts.forEachIndexed { i, alert ->
                     item(key = alert.id, contentType = "alert") {
-                        GroupedItem(i, count, Modifier.animateItem(), dividerInset = Spacing.x2 + 32.dp + Spacing.x15) {
-                            AlertRow(alert, onClick = { onOpenAlert(alert.id) })
+                        GroupedItem(i, count, Modifier.animateItem().staggerIn(alert.id, i, seen), dividerInset = Spacing.x2 + 32.dp + Spacing.x15) {
+                            AlertRow(alert, onClick = { onOpenAlert(alert.id) }, selected = alert.id == selectedId)
                         }
                     }
                 }
@@ -144,7 +182,7 @@ private fun FilterRow(selected: AlertFilter, onFilter: (AlertFilter) -> Unit) {
             ) {
             Row(
                 Modifier.heightIn(min = 36.dp).clip(CircleShape)
-                    .background(if (isSelected) p.accent else p.elevated)
+                    .background(if (isSelected) p.accent else ai.enthral.sentinel.ui.components.glassFill())
                     .padding(horizontal = Spacing.x15 + 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
