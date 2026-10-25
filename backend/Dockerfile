@@ -12,9 +12,18 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.6 /uv /bin/uv
 WORKDIR /srv
 COPY pyproject.toml uv.lock .python-version ./
 
-FROM base AS prod
-RUN uv sync --frozen --no-dev \
- && useradd --system --uid 10001 --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin sentinel
+# Builder: needs uv; the final prod image does not (uv is ~56 MB we never use at runtime).
+FROM base AS prod-build
+RUN uv sync --frozen --no-dev
+
+FROM python:3.12-slim AS prod
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/srv \
+    PATH="/srv/.venv/bin:$PATH"
+WORKDIR /srv
+COPY --from=prod-build /srv/.venv /srv/.venv
+RUN useradd --system --uid 10001 --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin sentinel
 COPY app ./app
 COPY alembic.ini .
 COPY alembic ./alembic
