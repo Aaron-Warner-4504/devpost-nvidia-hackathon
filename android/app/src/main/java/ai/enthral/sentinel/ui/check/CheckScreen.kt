@@ -1,5 +1,6 @@
 package ai.enthral.sentinel.ui.check
 
+import ai.enthral.sentinel.ui.components.glass
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -124,7 +125,7 @@ fun CheckContent(
     LargeTitleList(title = stringResource(R.string.check_title), subtitle = stringResource(R.string.check_intro)) {
         item(key = "composer") {
             Column(
-                Inset.fillMaxWidth().clip(RoundedCornerShape(Radii.large)).background(SentinelTheme.palette.elevated),
+                Inset.fillMaxWidth().glass(RoundedCornerShape(Radii.extraLarge)),
             ) {
                 if (state.mode == CheckMode.Text) {
                     SentinelTextField(
@@ -137,6 +138,7 @@ fun CheckContent(
                         minLines = 6,
                         maxLines = 14,
                         shape = RoundedCornerShape(0.dp),
+                        container = androidx.compose.ui.graphics.Color.Transparent,
                         modifier = Modifier.heightIn(min = 180.dp),
                     )
                 } else {
@@ -265,7 +267,7 @@ private fun ScreenshotArea(state: CheckUiState, onPick: () -> Unit) {
 private fun CheckErrorCard(err: CheckError, modifier: Modifier) {
     val p = SentinelTheme.palette
     Row(
-        modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.large)).background(p.elevated).padding(Spacing.x2),
+        modifier.fillMaxWidth().glass(RoundedCornerShape(Radii.large)).padding(Spacing.x2),
         horizontalArrangement = Arrangement.spacedBy(Spacing.x15),
     ) {
         TierGlyph(Tier.Caution, size = 32.dp, pulse = false)

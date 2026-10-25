@@ -1,5 +1,6 @@
 package ai.enthral.sentinel.ui.demo
 
+import ai.enthral.sentinel.ui.components.glass
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -75,7 +76,7 @@ fun DemoContent(state: DemoUiState, onStart: () -> Unit, onOpenAlert: (String) -
         item(key = "steps") {
             val steps = state.steps.ifEmpty { DemoKey.entries.map { DemoStep(it, DemoOutcome.Pending) } }
             Column(
-                Inset.padding(top = Spacing.x2).fillMaxWidth().clip(RoundedCornerShape(Radii.large)).background(p.elevated)
+                Inset.padding(top = Spacing.x2).fillMaxWidth().glass(RoundedCornerShape(Radii.large))
                     .padding(horizontal = Spacing.x2, vertical = Spacing.x15),
             ) {
                 steps.forEachIndexed { i, step -> StepRow(i + 1, step, first = i == 0, last = i == steps.lastIndex) }

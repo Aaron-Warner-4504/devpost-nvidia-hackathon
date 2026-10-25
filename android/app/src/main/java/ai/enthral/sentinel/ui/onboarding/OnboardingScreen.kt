@@ -66,6 +66,11 @@ import ai.enthral.sentinel.ui.components.ShieldIllustration
 import ai.enthral.sentinel.ui.components.SourceRow
 import ai.enthral.sentinel.ui.components.StatusLine
 import ai.enthral.sentinel.ui.components.apiErrorMessage
+import ai.enthral.sentinel.ui.components.atmosphere
+import ai.enthral.sentinel.ui.components.glass
+import ai.enthral.sentinel.ui.theme.Radii
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.graphicsLayer
 import ai.enthral.sentinel.ui.settings.Languages
 import ai.enthral.sentinel.ui.theme.SentinelTheme
 import ai.enthral.sentinel.ui.theme.Spacing
@@ -94,7 +99,7 @@ fun OnboardingScreen() {
     androidx.activity.compose.BackHandler(enabled = pager.currentPage > 0) { go(pager.currentPage - 1) }
     val p = SentinelTheme.palette
 
-    Box(Modifier.fillMaxSize().background(p.background), contentAlignment = Alignment.TopCenter) {
+    Box(Modifier.fillMaxSize().atmosphere(), contentAlignment = Alignment.TopCenter) {
         Column(Modifier.widthIn(max = MaxContentWidth).fillMaxSize().safeDrawingPadding()) {
             // Top: back on the left, skip (language only) on the right. Quiet chrome.
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = Spacing.x05), verticalAlignment = Alignment.CenterVertically) {
@@ -110,23 +115,25 @@ fun OnboardingScreen() {
             HorizontalPager(pager, Modifier.weight(1f)) { page ->
                 when (page) {
                     0 -> CenteredPage {
-                        ShieldIllustration(size = 200.dp)
+                        ShieldIllustration(size = 200.dp, modifier = Modifier.parallax(pager, page))
                         Spacer(Modifier.height(Spacing.x4))
                         PageTitle(stringResource(R.string.onboarding_welcome_title), center = true)
                         Spacer(Modifier.height(Spacing.x15))
                         PageBody(stringResource(R.string.onboarding_welcome_body), center = true)
                     }
                     1 -> CenteredPage {
-                        MaskedMessagesIllustration(size = 160.dp)
+                        MaskedMessagesIllustration(size = 160.dp, modifier = Modifier.parallax(pager, page))
                         Spacer(Modifier.height(Spacing.x3))
                         PageTitle(stringResource(R.string.onboarding_privacy_title), center = true)
                         Spacer(Modifier.height(Spacing.x3))
-                        Promise(SentinelIcons.Hand, R.string.promise_1_title, R.string.promise_1_body)
-                        Promise(SentinelIcons.EyeOff, R.string.promise_2_title, R.string.promise_2_body)
-                        Promise(SentinelIcons.Trash, R.string.promise_3_title, R.string.promise_3_body)
+                        Column(Modifier.fillMaxWidth().glass(RoundedCornerShape(Radii.large)).padding(Spacing.x2)) {
+                            Promise(SentinelIcons.Hand, R.string.promise_1_title, R.string.promise_1_body)
+                            Promise(SentinelIcons.EyeOff, R.string.promise_2_title, R.string.promise_2_body)
+                            Promise(SentinelIcons.Trash, R.string.promise_3_title, R.string.promise_3_body)
+                        }
                     }
                     PAGE_LANGUAGE -> CenteredPage {
-                        LanguageIllustration(size = 168.dp)
+                        LanguageIllustration(size = 168.dp, modifier = Modifier.parallax(pager, page))
                         Spacer(Modifier.height(Spacing.x4))
                         PageTitle(stringResource(R.string.onboarding_language_title), center = true)
                         Spacer(Modifier.height(Spacing.x15))
@@ -278,5 +285,16 @@ private fun SourcesPage(
             }
         }
         Spacer(Modifier.size(Spacing.x2))
+    }
+}
+
+/** Illustrations drift at a third of the page speed and fade, so pages feel layered while swiping. */
+@Composable
+private fun Modifier.parallax(pager: androidx.compose.foundation.pager.PagerState, page: Int): Modifier {
+    if (rememberReducedMotion()) return this
+    return graphicsLayer {
+        val offset = (pager.currentPage - page) + pager.currentPageOffsetFraction
+        translationX = offset * size.width * 0.35f
+        alpha = 1f - kotlin.math.abs(offset).coerceIn(0f, 1f) * 0.6f
     }
 }
