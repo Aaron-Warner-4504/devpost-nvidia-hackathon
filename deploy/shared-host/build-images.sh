@@ -60,14 +60,17 @@ if [ "$do_build" = 1 ]; then
   [ "$api_only" = 1 ] || docker build --platform linux/amd64 -t "sentinel/inspector:${tag}" "$repo/inspector"
 fi
 
-echo "== image sizes (on disk, uncompressed) =="
+echo "== image sizes =="
 total=0
 for img in "${images[@]}"; do
-  bytes="$(docker image inspect -f '{{.Size}}' "$img")" || { echo "image $img not found locally (drop --no-build)" >&2; exit 1; }
+  docker image inspect "$img" >/dev/null 2>&1 || { echo "image $img not found locally (drop --no-build)" >&2; exit 1; }
+  # unpacked size = sum of layer sizes (docker image inspect .Size can be the compressed size with the containerd store)
+  bytes="$(docker history --human=false --format '{{.Size}}' "$img" | awk '{s+=$1} END {printf "%d", s}')"
+  wire="$(docker image inspect -f '{{.Size}}' "$img")"
   arch="$(docker image inspect -f '{{.Architecture}}' "$img")"
   [ "$arch" = amd64 ] || { echo "$img is $arch, the VM needs amd64: rebuild without --no-build" >&2; exit 1; }
   total=$((total + bytes))
-  printf '  %-34s %6d MB\n' "$img" $((bytes / 1048576))
+  printf '  %-34s %6d MB unpacked (~%d MB compressed)\n' "$img" $((bytes / 1048576)) $((wire / 1048576))
 done
 est_mb=$((total / 1048576))
 need_kb=$(( (total * 3 / 2) / 1024 + min_free_gb * 1048576 ))
