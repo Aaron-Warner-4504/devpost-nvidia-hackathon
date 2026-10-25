@@ -70,6 +70,12 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) : AppSettings
         dataStore.edit { it[TRUE_BLACK] = enabled }
     }
 
+    override val reduceTransparency: Flow<Boolean> = dataStore.data.map { it[REDUCE_TRANSPARENCY] ?: false }
+
+    override suspend fun setReduceTransparency(enabled: Boolean) {
+        dataStore.edit { it[REDUCE_TRANSPARENCY] = enabled }
+    }
+
     override suspend fun installId(): String {
         dataStore.data.first()[INSTALL_ID]?.let { return it }
         val id = UUID.randomUUID().toString()
@@ -90,6 +96,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) : AppSettings
         val NOTIFIED = stringSetPreferencesKey("notified_alert_ids")
         val NOTIFIED_BASELINE = booleanPreferencesKey("notified_baseline")
         val TRUE_BLACK = booleanPreferencesKey("true_black")
+        val REDUCE_TRANSPARENCY = booleanPreferencesKey("reduce_transparency")
         val INSTALL_ID = stringPreferencesKey("install_id")
     }
 }

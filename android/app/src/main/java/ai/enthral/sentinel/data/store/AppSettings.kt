@@ -28,6 +28,10 @@ interface AppSettings {
     val useTrueBlack: Flow<Boolean>
     suspend fun setUseTrueBlack(enabled: Boolean)
 
+    /** Opaque surfaces instead of glass (accessibility; also saves battery). */
+    val reduceTransparency: Flow<Boolean>
+    suspend fun setReduceTransparency(enabled: Boolean)
+
     /** Random per-install id (used for the placeholder push token until Firebase is wired). */
     suspend fun installId(): String
 

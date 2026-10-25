@@ -53,8 +53,11 @@ object SentinelTheme {
 fun SentinelTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     trueBlack: Boolean = false,
+    reduceTransparency: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    val glass = rememberGlassSettings(reduceTransparency)
+    val clock = rememberAtmosphereClock(glass.motion)
     val palette = when {
         !darkTheme -> Palettes.light
         trueBlack -> Palettes.trueBlack
@@ -73,6 +76,8 @@ fun SentinelTheme(
         LocalSentinelColors provides if (darkTheme) DarkTierColors else LightTierColors,
         LocalPalette provides composePalette,
         LocalType provides type,
+        LocalGlass provides glass,
+        LocalAtmosphereClock provides clock,
     ) {
         MaterialTheme(colorScheme = scheme, typography = typography, shapes = SentinelShapes) {
             CompositionLocalProvider(
@@ -82,4 +87,33 @@ fun SentinelTheme(
             )
         }
     }
+}
+
+/** Seconds since the atmosphere started drifting; shared so every screen's background is in the same position. */
+val LocalAtmosphereClock = staticCompositionLocalOf<androidx.compose.runtime.State<Float>> { androidx.compose.runtime.mutableFloatStateOf(0f) }
+
+/**
+ * Ticks ~15 times a second while the UI is visible and motion is allowed: the drift is glacial, so 15 fps is smooth
+ * and keeps the bars' blur from re-rendering every vsync. Uses the infinite-animation frame clock so Compose UI
+ * tests never wait for it.
+ */
+@Composable
+private fun rememberAtmosphereClock(motion: Boolean): androidx.compose.runtime.State<Float> {
+    val t = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    if (motion) {
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            var start = -1L
+            var last = 0L
+            while (true) {
+                androidx.compose.animation.core.withInfiniteAnimationFrameMillis { now ->
+                    if (start < 0) start = now - (t.floatValue * 1000).toLong()
+                    if (now - last >= 66) {
+                        last = now
+                        t.floatValue = (now - start) / 1000f
+                    }
+                }
+            }
+        }
+    }
+    return t
 }

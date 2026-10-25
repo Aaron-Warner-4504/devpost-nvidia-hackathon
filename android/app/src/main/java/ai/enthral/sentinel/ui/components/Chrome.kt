@@ -96,48 +96,54 @@ fun LargeTitle(text: String, modifier: Modifier = Modifier, subtitle: String? = 
 }
 
 /**
- * Compact bar over a scrolling screen. The status-bar strip is always opaque; the bar's own background, title and
- * hairline fade in once [collapsed] (the large title has scrolled away), like a large-title navigation bar.
+ * Glass bar over a scrolling screen: invisible at rest; as soon as content scrolls beneath it ([scrolled]) the
+ * status strip and bar become navigation glass (blur + tint) with a hairline, and once the large title has gone
+ * ([collapsed]) the compact title fades in. Pushed screens always show the back button.
  */
 @Composable
 fun CollapsingTopBar(
     title: String,
     collapsed: Boolean,
     modifier: Modifier = Modifier,
+    scrolled: Boolean = collapsed,
     onBack: (() -> Unit)? = null,
-    background: Color = SentinelTheme.palette.groupedBackground,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val p = SentinelTheme.palette
     val reduced = rememberReducedMotion()
-    val fraction by animateFloatAsState(if (collapsed) 1f else 0f, if (reduced) androidx.compose.animation.core.snap() else Motion.standard(), label = "bar")
-    val showBar = onBack != null || fraction > 0f
+    val spec: androidx.compose.animation.core.AnimationSpec<Float> = if (reduced) androidx.compose.animation.core.snap() else Motion.standard()
+    val fraction by animateFloatAsState(if (collapsed) 1f else 0f, spec, label = "title")
+    val glassAlpha by animateFloatAsState(if (scrolled) 1f else 0f, spec, label = "glass")
+    val showBar = onBack != null || glassAlpha > 0f
     Column(modifier.fillMaxWidth()) {
-        Spacer(Modifier.fillMaxWidth().background(background).statusBarsPadding())
-        if (showBar) {
-            val barBg = if (onBack != null) background.copy(alpha = fraction.coerceAtLeast(0.0f)) else background.copy(alpha = fraction)
-            Box(Modifier.fillMaxWidth().height(BarHeight).background(barBg)) {
-                if (onBack != null) {
-                    IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).padding(start = Spacing.x05)) {
-                        Icon(SentinelIcons.Back, stringResource(R.string.action_back), tint = p.accent, modifier = Modifier.size(24.dp))
+        Box(Modifier.fillMaxWidth().then(if (glassAlpha > 0f) Modifier.glassBar(alpha = glassAlpha) else Modifier)) {
+            Column(Modifier.fillMaxWidth()) {
+                Spacer(Modifier.fillMaxWidth().statusBarsPadding())
+                if (showBar) {
+                    Box(Modifier.fillMaxWidth().height(BarHeight)) {
+                        if (onBack != null) {
+                            IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).padding(start = Spacing.x05)) {
+                                Icon(SentinelIcons.Back, stringResource(R.string.action_back), tint = p.accent, modifier = Modifier.size(24.dp))
+                            }
+                        }
+                        if (fraction > 0.01f) {
+                            Text(
+                                title,
+                                style = SentinelTheme.type.headline,
+                                color = p.label,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.align(Alignment.Center).padding(horizontal = 64.dp)
+                                    .graphicsLayer { alpha = fraction }.clearAndSetSemantics { },
+                            )
+                        }
+                        Row(Modifier.align(Alignment.CenterEnd).padding(end = Spacing.x05), verticalAlignment = Alignment.CenterVertically, content = actions)
                     }
                 }
-                if (fraction > 0.01f) {
-                    Text(
-                        title,
-                        style = SentinelTheme.type.headline,
-                        color = p.label,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.align(Alignment.Center).padding(horizontal = 64.dp)
-                            .graphicsLayer { alpha = fraction }.clearAndSetSemantics { },
-                    )
-                }
-                Row(Modifier.align(Alignment.CenterEnd).padding(end = Spacing.x05), verticalAlignment = Alignment.CenterVertically, content = actions)
             }
-            Box(Modifier.fillMaxWidth().height(Spacing.hairline).graphicsLayer { alpha = fraction }.background(p.separator))
         }
+        Box(Modifier.fillMaxWidth().height(Spacing.hairline).graphicsLayer { alpha = glassAlpha }.background(p.separator))
     }
 }
 
@@ -160,7 +166,6 @@ fun LargeTitleList(
     showLargeTitle: Boolean = true,
     refreshing: Boolean = false,
     onRefresh: (() -> Unit)? = null,
-    background: Color = SentinelTheme.palette.groupedBackground,
     bottomPadding: Dp = Spacing.x4,
     actions: @Composable RowScope.() -> Unit = {},
     content: LazyListScope.() -> Unit,
@@ -170,14 +175,18 @@ fun LargeTitleList(
     val collapsed by remember(state) {
         derivedStateOf { state.firstVisibleItemIndex > 0 || state.firstVisibleItemScrollOffset > threshold }
     }
+    val scrolled by remember(state) {
+        derivedStateOf { state.firstVisibleItemIndex > 0 || state.firstVisibleItemScrollOffset > 0 }
+    }
     val top = topContentInset(onBack != null)
-    Box(modifier.fillMaxSize().background(background)) {
+    val bottom = bottomPadding + LocalBottomBarInset.current
+    Box(modifier.fillMaxSize()) {
         val list: @Composable () -> Unit = {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            Box(Modifier.fillMaxSize().glassSource().atmosphere(), contentAlignment = Alignment.TopCenter) {
                 LazyColumn(
                     state = state,
                     modifier = Modifier.widthIn(max = MaxContentWidth).fillMaxSize(),
-                    contentPadding = PaddingValues(top = top, bottom = bottomPadding),
+                    contentPadding = PaddingValues(top = top, bottom = bottom),
                 ) {
                     if (showLargeTitle) item(key = "large-title", contentType = "title") { LargeTitle(title, subtitle = subtitle) }
                     content()
@@ -185,7 +194,7 @@ fun LargeTitleList(
             }
         }
         if (onRefresh != null) SentinelRefreshBox(refreshing, onRefresh, topInset = top) { list() } else list()
-        CollapsingTopBar(title, collapsed, onBack = onBack, background = background, actions = actions)
+        CollapsingTopBar(title, collapsed, scrolled = scrolled, onBack = onBack, actions = actions)
     }
 }
 
@@ -197,16 +206,18 @@ fun LargeTitleColumn(
     onBack: (() -> Unit)? = null,
     scroll: ScrollState = rememberScrollState(),
     collapseAfter: Dp = 96.dp,
-    background: Color = SentinelTheme.palette.groupedBackground,
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val threshold = with(LocalDensity.current) { collapseAfter.roundToPx() }
     val collapsed by remember(scroll) { derivedStateOf { scroll.value > threshold } }
+    val scrolled by remember(scroll) { derivedStateOf { scroll.value > 0 } }
     val top = topContentInset(onBack != null)
-    Box(modifier.fillMaxSize().background(background)) {
-        content(PaddingValues(top = top))
-        CollapsingTopBar(title, collapsed, onBack = onBack, background = background, actions = actions)
+    Box(modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().glassSource().atmosphere()) {
+            content(PaddingValues(top = top, bottom = LocalBottomBarInset.current))
+        }
+        CollapsingTopBar(title, collapsed, scrolled = scrolled, onBack = onBack, actions = actions)
     }
 }
 
@@ -241,58 +252,6 @@ fun SectionHeader(text: String, modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxWidth().padding(start = Spacing.gutter, end = Spacing.gutter, top = Spacing.x4, bottom = Spacing.x15)
             .semantics { heading() },
     )
-}
-
-// ---- Tab bar ---------------------------------------------------------------------------------------------------
-
-class TabBarItem(val label: String, val icon: ImageVector, val selectedIcon: ImageVector)
-
-/**
- * Refined bottom bar: hairline on top, icon + small label, selection shown by accent colour and a heavier icon
- * (no Material pill). Labels are capped at 1.3x font scale so they never clip; TalkBack still reads full names.
- */
-@Composable
-fun TabBar(items: List<TabBarItem>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
-    val p = SentinelTheme.palette
-    val haptics = rememberHaptics()
-    val density = LocalDensity.current
-    androidx.compose.runtime.CompositionLocalProvider(
-        LocalDensity provides Density(density.density, fontScale = minOf(density.fontScale, 1.3f)),
-    ) {
-        Column(modifier.fillMaxWidth().background(p.elevated)) {
-            Box(Modifier.fillMaxWidth().height(Spacing.hairline).background(p.separator))
-            Row(Modifier.fillMaxWidth().navigationBarsPadding().heightIn(min = 56.dp).selectableGroup()) {
-                items.forEachIndexed { i, item ->
-                    val isSelected = i == selected
-                    val tint = if (isSelected) p.accent else p.secondaryLabel
-                    Column(
-                        Modifier.weight(1f).heightIn(min = 56.dp)
-                            .selectable(
-                                selected = isSelected,
-                                role = Role.Tab,
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = { if (!isSelected) haptics.tick(); onSelect(i) },
-                            )
-                            .padding(top = Spacing.x1, bottom = Spacing.x05),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(3.dp),
-                    ) {
-                        Icon(if (isSelected) item.selectedIcon else item.icon, null, tint = tint, modifier = Modifier.size(25.dp))
-                        Text(
-                            item.label,
-                            style = SentinelTheme.type.caption.copy(
-                                fontWeight = if (isSelected) androidx.compose.ui.text.font.FontWeight.SemiBold else androidx.compose.ui.text.font.FontWeight.Medium,
-                            ),
-                            color = tint,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
 
 // ---- Segmented control -----------------------------------------------------------------------------------------
@@ -382,7 +341,7 @@ fun SentinelSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = p.elevated,
+        containerColor = if (ai.enthral.sentinel.ui.theme.LocalGlass.current.glass) p.glassSheet else p.elevated,
         contentColor = p.label,
         scrimColor = Color.Black.copy(alpha = if (p.isDark) 0.6f else 0.32f),
         shape = RoundedCornerShape(topStart = Radii.extraLarge, topEnd = Radii.extraLarge),

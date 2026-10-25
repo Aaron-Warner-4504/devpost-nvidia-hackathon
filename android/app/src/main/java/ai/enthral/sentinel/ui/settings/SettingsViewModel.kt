@@ -32,6 +32,7 @@ data class SettingsUiState(
     val sources: SourcesState = SourcesState(),
     val paused: Boolean = false,
     val trueBlack: Boolean = false,
+    val reduceTransparency: Boolean = false,
     val language: String = "en",
     val deleting: Boolean = false,
     val deleteFailure: ApiResult<Nothing>? = null,
@@ -62,10 +63,16 @@ class SettingsViewModel(
     private data class Extra(val deleting: Boolean = false, val failure: ApiResult<Nothing>? = null,
                              val syncFailed: Boolean = false)
 
+    private data class Look(val trueBlack: Boolean, val reduceTransparency: Boolean)
+    private val look = combine(settings.useTrueBlack, settings.reduceTransparency) { b, r -> Look(b, r) }
+
     val state: StateFlow<SettingsUiState> = combine(
-        sources.state, settings.monitoringPaused, settings.useTrueBlack, extra,
-    ) { s, paused, dyn, e ->
-        SettingsUiState(s, paused, dyn, locale.current(), e.deleting, e.failure, e.syncFailed, debugInfo, demoEnabled)
+        sources.state, settings.monitoringPaused, look, extra,
+    ) { s, paused, lk, e ->
+        SettingsUiState(
+            s, paused, lk.trueBlack, lk.reduceTransparency, locale.current(), e.deleting, e.failure, e.syncFailed,
+            debugInfo, demoEnabled,
+        )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SettingsUiState(debugInfo = debugInfo, demoEnabled = demoEnabled))
 
     /** On resume: re-read OS permissions and tell the server about any change the user made in system settings. */
@@ -120,6 +127,10 @@ class SettingsViewModel(
 
     fun setPaused(paused: Boolean) {
         viewModelScope.launch { settings.setMonitoringPaused(paused) }
+    }
+
+    fun setReduceTransparency(on: Boolean) {
+        viewModelScope.launch { settings.setReduceTransparency(on) }
     }
 
     fun setTrueBlack(on: Boolean) {

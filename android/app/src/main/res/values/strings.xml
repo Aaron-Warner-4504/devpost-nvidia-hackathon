@@ -243,6 +243,12 @@
     <string name="settings_appearance">Appearance</string>
     <string name="settings_true_black_title">True black in dark mode</string>
     <string name="settings_true_black_body">A pure black background saves power on OLED screens.</string>
+    <string name="settings_reduce_transparency_title">Reduce transparency</string>
+    <string name="settings_reduce_transparency_body">Solid backgrounds instead of glass. Easier to read and uses less battery.</string>
+    <string name="nav_more">More</string>
+    <string name="home_attention_title">Needs your attention</string>
+    <string name="home_attention_body">A %1$s alert arrived today. Open it to see what to do.</string>
+    <string name="home_attention_action">Open the alert</string>
     <string name="settings_demo">Demo mode</string>
     <string name="settings_demo_body">Replays a three-day scam story with sample messages so you can see how Sentinel reacts.</string>
     <string name="settings_demo_open">Open the demo</string>

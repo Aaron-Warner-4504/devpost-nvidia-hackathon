@@ -83,6 +83,9 @@ class FakeSettings : AppSettings {
     override suspend fun markNotified(ids: Set<String>) { notified.update { (it ?: emptySet()) + ids } }
     override val useTrueBlack: Flow<Boolean> = trueBlack
     override suspend fun setUseTrueBlack(enabled: Boolean) { trueBlack.value = enabled }
+    val reduceTransparencyFlow = MutableStateFlow(false)
+    override val reduceTransparency: Flow<Boolean> = reduceTransparencyFlow
+    override suspend fun setReduceTransparency(enabled: Boolean) { reduceTransparencyFlow.value = enabled }
     override suspend fun installId() = "install-1"
     override suspend fun clearAll() {
         cleared++

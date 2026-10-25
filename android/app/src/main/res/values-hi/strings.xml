@@ -243,6 +243,12 @@
     <string name="settings_appearance">रूप-रंग</string>
     <string name="settings_true_black_title">डार्क मोड में पूरा काला</string>
     <string name="settings_true_black_body">पूरी तरह काली पृष्ठभूमि OLED स्क्रीन पर बैटरी बचाती है।</string>
+    <string name="settings_reduce_transparency_title">पारदर्शिता कम करें</string>
+    <string name="settings_reduce_transparency_body">काँच जैसे प्रभाव की जगह ठोस पृष्ठभूमि। पढ़ने में आसान और कम बैटरी खर्च।</string>
+    <string name="nav_more">और</string>
+    <string name="home_attention_title">आपका ध्यान चाहिए</string>
+    <string name="home_attention_body">आज एक %1$s अलर्ट आया है। क्या करना है, यह देखने के लिए इसे खोलें।</string>
+    <string name="home_attention_action">अलर्ट खोलें</string>
     <string name="settings_demo">डेमो मोड</string>
     <string name="settings_demo_body">नमूना संदेशों के साथ तीन दिन की धोखाधड़ी की कहानी दोहराता है ताकि आप देख सकें कि सेंटिनल कैसे प्रतिक्रिया देता है।</string>
     <string name="settings_demo_open">डेमो खोलें</string>

@@ -2,6 +2,11 @@ package ai.enthral.sentinel
 
 import ai.enthral.sentinel.ui.theme.Palette
 import ai.enthral.sentinel.ui.theme.Palettes
+import ai.enthral.sentinel.ui.theme.SystemGlassConditions
+import ai.enthral.sentinel.ui.theme.Tinted
+import ai.enthral.sentinel.ui.theme.decideGlass
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import kotlin.math.pow
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -69,5 +74,79 @@ class PaletteContrastTest {
         val t: Palette = Palettes.trueBlack
         assertTrue(t.groupedBackground == 0xFF000000 && t.background == 0xFF000000)
         assertTrue(t.label == Palettes.dark.label && t.accent == Palettes.dark.accent)
+    }
+
+    // ---- Glass (pass 2): composites against the worst-case backdrop -------------------------------------------
+
+    /** Source-over: [fg] at [alpha] on an opaque [bg]. */
+    private fun over(fg: Long, alpha: Float, bg: Long): Long {
+        fun ch(c: Long, shift: Int) = ((c shr shift) and 0xFF).toDouble()
+        fun mix(shift: Int) = Math.round(ch(fg, shift) * alpha + ch(bg, shift) * (1 - alpha)).toLong()
+        return 0xFF000000 or (mix(16) shl 16) or (mix(8) shl 8) or mix(0)
+    }
+    private fun Tinted.over(bg: Long) = over(color, alpha, bg)
+
+    /** Every point of the atmosphere: base, each blob at full strength, every overlap. */
+    private fun atmosphere(p: Palette): List<Long> {
+        val g = p.glass
+        val singles = g.blobs.map { it.over(g.base) }
+        val pairs = g.blobs.indices.flatMap { i -> (i + 1 until g.blobs.size).map { j -> g.blobs[j].over(g.blobs[i].over(g.base)) } }
+        val all = g.blobs.fold(g.base) { acc, b -> b.over(acc) }
+        return listOf(g.base) + singles + pairs + all
+    }
+
+    @Test fun `text directly on the atmosphere meets 4_5 to 1 at every blob overlap`() {
+        for ((mode, p) in modes) {
+            atmosphere(p).forEach { bg ->
+                listOf("label" to p.label, "secondary" to p.secondaryLabel, "accent" to p.accent).forEach { (n, c) ->
+                    check(mode, "$n on atmosphere", c, bg, 4.5)
+                }
+                p.tiers.forEach { (t, pair) -> check(mode, "$t glyph on atmosphere", pair.content, bg, 3.0) }
+            }
+        }
+    }
+
+    @Test fun `all text on glass cards meets 4_5 to 1 over the worst backdrop, with and without the sheen`() {
+        for ((mode, p) in modes) {
+            atmosphere(p).forEach { atmos ->
+                val card = p.glass.card.over(atmos)
+                listOf(card, p.glass.sheen.over(card)).forEach { bg ->
+                    p.textColors.forEach { fg -> check(mode, "text on glass card", fg, bg, 4.5) }
+                }
+            }
+        }
+    }
+
+    @Test fun `bar text meets 4_5 to 1 even with solid content scrolling beneath the blur`() {
+        for ((mode, p) in modes) {
+            // Blur averages what is beneath; the extreme is a solid patch of any content colour.
+            val beneath = atmosphere(p) + listOf(p.accent, p.label, p.elevated, p.groupedBackground, p.accentSoft) +
+                p.tiers.values.flatMap { listOf(it.content, it.container) }
+            beneath.forEach { under ->
+                val bar = p.glass.bar.over(under)
+                listOf("label" to p.label, "secondary (tab labels)" to p.secondaryLabel, "accent (selected tab)" to p.accent)
+                    .forEach { (n, c) -> check(mode, "$n on bar over ${under.toString(16)}", c, bar, 4.5) }
+            }
+        }
+    }
+
+    @Test fun `sheets are nearly opaque glass and every text colour passes over black or white beneath`() {
+        for ((mode, p) in modes) {
+            listOf(0xFF000000, 0xFFFFFFFF, p.accent).forEach { under ->
+                val sheet = p.glass.sheet.over(under)
+                p.textColors.forEach { fg -> check(mode, "text on sheet", fg, sheet, 4.5) }
+            }
+        }
+    }
+
+    @Test fun `glass falls back to opaque for every system or user reason`() {
+        val ok = SystemGlassConditions(animationsOff = false, highContrastText = false, powerSave = false, lowRam = false, blurCapable = true)
+        val on = decideGlass(false, ok)
+        assertTrue(on.glass && on.blur && on.motion)
+        assertFalse(decideGlass(true, ok).glass)
+        listOf(ok.copy(animationsOff = true), ok.copy(highContrastText = true), ok.copy(powerSave = true), ok.copy(lowRam = true))
+            .forEach { assertEquals(false, decideGlass(false, it).glass) }
+        val oldApi = decideGlass(false, ok.copy(blurCapable = false))
+        assertTrue(oldApi.glass && !oldApi.blur)
     }
 }
