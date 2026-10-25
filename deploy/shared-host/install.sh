@@ -21,6 +21,28 @@ for v in DATABASE_URL FAMILY_CODE_PEPPER INSPECTOR_SECRET; do
   grep -Eq "^${v}=.+" "$ENV_FILE" || { echo "$ENV_FILE: $v is missing or empty" >&2; exit 1; }
 done
 
+# bind address guard: the api must stay on loopback unless you explicitly opt in (nginx inside Docker needs
+# SENTINEL_BIND_ADDR=<docker0 gateway> AND SENTINEL_ALLOW_NON_LOOPBACK=1; either may live in the env file)
+envval() { # value of KEY from the environment, else from the env file (never printed unless it is the bind addr)
+  if [ -n "${!1:-}" ]; then printf '%s' "${!1}"; else { grep -E "^$1=" "$ENV_FILE" || true; } | tail -n1 | cut -d= -f2- | tr -d "\"' "; fi
+}
+BIND="$(envval SENTINEL_BIND_ADDR)"; BIND="${BIND:-127.0.0.1}"
+ALLOW="$(envval SENTINEL_ALLOW_NON_LOOPBACK)"
+case "$BIND" in
+  127.* | ::1 | localhost) ;;
+  *)
+    if [ "$ALLOW" != 1 ]; then
+      echo "REFUSING: SENTINEL_BIND_ADDR=${BIND} is not loopback. Binding the api to a non-loopback address exposes it" >&2
+      echo "without TLS and lets anyone on that network reach it directly. If your nginx runs inside Docker and you" >&2
+      echo "really need this, set BOTH SENTINEL_BIND_ADDR=<docker0 gateway> and SENTINEL_ALLOW_NON_LOOPBACK=1 (README step 5)," >&2
+      echo "and never use 0.0.0.0. Otherwise unset SENTINEL_BIND_ADDR." >&2
+      exit 1
+    fi
+    case "$BIND" in 0.0.0.0 | :: ) echo "REFUSING: ${BIND} listens on every interface, even with SENTINEL_ALLOW_NON_LOOPBACK=1" >&2; exit 1 ;; esac
+    echo "WARN: api bound to non-loopback ${BIND} (opted in). Make sure the host firewall only allows the nginx container's subnet to port ${PORT}." >&2 ;;
+esac
+export SENTINEL_BIND_ADDR="$BIND"
+
 # docker / compose / port checks (same intent as preflight.sh, read-only)
 docker info >/dev/null 2>&1 || { echo "docker daemon not reachable by this user" >&2; exit 1; }
 docker compose version >/dev/null 2>&1 || { echo "docker compose v2 plugin missing" >&2; exit 1; }

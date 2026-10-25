@@ -42,7 +42,8 @@ services:
       DEMO_ENABLED: "false"   # fixed off: /sentinel/dashboard stays a 404 on a shared public host
     ports:
       # Loopback only. To let an nginx that runs INSIDE Docker reach it, set SENTINEL_BIND_ADDR to the
-      # docker0 gateway IP (see README "nginx inside Docker"); the default never leaves the host.
+      # docker0 gateway IP AND SENTINEL_ALLOW_NON_LOOPBACK=1 (install.sh refuses a non-loopback bind without it;
+      # see README "nginx inside Docker"). The default never leaves the host. Never 0.0.0.0.
       - "${SENTINEL_BIND_ADDR:-127.0.0.1}:${SENTINEL_HOST_PORT:-8100}:8000"
     networks: [edge, inspector_net]
     read_only: true

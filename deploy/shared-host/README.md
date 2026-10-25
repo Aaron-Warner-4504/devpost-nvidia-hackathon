@@ -104,7 +104,7 @@ The snippet only adds `/sentinel` locations. Read its comments for why each dire
 
 ### nginx inside Docker (alternative)
 If the neighbour's nginx is a container, `127.0.0.1` is that container. Preferred fix: none needed if you can run nginx on the host. Otherwise
-set `SENTINEL_BIND_ADDR=<docker0 gateway, usually 172.17.0.1>` in `/opt/sentinel/.env.prod` (read by compose), re-run `install.sh`, and use
+set **both** `SENTINEL_BIND_ADDR=<docker0 gateway, usually 172.17.0.1>` and `SENTINEL_ALLOW_NON_LOOPBACK=1` in `/opt/sentinel/.env.prod` (`install.sh` refuses a non-loopback bind without both, and always refuses `0.0.0.0`; `TRUSTED_PROXY_CIDRS` already trusts the private/bridge ranges), re-run `install.sh`, and use
 `proxy_pass http://172.17.0.1:8100/;` (or `host.docker.internal:8100` with `extra_hosts: host-gateway`, which edits the neighbour's compose). Allow
 that docker subnet to the port in the host firewall if it is blocked. Details are at the bottom of `nginx-sentinel.conf`. Default stays loopback.
 
@@ -173,6 +173,7 @@ change `DATABASE_URL`). Use the **session pooler** string (IPv4) and `sslmode=re
 | 413 on image upload | `client_max_body_size 6m` not applied: the include is outside the server block or a location with a lower limit wins; app limit is 5 MB |
 | 401 | Missing/invalid bearer token (deleted device, or app registered against a different base URL) |
 | 429 on register for everyone | all clients counted as one IP: nginx is behind another proxy/CDN so `$remote_addr` is that proxy; either use real-IP restoration in the neighbour's nginx (`real_ip_header`) or raise `REGISTER_PER_IP_PER_HOUR` |
+| Client IP looks like nginx's/bridge's address | Expected for the proxy hop; the app trusts `X-Forwarded-For` only from peers inside `TRUSTED_PROXY_CIDRS` (default loopback + private ranges). A proxy on a public address must be added there |
 | Rate limit never triggers / forged IPs counted | `TRUSTED_PROXY_COUNT` must be 1 and nginx must **replace** X-Forwarded-For (the snippet does); never use `$proxy_add_x_forwarded_for` |
 | CORS errors | Not needed: the Android app is not a browser. Leave `CORS_ALLOW_ORIGINS` empty |
 | `/sentinel/docs` assets 404 | `ROOT_PATH` is not `/sentinel` in the running container (`docker exec sentinel-api env \| grep ROOT_PATH`) |
