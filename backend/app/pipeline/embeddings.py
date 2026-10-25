@@ -17,7 +17,8 @@ Rules every caller relies on:
 - `get_provider` returns None when no provider is usable (no key / extra missing / `none`), so the
   safe default with nothing configured is "semantic memory off".
 - Vectors are fitted to the pgvector column width (`settings.embed_dim`): a shorter vector is
-  zero-padded (cosine similarity is unchanged), a longer one is rejected (semantic memory off).
+  zero-padded (cosine similarity is unchanged). The token_factory provider truncates a longer vector to
+  its first `dim` values (Matryoshka models) and re-normalises it; any other longer vector is rejected.
 """
 
 from __future__ import annotations
@@ -69,11 +70,39 @@ class FakeEmbeddings:
         return out
 
 
-class TokenFactoryEmbeddings:
-    """Hosted embeddings via the OpenAI-compatible Token Factory client (`llm.embed`)."""
+EMBED_BATCH = 16  # max texts per request
+_dims_rejected: set[str] = set()  # models whose server refused `dimensions` (per process)
 
-    def __init__(self, llm=None, model: str = ""):
+
+def reset_dimension_memory() -> None:
+    _dims_rejected.clear()
+
+
+def shape_vector(v, dim: int) -> list[float]:
+    """Finite, non-zero float vector fitted to `dim`: longer -> first `dim` values, L2-normalised (cosine
+    stays meaningful for Matryoshka models); shorter -> unit-normalised (embed_safe zero-pads). Raises ValueError."""
+    f = [float(x) for x in v]
+    if not f or not all(math.isfinite(x) for x in f):
+        raise ValueError("non-finite")
+    if len(f) > dim:
+        f = f[:dim]
+    n = math.sqrt(sum(x * x for x in f))
+    if not (n > 1e-12) or not math.isfinite(n):
+        raise ValueError("zero")
+    return [x / n for x in f]
+
+
+class TokenFactoryEmbeddings:
+    """Hosted embeddings via the OpenAI-compatible Token Factory client (`llm.embed`). Sends
+    `dimensions=dim` when allowed (falls back once if rejected), batches, and always shapes the result."""
+
+    def __init__(self, llm=None, model: str = "", dim: int | None = None, send_dimensions: bool | None = None,
+                 timeout: float | None = None):
         self._llm = llm
+        self._model = model
+        self._dim = dim
+        self._send = send_dimensions
+        self._timeout = timeout
         self.name = f"tf:{model}" if model else "tf"
 
     def _client(self):
@@ -82,8 +111,35 @@ class TokenFactoryEmbeddings:
             self._llm = get_llm()
         return self._llm
 
+    def _cfg(self):
+        from app.config import settings
+        dim = self._dim or settings.embed_dim
+        send = settings.embed_send_dimensions if self._send is None else self._send
+        timeout = settings.embed_timeout_s if self._timeout is None else self._timeout
+        return dim, send, timeout
+
+    def _request(self, batch: list[str], dim: int, send: bool, timeout: float) -> list[list[float]]:
+        from app.llm import DimensionsRejected
+        llm, key = self._client(), self._model or self.name
+        if send and key not in _dims_rejected:
+            try:
+                return llm.embed(batch, dimensions=dim, timeout=timeout)
+            except DimensionsRejected:
+                _dims_rejected.add(key)
+                log.warning("embedding server rejected `dimensions`; not sending it again (model %s)", key)
+        return llm.embed(batch, timeout=timeout)
+
     def embed(self, texts: list[str]) -> list[list[float]]:
-        return [_unit([float(x) for x in v]) for v in self._client().embed(texts)]
+        dim, send, timeout = self._cfg()
+        clean = [redact((t or "")[:MAX_CHARS]) for t in texts]  # defence in depth
+        out: list[list[float]] = []
+        for i in range(0, len(clean), EMBED_BATCH):
+            batch = clean[i:i + EMBED_BATCH]
+            vecs = self._request(batch, dim, send, timeout)
+            if len(vecs) != len(batch):
+                raise ValueError("shape")
+            out.extend(shape_vector(v, dim) for v in vecs)
+        return out
 
 
 class LocalEmbeddings:
@@ -133,12 +189,23 @@ _cache: dict[tuple, EmbeddingProvider] = {}
 _cache_lock = threading.Lock()
 
 
+def _key(settings, name: str) -> tuple:
+    return (name, settings.local_embed_model if name == "local" else settings.embed_model,
+            settings.embed_dim, settings.embed_send_dimensions, settings.embed_timeout_s)
+
+
+def register_provider(settings, provider: EmbeddingProvider) -> None:
+    """Make `get_provider(settings)` return `provider` (eval tooling: cached / recording providers)."""
+    with _cache_lock:
+        _cache[_key(settings, provider_name(settings))] = provider
+
+
 def get_provider(settings) -> EmbeddingProvider | None:
     """The configured provider (one instance per configuration, so the local model loads once)."""
     name = provider_name(settings)
     if name == "none":
         return None
-    key = (name, settings.local_embed_model if name == "local" else settings.embed_model)
+    key = _key(settings, name)
     with _cache_lock:
         if key not in _cache:
             if name == "fake":
@@ -146,7 +213,9 @@ def get_provider(settings) -> EmbeddingProvider | None:
             elif name == "local":
                 _cache[key] = LocalEmbeddings(settings.local_embed_model)
             else:
-                _cache[key] = TokenFactoryEmbeddings(model=settings.embed_model)
+                _cache[key] = TokenFactoryEmbeddings(
+                    model=settings.embed_model, dim=settings.embed_dim,
+                    send_dimensions=settings.embed_send_dimensions, timeout=settings.embed_timeout_s)
         return _cache[key]
 
 

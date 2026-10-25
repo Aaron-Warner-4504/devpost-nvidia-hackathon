@@ -161,3 +161,124 @@ def test_local_model_multilingual_smoke():
                              "मुझे आपका नंबर एक दोस्त से मिला, हमारे शेयर टिप्स ग्रुप से जुड़ें",
                              "Your electricity bill has been paid successfully"])
     assert cos(en, hi) > cos(en, other)
+
+
+# ---------------------------------------------------------------- token_factory: dimensions, truncation, batching
+import json as _json  # noqa: E402
+
+import httpx  # noqa: E402
+import respx  # noqa: E402
+
+from app.llm import LLM  # noqa: E402
+
+EMB_URL = "https://tf.test/v1/embeddings"
+DIM = 8
+
+
+def _tf(dim=DIM, send=True, model="Qwen/Qwen3-Embedding-8B"):
+    embeddings.reset_dimension_memory()
+    llm = LLM("https://tf.test/v1/", "k", "chat", model, "", dim)
+    return TokenFactoryEmbeddings(llm=llm, model=model, dim=dim, send_dimensions=send, timeout=3.0)
+
+
+def _resp(vecs):
+    return httpx.Response(200, json={"object": "list", "model": "m", "usage": {"prompt_tokens": 1, "total_tokens": 1},
+                                     "data": [{"object": "embedding", "index": i, "embedding": v}
+                                              for i, v in enumerate(vecs)]})
+
+
+def _vec(n, seed):
+    return [math.sin(seed * 7.3 + i * 1.7) + 0.1 for i in range(n)]
+
+
+def _echo(request):
+    body = _json.loads(request.content)
+    n = len(body["input"])
+    return _resp([_vec(16, i + 1) for i in range(n)])
+
+
+@respx.mock
+def test_dimensions_param_sent():
+    route = respx.post(EMB_URL).mock(side_effect=_echo)
+    out = _tf().embed(["hello"])
+    body = _json.loads(route.calls[0].request.content)
+    assert body["dimensions"] == DIM and body["model"] == "Qwen/Qwen3-Embedding-8B"
+    assert len(out) == 1 and len(out[0]) == DIM
+
+
+@respx.mock
+def test_dimensions_not_sent_when_disabled():
+    route = respx.post(EMB_URL).mock(side_effect=_echo)
+    _tf(send=False).embed(["hello"])
+    assert "dimensions" not in _json.loads(route.calls[0].request.content)
+
+
+@respx.mock
+@pytest.mark.parametrize("status", [400, 422])
+def test_rejected_dimensions_retry_once_then_never_sent_again(status):
+    def handler(request):
+        if "dimensions" in _json.loads(request.content):
+            return httpx.Response(status, json={"error": {"message": "unsupported parameter: dimensions"}})
+        return _echo(request)
+    route = respx.post(EMB_URL).mock(side_effect=handler)
+    p = _tf()
+    assert len(p.embed(["a"])[0]) == DIM  # truncated even though the server ignored dimensions
+    assert [("dimensions" in _json.loads(c.request.content)) for c in route.calls] == [True, False]
+    p.embed(["b"])
+    assert [("dimensions" in _json.loads(c.request.content)) for c in route.calls] == [True, False, False]
+
+
+@respx.mock
+def test_truncation_normalised_and_preserves_cosine_order():
+    full = [_vec(32, s) for s in range(1, 6)]
+    respx.post(EMB_URL).mock(side_effect=lambda r: _resp(full[:len(_json.loads(r.content)["input"])]))
+    out = _tf(dim=16, send=False).embed(["t"] * 5)
+    for v in out:
+        assert len(v) == 16 and abs(math.sqrt(sum(x * x for x in v)) - 1) < 1e-9
+    prefix = [f[:16] for f in full]
+    for i in range(5):
+        assert [round(x, 9) for x in out[i]] == [round(x, 9) for x in embeddings._unit(prefix[i])]
+    q = out[0]
+    ranked = sorted(range(1, 5), key=lambda j: -cos(q, out[j]))
+    assert ranked == sorted(range(1, 5), key=lambda j: -cos(prefix[0], prefix[j]))
+
+
+@respx.mock
+def test_shorter_vectors_padded_by_embed_safe():
+    respx.post(EMB_URL).mock(side_effect=lambda r: _resp([_vec(4, 1)]))
+    p = _tf(dim=DIM, send=False)
+    out = embed_safe(p, ["hi"], dim=DIM, timeout=5)
+    assert len(out[0]) == DIM and out[0][4:] == [0.0] * 4
+    assert abs(math.sqrt(sum(x * x for x in out[0])) - 1) < 1e-9
+
+
+@respx.mock
+@pytest.mark.parametrize("bad", [[0.0] * 16, [float("nan")] + [1.0] * 15, [1.0] * 15 + [float("inf")]])
+def test_nan_zero_inf_vectors_rejected(bad):
+    respx.post(EMB_URL).mock(side_effect=lambda r: httpx.Response(
+        200, content=_json.dumps({"object": "list", "data": [{"index": 0, "embedding": bad}]}, allow_nan=True)))
+    assert embed_safe(_tf(send=False), ["x"], dim=DIM, timeout=5) is None
+
+
+@respx.mock
+def test_failure_returns_none_and_logs_no_text(caplog):
+    respx.post(EMB_URL).mock(return_value=httpx.Response(500, json={"error": "boom"}))
+    with caplog.at_level(logging.DEBUG):
+        assert embed_safe(_tf(), ["secret message text"], dim=DIM, timeout=5) is None
+    assert "secret message text" not in caplog.text
+
+
+@respx.mock
+def test_batches_split_at_16_and_order_kept():
+    route = respx.post(EMB_URL).mock(side_effect=_echo)
+    out = _tf(send=False).embed([f"t{i}" for i in range(35)])
+    sizes = [len(_json.loads(c.request.content)["input"]) for c in route.calls]
+    assert sizes == [16, 16, 3] and len(out) == 35
+
+
+@respx.mock
+def test_text_redacted_before_sending():
+    route = respx.post(EMB_URL).mock(side_effect=_echo)
+    _tf(send=False).embed(["call me on 9876543210 otp 482913"])
+    sent = _json.loads(route.calls[0].request.content)["input"][0]
+    assert "482913" not in sent
