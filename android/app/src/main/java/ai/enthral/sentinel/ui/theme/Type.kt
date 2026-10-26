@@ -61,13 +61,17 @@ data class SentinelType(
 /**
  * @param lineScale Devanagari needs more vertical room for matras and conjuncts: Hindi uses ~1.12x line heights.
  */
-fun sentinelType(lineScale: Float = 1f): SentinelType {
+/**
+ * @param tracked Inter's optical tracking. Off for Hindi: letter-spacing breaks Devanagari's joined headline
+ *   (shirorekha) and let Android break words between clusters ("सेंटिन / ल").
+ */
+fun sentinelType(lineScale: Float = 1f, tracked: Boolean = true): SentinelType {
     fun style(size: Float, line: Float, weight: FontWeight, tabular: Boolean = false) = TextStyle(
         fontFamily = Inter,
         fontWeight = weight,
         fontSize = size.sp,
         lineHeight = (line * lineScale).sp,
-        letterSpacing = tracking(size),
+        letterSpacing = if (tracked) tracking(size) else 0.em,
         lineHeightStyle = NoTrim,
         fontFeatureSettings = if (tabular) "tnum, calt" else "calt",
     )
@@ -89,7 +93,7 @@ fun sentinelType(lineScale: Float = 1f): SentinelType {
 }
 
 val LatinType = sentinelType()
-val DevanagariType = sentinelType(lineScale = 1.12f)
+val DevanagariType = sentinelType(lineScale = 1.12f, tracked = false)
 
 /** Material slots mapped onto the Sentinel scale so stock components (fields, snackbars, sheets) match. */
 fun SentinelType.toMaterial() = Typography(

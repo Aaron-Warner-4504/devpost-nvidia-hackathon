@@ -66,4 +66,19 @@ class HomeViewModelTest {
         val repo = FakeAlerts(listOf(Samples.alert())).apply { refreshResult = NetworkDown }
         assertEquals(ProtectionStatus.Offline, vm(repo).state.value.protection)
     }
+
+    @Test fun `attention is today's most serious alert, not merely the newest`() = runTest {
+        val critical = Samples.alert("crit", Tier.Critical, createdAt = Samples.now.minusSeconds(3600))
+        val newerHigh = Samples.alert("high", Tier.High, createdAt = Samples.now.minusSeconds(60))
+        val caution = Samples.alert("caut", Tier.Caution, createdAt = Samples.now)
+        val vm = vm(FakeAlerts(listOf(critical, newerHigh, caution)))
+        assertEquals("caut", vm.state.value.latest?.id)
+        assertEquals("crit", vm.state.value.attention?.id)
+    }
+
+    @Test fun `no attention for caution only or for yesterday's critical`() = runTest {
+        val old = Samples.alert("old", Tier.Critical, createdAt = Samples.now.minusSeconds(2 * 86_400))
+        val caution = Samples.alert("caut", Tier.Caution, createdAt = Samples.now)
+        assertEquals(null, vm(FakeAlerts(listOf(old, caution))).state.value.attention)
+    }
 }

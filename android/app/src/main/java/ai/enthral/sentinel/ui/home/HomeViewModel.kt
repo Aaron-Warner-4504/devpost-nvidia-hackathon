@@ -13,6 +13,7 @@ import ai.enthral.sentinel.domain.Tier
 import ai.enthral.sentinel.domain.computeProtection
 import ai.enthral.sentinel.ui.common.SourcesController
 import ai.enthral.sentinel.ui.common.SourcesState
+import ai.enthral.sentinel.ui.common.attentionToday
 import ai.enthral.sentinel.ui.common.countsToday
 import java.time.Instant
 import java.time.ZoneId
@@ -33,6 +34,8 @@ data class HomeUiState(
     val protection: ProtectionStatus = ProtectionStatus.SetupIncomplete,
     val sources: SourcesState = SourcesState(),
     val latest: Alert? = null,
+    /** Today's most serious (critical/high) alert: the hero turns into "Needs your attention" for it. */
+    val attention: Alert? = null,
     val todayCounts: Map<Tier, Int> = emptyMap(),
     val offline: Boolean = false,
 )
@@ -60,6 +63,7 @@ class HomeViewModel(
             protection = protection,
             sources = s,
             latest = list.maxByOrNull { it.createdAt },
+            attention = attentionToday(list, clock(), zone),
             todayCounts = countsToday(list, clock(), zone),
             offline = f.offline,
         )
