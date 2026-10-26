@@ -1,0 +1,51 @@
+{
+  "id": "scam-distributed-slow-burn-04",
+  "label": "scam",
+  "category": "distributed_slow_burn",
+  "lang": "en",
+  "shape": "distributed",
+  "template": "dsb_job_en",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-distributed-slow-burn-04-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-06T11:05:00+05:30",
+      "sender": "8730880114",
+      "text": "Hello, this is Kavita from JobKart HR. We saw your profile on a job portal and have a remote opening for you.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-04-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-07T14:11:00+05:30",
+      "sender": "7977948331",
+      "text": "Work from home opportunity: rate hotels online and earn Rs 4,500 daily. Many members are already earning.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-04-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-09T00:12:00+05:30",
+      "sender": "7859877302",
+      "text": "Your onboarding is approved. A refundable training kit fee of Rs 2,000 is needed to activate your employee ID.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

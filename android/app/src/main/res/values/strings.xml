@@ -152,6 +152,7 @@
     <string name="signal_credential_form_on_new_domain">Link opens a login form on a brand-new site</string>
     <string name="signal_apk_download">Link downloads an app file</string>
     <string name="signal_threat_feed_hit">Link is on a list of known scam sites</string>
+    <string name="signal_story_progression">Fits the pattern of a scam that builds up over several contacts</string>
     <string name="check_title">Check something</string>
     <string name="check_intro">Not sure about a message? Paste it or pick a screenshot and Sentinel will tell you whether it looks like a scam.</string>
     <string name="check_mode_text">Text</string>

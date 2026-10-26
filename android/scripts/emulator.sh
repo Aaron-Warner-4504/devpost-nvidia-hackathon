@@ -6,8 +6,9 @@ set -euo pipefail
 source "$(dirname "$0")/env.sh"
 args=(-avd sentinel_pixel -gpu swiftshader_indirect -no-audio -no-boot-anim -no-snapshot-save)
 [ "${1:-}" = "headless" ] && args+=(-no-window)
-nohup emulator "${args[@]}" >"${TMPDIR:-/tmp}/sentinel-emulator.log" 2>&1 &
-echo "emulator pid $! (log: ${TMPDIR:-/tmp}/sentinel-emulator.log)"
+log="$(mktemp "${TMPDIR:-/tmp}/sentinel-emulator.XXXXXX.log")"  # unpredictable name (no symlink/clobber on shared /tmp)
+nohup emulator "${args[@]}" >"$log" 2>&1 &
+echo "emulator pid $! (log: $log)"
 timeout 300 adb wait-for-device
 for _ in $(seq 1 150); do
   [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && { echo "booted"; exit 0; }

@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app import family, push
-from app.config import settings
+from app.config import docs_are_enabled, settings
 from app.cors import apply_cors
 from app.db_url import check_database_url
 from app.pipeline import orchestrator
@@ -20,6 +20,7 @@ async def lifespan(_: FastAPI):
     # alert hooks are registered at startup (not import time) so tests can inject their own
     orchestrator.register_alert_hook(family.family_alert_hook)
     orchestrator.register_alert_hook(push.push_alert_hook)
+    _start_review()
     try:
         yield
     finally:
@@ -28,7 +29,25 @@ async def lifespan(_: FastAPI):
                 orchestrator.alert_hooks.remove(hook)
 
 
-app = FastAPI(title="Sentinel API", version="0.1.0", lifespan=lifespan)
+def _start_review() -> None:
+    """Stage-2 worker pool from settings; a periodic sweeper submits jobs that did not fit the queue or
+    that a crash / restart left behind (background thread, also runs once at startup)."""
+    from datetime import timedelta
+
+    from app.db import SessionLocal
+    from app.pipeline import review
+    review.configure(workers=settings.review_workers, queue_size=settings.review_queue_size,
+                     max_per_user=settings.review_max_queued_per_user)
+    if not review.enabled(settings) or settings.environment == "test":
+        return
+    period = timedelta(minutes=max(1, settings.review_sweep_minutes))
+    review.start_sweeper(SessionLocal, interval=period, older_than=period)
+
+
+# /docs, /redoc and /openapi.json are off in prod by default (see DOCS_ENABLED); nothing in the app uses them.
+_docs_kw = {} if docs_are_enabled(settings) else {"docs_url": None, "redoc_url": None, "openapi_url": None}
+app = FastAPI(title="Sentinel API", version="0.1.0", lifespan=lifespan,
+              root_path=settings.root_path.strip().rstrip("/"), **_docs_kw)
 app.include_router(me.router)
 app.include_router(events.router)
 app.include_router(alerts.router)

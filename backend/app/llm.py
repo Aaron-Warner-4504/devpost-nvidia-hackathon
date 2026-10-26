@@ -14,6 +14,10 @@ class LLMUnavailable(Exception):
     """LLM timed out, was rate-limited, errored (5xx) or returned unusable output."""
 
 
+class DimensionsRejected(LLMUnavailable):
+    """The embeddings endpoint refused the `dimensions` parameter (HTTP 400/422 or an error naming it)."""
+
+
 @dataclass
 class ToolCall:
     id: str
@@ -69,8 +73,21 @@ class LLM:
             calls.append(ToolCall(id=t.id, name=t.function.name, arguments=args))
         return ChatResult(content=msg.content, tool_calls=calls)
 
-    def embed(self, texts: list[str]) -> list[list[float]]:
-        resp = self._call(self._client.embeddings.create, model=self.embed_model, input=texts)
+    def embed(self, texts: list[str], dimensions: int | None = None,
+              timeout: float | None = None) -> list[list[float]]:
+        kw: dict = {}
+        if dimensions is not None:
+            kw["dimensions"] = dimensions
+        if timeout is not None:
+            kw["timeout"] = timeout
+        try:
+            resp = self._call(self._client.embeddings.create, model=self.embed_model, input=texts, **kw)
+        except LLMUnavailable as e:
+            if dimensions is not None and (isinstance(e.__cause__, (openai.BadRequestError,
+                                                                     openai.UnprocessableEntityError))
+                                           or "dimension" in str(e).lower()):
+                raise DimensionsRejected(str(e)) from e
+            raise
         return [d.embedding for d in sorted(resp.data, key=lambda d: d.index)]
 
 
@@ -90,7 +107,8 @@ class FakeLLM:
             raise item
         return item
 
-    def embed(self, texts: list[str]) -> list[list[float]]:
+    def embed(self, texts: list[str], dimensions: int | None = None,
+              timeout: float | None = None) -> list[list[float]]:
         out = []
         for t in texts:
             digest = hashlib.sha256(t.encode()).digest()

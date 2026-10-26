@@ -1,0 +1,51 @@
+{
+  "id": "scam-distributed-slow-burn-01",
+  "label": "scam",
+  "category": "distributed_slow_burn",
+  "lang": "en",
+  "shape": "distributed",
+  "template": "dsb_inv_en",
+  "harm_index": 2,
+  "events": [
+    {
+      "device_event_id": "scam-distributed-slow-burn-01-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-03T17:35:00+05:30",
+      "sender": "6930782407",
+      "text": "Hi Kavita, I got your number from the Bengaluru investors meetup. Hope you are doing well! I share market updates sometimes.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-01-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-04T17:43:00+05:30",
+      "sender": "7939090376",
+      "text": "Good morning! Our members booked 27% profit this month with expert stock tips. Guaranteed returns, only for serious members.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "scam-distributed-slow-burn-01-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-06T15:46:00+05:30",
+      "sender": "8337193013",
+      "text": "Only 3 VIP seats left in the premium batch. The membership fee of Rs 8,999 is required to secure your slot.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": 2,
+    "min_tier": "high"
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

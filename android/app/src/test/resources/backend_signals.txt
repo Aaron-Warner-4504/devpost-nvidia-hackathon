@@ -18,3 +18,4 @@ user_marked_safe
 credential_form_on_new_domain
 apk_download
 threat_feed_hit
+story_progression

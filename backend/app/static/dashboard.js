@@ -116,7 +116,7 @@
   function load() {
     if (!token) { setStatus("Paste a bearer token to load a timeline.", true); return Promise.resolve(); }
     setStatus("Loading…");
-    return fetch("/v1/dashboard/timeline", {headers: {Authorization: "Bearer " + token}, cache: "no-store"})
+    return fetch("v1/dashboard/timeline", {headers: {Authorization: "Bearer " + token}, cache: "no-store"})
       .then(function (r) {
         if (r.status === 401) throw new Error("Invalid token.");
         if (r.status === 404) throw new Error("Dashboard is not enabled on this server.");

@@ -1,0 +1,84 @@
+{
+  "id": "benign-distributed-slow-burn-02",
+  "label": "benign",
+  "category": "distributed_slow_burn",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "dsb_b_recruiter",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-distributed-slow-burn-02-e00",
+      "source": "sms",
+      "ts": "2026-07-16T10:00:00+05:30",
+      "sender": "VM-NAUKRI",
+      "text": "Your profile was shortlisted by Wipro for a developer role.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-02-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-17T09:41:00+05:30",
+      "sender": "Chachu",
+      "text": "Reached home?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-02-e02",
+      "source": "sms",
+      "ts": "2026-07-18T12:00:00+05:30",
+      "sender": "JD-HRMAIL",
+      "text": "Your interview is scheduled for Tuesday 11 AM; the HR team will share the meeting link.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-02-e03",
+      "source": "whatsapp",
+      "ts": "2026-07-18T17:06:00+05:30",
+      "sender": "Mummy",
+      "text": "Ok 👍",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-02-e04",
+      "source": "whatsapp",
+      "ts": "2026-07-19T09:04:00+05:30",
+      "sender": "Mummy",
+      "text": "Call me when free",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-02-e05",
+      "source": "sms",
+      "ts": "2026-07-21T16:00:00+05:30",
+      "sender": "JD-HRMAIL",
+      "text": "Congratulations! Your offer letter is released. Complete onboarding documents on the portal.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

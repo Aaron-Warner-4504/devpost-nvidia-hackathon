@@ -34,7 +34,47 @@ Debug builds install as `ai.enthral.sentinel.debug` and log HTTP *headers* under
 * Emulator: default `http://10.0.2.2:8000` (host loopback). Start the backend on `0.0.0.0` or `127.0.0.1:8000`.
 * Physical phone over USB: `adb reverse tcp:8000 tcp:8000`, then build with `./gradlew assembleDebug -PsentinelApiBaseUrl=http://localhost:8000`.
 * Debug-only `network_security_config` allows cleartext to `10.0.2.2` and `localhost` only; release forbids cleartext.
-* Release URL is the placeholder `https://api.example.invalid`. **TODO: set the production API origin in `app/build.gradle.kts` (release buildType) and add signing.**
+* Release URL is set per build with `-PsentinelApiBaseUrl=...` (see **Release build**); without it the placeholder `https://api.example.invalid` is baked in and the app refuses to start.
+
+## Release build
+Signed, minified (R8), https-only, no demo mode (`DEMO_ENABLED=false`, the demo code is stripped).
+
+```bash
+cd android && source scripts/env.sh
+./gradlew assembleRelease -PsentinelApiBaseUrl=https://interns.enthral.ai/sentinel
+# -> app/build/outputs/apk/release/app-release.apk  (package ai.enthral.sentinel)
+```
+* `sentinelApiBaseUrl` must be `https://...` with no spaces or quotes; trailing slashes are stripped (the client appends
+  `/v1/...` to it, so the live URL is `https://interns.enthral.ai/sentinel`). Anything else fails the build.
+* Without the property the placeholder `https://api.example.invalid` is baked in and the app throws at startup with
+  "Sentinel release build has no API URL" instead of silently calling a dummy host.
+* To point at a new server, rebuild with the new URL and reinstall (`adb install -r`); same signing key, data is kept.
+  The registered device token belongs to the old server, so users should use Settings -> Delete my data first (or expect a re-register).
+
+### Signing
+Create `android/keystore.properties` (gitignored, mode 600). If it is missing or incomplete the release APK is built unsigned.
+```properties
+storeFile=/home/YOU/.sentinel-keystore/sentinel-release.jks
+storePassword=<password>
+keyAlias=sentinel
+keyPassword=<password>
+```
+Key creation (once; keep it OUTSIDE the repo; `*.jks`, `*.keystore` and `keystore.properties` are gitignored):
+```bash
+mkdir -m 700 ~/.sentinel-keystore
+PW=$(openssl rand -hex 24)
+keytool -genkeypair -keystore ~/.sentinel-keystore/sentinel-release.jks -alias sentinel -keyalg EC -groupname secp256r1 \
+  -validity 10000 -dname "CN=Sentinel" -storepass "$PW" -keypass "$PW"
+```
+**Back up `~/.sentinel-keystore/` and the password.** Android only accepts an update signed with the same key: if the key
+is lost, the installed app can never be updated (users would have to uninstall). Sign every future release with this key.
+
+Verify and install:
+```bash
+$ANDROID_HOME/build-tools/35.0.0/apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
+adb install -r app/build/outputs/apk/release/app-release.apk      # add -s <serial> with several devices
+adb shell am start -n ai.enthral.sentinel/.MainActivity
+```
 
 ## Screens (phase 2)
 | Screen | What it does |

@@ -1,0 +1,84 @@
+{
+  "id": "benign-distributed-slow-burn-01",
+  "label": "benign",
+  "category": "distributed_slow_burn",
+  "lang": "en",
+  "shape": "user_week",
+  "template": "dsb_b_society",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-distributed-slow-burn-01-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-15T11:00:00+05:30",
+      "sender": "Mrs Kapoor (Society)",
+      "text": "Hi, adding you to the Green Park residents group for Diwali planning.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-01-e01",
+      "source": "whatsapp",
+      "ts": "2026-07-17T19:00:00+05:30",
+      "sender": "Mr Iyer (Society)",
+      "text": "Diwali party on Saturday at 7 pm, everyone welcome!",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-01-e02",
+      "source": "sms",
+      "ts": "2026-07-18T16:58:00+05:30",
+      "sender": "VM-ZOMATO",
+      "text": "216664 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-01-e03",
+      "source": "whatsapp",
+      "ts": "2026-07-19T10:00:00+05:30",
+      "sender": "Treasurer Green Park",
+      "text": "Maintenance fee of Rs 1,500 for October is due, please pay to the society account.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-01-e04",
+      "source": "sms",
+      "ts": "2026-07-19T14:53:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "Rs.4,848.00 debited from A/c XX4215 on 17-03-26 to VPA irctc@icici. UPI Ref 260070267178. Not you? Call 18002586161 -HDFC",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "en"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-01-e05",
+      "source": "sms",
+      "ts": "2026-07-20T12:12:00+05:30",
+      "sender": "VM-HDFCBK",
+      "text": "OTP for transaction of INR 7,356.00 on your HDFC card XX6776 at AMAZON is 919959. Do not share OTP with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "en"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "holdout",
+  "source": "synthetic"
+}

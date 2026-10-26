@@ -377,6 +377,15 @@ def _neutral(s: Any, n: int = 4000) -> str:
     return _DELIM.sub(lambda m: ("‹" if m.group(0)[0] == "<" else "›") * len(m.group(0)), s)
 
 
+_ID_OK = re.compile(r"[A-Za-z0-9_-]{1,64}")
+
+
+def _event_id(eid: Any) -> str:
+    """Server-generated event ids are passed verbatim (redaction would mangle hex digit runs and make
+    them uncitable); anything that is not a plain id is dropped."""
+    return eid if isinstance(eid, str) and _ID_OK.fullmatch(eid) else ""
+
+
 def _user_message(event: EventIn, entities: list[Entity], signals: list[Signal], base_tier: Tier,
                   history: list[HistoryItem], nonce: str) -> str:
     payload = {
@@ -386,7 +395,7 @@ def _user_message(event: EventIn, entities: list[Entity], signals: list[Signal],
         "rule_signals": [{"name": s.name, "weight": s.weight, "evidence": _neutral(s.evidence, 200)}
                          for s in signals],
         "base_tier": base_tier,
-        "history": [{"event_id": _neutral(h.event_id, 64), "ts": h.ts.isoformat(),
+        "history": [{"event_id": _event_id(h.event_id), "ts": h.ts.isoformat(),
                      "source": _neutral(h.source, 32), "text": _neutral(h.redacted_text, 300)}
                     for h in history],
     }

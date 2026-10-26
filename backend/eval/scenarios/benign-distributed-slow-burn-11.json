@@ -1,0 +1,100 @@
+{
+  "id": "benign-distributed-slow-burn-11",
+  "label": "benign",
+  "category": "distributed_slow_burn",
+  "lang": "hinglish",
+  "shape": "user_week",
+  "template": "dsb_b_family",
+  "harm_index": null,
+  "events": [
+    {
+      "device_event_id": "benign-distributed-slow-burn-11-e00",
+      "source": "whatsapp",
+      "ts": "2026-07-25T09:00:00+05:30",
+      "sender": "Mummy",
+      "text": "Beta aaj Papa ke phone se baat kar rahi hoon, mera phone kharab hai.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-11-e01",
+      "source": "sms",
+      "ts": "2026-07-26T14:30:00+05:30",
+      "sender": "AD-OLACAB",
+      "text": "127545 is your login OTP. Do not share it with anyone.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-11-e02",
+      "source": "whatsapp",
+      "ts": "2026-07-26T18:00:00+05:30",
+      "sender": "Papa",
+      "text": "Hospital mein checkup tha, sab theek hai.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-11-e03",
+      "source": "whatsapp",
+      "ts": "2026-07-27T20:00:00+05:30",
+      "sender": "Papa",
+      "text": "Dawai ke liye ₹2,000 bhej do, ghar aake de dungi.",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi-Latn",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-11-e04",
+      "source": "call",
+      "ts": "2026-07-28T20:00:00+05:30",
+      "sender": null,
+      "text": null,
+      "call": {
+        "number": "7101020193",
+        "duration_s": 456,
+        "is_contact": true,
+        "direction": "in"
+      },
+      "triage_score": 0.1,
+      "lang": null
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-11-e05",
+      "source": "whatsapp",
+      "ts": "2026-07-31T07:33:00+05:30",
+      "sender": "Priya Office",
+      "text": "घर कब आ रहे हो?",
+      "call": null,
+      "triage_score": 0.1,
+      "lang": "hi",
+      "is_contact": true
+    },
+    {
+      "device_event_id": "benign-distributed-slow-burn-11-e06",
+      "source": "sms",
+      "ts": "2026-07-31T10:56:00+05:30",
+      "sender": "BZ-AXISBK",
+      "text": "Dear Customer, 618928 is the OTP to add a beneficiary in Axis Bank NetBanking. Never share your OTP. If not done by you, call the number on the back of your card.",
+      "call": null,
+      "triage_score": 0.4,
+      "lang": "hi-Latn"
+    }
+  ],
+  "expect": {
+    "first_alert_at_index": null,
+    "min_tier": null
+  },
+  "fixtures": {
+    "domain_info": {},
+    "link_reports": {}
+  },
+  "split": "tune",
+  "source": "synthetic"
+}

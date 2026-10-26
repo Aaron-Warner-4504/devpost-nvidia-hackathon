@@ -46,11 +46,29 @@ def _peer(request: Request) -> str:
     return normalize_ip(host) or host  # non-IP peers (e.g. the test client) are used as-is
 
 
+def _peer_is_trusted_proxy(request: Request) -> bool:
+    """True when the socket peer is inside TRUSTED_PROXY_CIDRS (so its X-Forwarded-For may be believed)."""
+    host = request.client.host if request.client else None
+    try:
+        ip = ipaddress.ip_address((host or "").strip())
+    except ValueError:
+        return False
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
+        ip = ip.ipv4_mapped
+    for part in settings.trusted_proxy_cidrs.split(","):
+        part = part.strip()
+        if part and ip.version == ipaddress.ip_network(part, strict=False).version \
+                and ip in ipaddress.ip_network(part, strict=False):
+            return True
+    return False
+
+
 def client_ip(request: Request) -> str:
     """The socket peer by default. With TRUST_PROXY_HEADERS, the X-Forwarded-For entry TRUSTED_PROXY_COUNT
-    positions from the right (the one our proxy appended; anything further left is client-controlled).
+    positions from the right (the one our proxy appended; anything further left is client-controlled), but only
+    when the socket peer is inside TRUSTED_PROXY_CIDRS; otherwise the peer is used.
     Too few entries or a non-IP entry -> the socket peer."""
-    if settings.trust_proxy_headers:
+    if settings.trust_proxy_headers and _peer_is_trusted_proxy(request):
         raw = request.headers.get("x-forwarded-for")
         n = settings.trusted_proxy_count
         if raw is not None and n >= 1:

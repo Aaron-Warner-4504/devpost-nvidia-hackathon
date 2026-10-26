@@ -46,7 +46,7 @@ def test_every_table_is_owned_by_a_user():
 
 def seed(db, user_id):
     """Insert one row into every user-owned table."""
-    from app.models import (Alert, Assessment, Edge, Embedding, Entity, EventEntity, FamilyAcceptFailure,
+    from app.models import (Alert, Assessment, Edge, Embedding, Entity, EventEntity, EventJob, FamilyAcceptFailure,
                             FamilyInvite, FamilyPing, Override, TrustedContact, User)
     from datetime import datetime, timezone
     from app.config import settings
@@ -70,6 +70,7 @@ def seed(db, user_id):
         FamilyPing(user_id=user_id),
         Override(user_id=user_id, kind="safe", type="domain", canonical="ok.com"),
         Consent(user_id=user_id, source="sms", granted_at=datetime.now(timezone.utc)),
+        EventJob(user_id=user_id, event_id=ev.id, state="queued", payload={"event": {}}),
         a,
     ])
     db.flush()
