@@ -6,6 +6,46 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Call number/time/duration/direction only, requested at runtime with an explanation. Never audio. -->
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <!-- Yes/no "is this sender a saved contact" checks only; names never leave the phone. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- Re-arms the 15-minute outbox flush / alert check after a reboot. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Lets the user exempt Sentinel from battery optimisation (system dialog, offered in onboarding/Settings). -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- Package visibility: only to show the names of the watched apps (capture/CaptureAllowlist.kt) in Settings. -->
+    <queries>
+        <package android:name="com.android.messaging" />
+        <package android:name="com.android.mms" />
+        <package android:name="com.axis.mobile" />
+        <package android:name="com.bankofbaroda.mconnect" />
+        <package android:name="com.csam.icici.bank.imobile" />
+        <package android:name="com.dreamplug.androidapp" />
+        <package android:name="com.fedmobile" />
+        <package android:name="com.freecharge.android" />
+        <package android:name="com.fss.unbipay" />
+        <package android:name="com.google.android.apps.messaging" />
+        <package android:name="com.google.android.apps.nbu.paisa.user" />
+        <package android:name="com.idbibank.abhay_card" />
+        <package android:name="com.idfcfirstbank.optimus" />
+        <package android:name="com.infrasofttech.indianBank" />
+        <package android:name="com.kotak811mobilebankingapp.instantsavingsupiscanandpayrecharge" />
+        <package android:name="com.lcode.smartz" />
+        <package android:name="com.mobikwik_new" />
+        <package android:name="com.motorola.messaging" />
+        <package android:name="com.msf.kbank.mobile" />
+        <package android:name="com.oneplus.mms" />
+        <package android:name="com.phonepe.app" />
+        <package android:name="com.pnb.pnbone" />
+        <package android:name="com.samsung.android.messaging" />
+        <package android:name="com.sbi.SBIFreedomPlus" />
+        <package android:name="com.sbi.lotusintouch" />
+        <package android:name="com.snapwork.hdfc" />
+        <package android:name="com.yesbank" />
+        <package android:name="in.amazon.mShop.android.shopping" />
+        <package android:name="in.org.npci.upiapp" />
+        <package android:name="net.one97.paytm" />
+    </queries>
 
     <application
         android:name=".SentinelApp"
@@ -50,9 +90,9 @@
             </intent-filter>
         </activity>
 
-        <!-- Makes the app appear in system "Notification access". Reads nothing yet (see class doc). -->
+        <!-- Reads notifications of the allowlisted apps only, masks them on the phone (capture/). -->
         <service
-            android:name=".data.system.SentinelNotificationListener"
+            android:name=".capture.SentinelNotificationListener"
             android:exported="true"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
@@ -60,6 +100,15 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <receiver
+            android:name=".sync.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <!-- Persists the per-app language on API < 33 (AppCompat). -->
         <service
