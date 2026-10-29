@@ -1,0 +1,38 @@
+flowchart LR
+  subgraph Phone["Android phone (Kotlin, Jetpack Compose)"]
+    CAP["Capture: share sheet 'Check this'<br/>notification listener and call log<br/>(live capture: see status table)"]
+    UI["Alerts, 'why' timeline,<br/>feedback, family pairing"]
+  end
+
+  subgraph Host["Team VM: nginx -> FastAPI (interns.enthral.ai/sentinel)"]
+    GW["API gateway<br/>device token auth, rate limits"]
+    RED["Redact<br/>OTP, card, account, Aadhaar, PAN"]
+    EXT["Entity extraction<br/>phone, domain, UPI id, amount, claim"]
+    MEM["Temporal memory + semantic links<br/>entities, edges, valid_from/valid_to"]
+    RULES["Rules engine<br/>signals set the FLOOR tier"]
+    AGENT["Risk agent (tool-using)<br/>raises tier only on tool-confirmed facts"]
+    POL["Alert policy<br/>dedupe, daily cap, flood guard"]
+    INS["Link inspector (separate sandbox)<br/>redirects, headless page check, SSRF guard"]
+  end
+
+  subgraph Nebius["Nebius Token Factory (inference)"]
+    NEM["NVIDIA Nemotron chat model<br/>agent reasoning and tool calls"]
+    VL["NVIDIA Nemotron VL model<br/>screenshot text"]
+    EMB["Qwen3-Embedding-8B<br/>semantic recall"]
+  end
+
+  DB[("Supabase Postgres<br/>+ pgvector")]
+  TAV["Tavily web lookup"]
+  FEEDS["RDAP domain age,<br/>URLhaus / Safe Browsing"]
+
+  CAP -->|"HTTPS: event"| GW --> RED --> EXT --> MEM
+  MEM <--> DB
+  MEM <-->|"embed redacted text"| EMB
+  MEM --> RULES --> AGENT
+  AGENT <-->|"chat + tools"| NEM
+  AGENT -->|"web_lookup"| TAV
+  AGENT -->|"check_url"| FEEDS
+  AGENT -->|"inspect_link"| INS
+  GW -.->|"screenshots"| VL
+  AGENT --> POL -->|"alert + why"| UI
+  UI --> CAP
