@@ -11,6 +11,11 @@ import ai.enthral.sentinel.domain.Alert
 import ai.enthral.sentinel.domain.ProtectionStatus
 import ai.enthral.sentinel.domain.Tier
 import ai.enthral.sentinel.domain.computeProtection
+import ai.enthral.sentinel.capture.CaptureStatus
+import ai.enthral.sentinel.ui.common.CaptureNumbers
+import ai.enthral.sentinel.ui.common.CaptureState
+import ai.enthral.sentinel.ui.common.captureState
+import ai.enthral.sentinel.ui.common.numbers
 import ai.enthral.sentinel.ui.common.SourcesController
 import ai.enthral.sentinel.ui.common.SourcesState
 import ai.enthral.sentinel.ui.common.attentionToday
@@ -38,6 +43,9 @@ data class HomeUiState(
     val attention: Alert? = null,
     val todayCounts: Map<Tier, Int> = emptyMap(),
     val offline: Boolean = false,
+    /** Notification capture truth for the status card. */
+    val capture: CaptureState = CaptureState.Off,
+    val captureNumbers: CaptureNumbers = CaptureNumbers(),
 )
 
 class HomeViewModel(
@@ -46,6 +54,7 @@ class HomeViewModel(
     access: SystemAccess,
     private val clock: () -> Instant,
     private val zone: ZoneId = ZoneId.systemDefault(),
+    capture: CaptureStatus? = null,
 ) : ViewModel() {
     private val sources = SourcesController(settings, access, viewModelScope)
     private val fetch = MutableStateFlow(Fetch())
@@ -54,9 +63,13 @@ class HomeViewModel(
     private data class Fetch(val phase: Phase = Phase.Loading, val refreshing: Boolean = false,
                              val failure: ApiResult<Nothing>? = null, val offline: Boolean = false)
 
-    val state: StateFlow<HomeUiState> = combine(fetch, alerts.alerts, sources.state, paused) { f, list, s, p ->
+    private val numbers = capture.numbers()
+
+    val state: StateFlow<HomeUiState> = combine(fetch, alerts.alerts, sources.state, paused, numbers) { f, list, s, p, n ->
         val protection = computeProtection(s.notifications, s.calls, p, f.offline)
         HomeUiState(
+            capture = captureState(s, p),
+            captureNumbers = n,
             phase = f.phase,
             refreshing = f.refreshing,
             failure = f.failure,
@@ -90,6 +103,6 @@ class HomeViewModel(
     }
 
     companion object {
-        fun create(g: AppGraph) = HomeViewModel(g.alerts, g.settings, g.access, g.clock)
+        fun create(g: AppGraph) = HomeViewModel(g.alerts, g.settings, g.access, g.clock, capture = g.captureStatus)
     }
 }

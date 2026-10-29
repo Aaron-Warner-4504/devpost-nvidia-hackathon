@@ -11,7 +11,13 @@ import ai.enthral.sentinel.data.store.AppSettings
 import ai.enthral.sentinel.data.system.LocaleController
 import ai.enthral.sentinel.data.system.SystemAccess
 import ai.enthral.sentinel.domain.ConsentSource
+import ai.enthral.sentinel.capture.CaptureStatus
+import ai.enthral.sentinel.capture.WatchedApp
+import ai.enthral.sentinel.ui.common.CaptureNumbers
+import ai.enthral.sentinel.ui.common.CaptureState
 import ai.enthral.sentinel.ui.common.Events
+import ai.enthral.sentinel.ui.common.captureState
+import ai.enthral.sentinel.ui.common.numbers
 import ai.enthral.sentinel.ui.common.SourcesController
 import ai.enthral.sentinel.ui.common.SourcesState
 import ai.enthral.sentinel.ui.onboarding.SystemRequest
@@ -39,11 +45,19 @@ data class SettingsUiState(
     val consentSyncFailed: Boolean = false,
     val debugInfo: DebugInfo? = null,
     val demoEnabled: Boolean = false,
+    val capture: CaptureState = CaptureState.Off,
+    val captureNumbers: CaptureNumbers = CaptureNumbers(),
+    /** Watched apps installed on this phone (display names). */
+    val watchedApps: List<WatchedApp> = emptyList(),
+    /** Supported apps in total (installed or not). */
+    val supportedApps: Int = 0,
 )
 
 sealed interface SettingsEvent {
     data class Request(val request: SystemRequest) : SettingsEvent
     data object RequestPostNotifications : SettingsEvent
+    data object RequestBatteryExemption : SettingsEvent
+    data class QueueCleared(val count: Int) : SettingsEvent
 }
 
 class SettingsViewModel(
@@ -54,6 +68,7 @@ class SettingsViewModel(
     private val locale: LocaleController,
     private val debugInfo: DebugInfo?,
     private val demoEnabled: Boolean,
+    private val capture: CaptureStatus? = null,
 ) : ViewModel() {
     private val sources = SourcesController(settings, access, viewModelScope)
     private val extra = MutableStateFlow(Extra())
@@ -66,18 +81,25 @@ class SettingsViewModel(
     private data class Look(val trueBlack: Boolean, val reduceTransparency: Boolean)
     private val look = combine(settings.useTrueBlack, settings.reduceTransparency) { b, r -> Look(b, r) }
 
+    private val apps = MutableStateFlow(capture?.installedWatchedApps().orEmpty())
+
     val state: StateFlow<SettingsUiState> = combine(
-        sources.state, settings.monitoringPaused, look, extra,
-    ) { s, paused, lk, e ->
+        sources.state, settings.monitoringPaused, look, extra, combine(capture.numbers(), apps) { n, a -> n to a },
+    ) { s, paused, lk, e, (numbers, installed) ->
         SettingsUiState(
             s, paused, lk.trueBlack, lk.reduceTransparency, locale.current(), e.deleting, e.failure, e.syncFailed,
             debugInfo, demoEnabled,
+            capture = captureState(s, paused),
+            captureNumbers = numbers,
+            watchedApps = installed,
+            supportedApps = capture?.watchedPackages?.size ?: 0,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SettingsUiState(debugInfo = debugInfo, demoEnabled = demoEnabled))
 
     /** On resume: re-read OS permissions and tell the server about any change the user made in system settings. */
     fun onResume() {
         sources.refreshAccess()
+        apps.value = capture?.installedWatchedApps().orEmpty()
         viewModelScope.launch { reconcile() }
     }
 
@@ -141,6 +163,14 @@ class SettingsViewModel(
 
     fun requestPostNotifications() = events.send(SettingsEvent.RequestPostNotifications)
 
+    fun requestBatteryExemption() = events.send(SettingsEvent.RequestBatteryExemption)
+
+    /** Caller confirmed. Drops events that were never sent (they are masked already, but the user asked). */
+    fun clearQueue() {
+        val c = capture ?: return
+        viewModelScope.launch { events.send(SettingsEvent.QueueCleared(c.clearQueue())) }
+    }
+
     fun onPostNotificationsResult() = sources.refreshAccess()
 
     /** Caller has already checked [isDeleteConfirmed]. On success the root observes onboarding state and resets. */
@@ -163,7 +193,7 @@ class SettingsViewModel(
 
     companion object {
         fun create(g: AppGraph) = SettingsViewModel(
-            g.settings, g.access, g.consent, g.account, g.locale, g.debugInfo, g.demoEnabled,
+            g.settings, g.access, g.consent, g.account, g.locale, g.debugInfo, g.demoEnabled, g.captureStatus,
         )
     }
 }

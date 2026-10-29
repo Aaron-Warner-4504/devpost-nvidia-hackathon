@@ -51,6 +51,18 @@ fun Context.openAppNotificationSettings() {
     if (!ok) openAppSettings()
 }
 
+/**
+ * Asks Android to stop battery-optimising Sentinel (system dialog). Falls back to the battery-optimisation list
+ * and then to app settings on OEMs that do not offer the dialog.
+ */
+@android.annotation.SuppressLint("BatteryLife") // the user asked for it after a plain explanation; capture is the core function
+fun Context.requestBatteryExemption() {
+    val ok = startSafely(
+        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.fromParts("package", packageName, null)),
+    ) || startSafely(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+    if (!ok) openAppSettings()
+}
+
 private fun Context.startSafely(intent: Intent): Boolean = try {
     startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     true
@@ -73,10 +85,22 @@ fun rememberSystemRequester(onCallResult: (granted: Boolean, permanentlyDenied: 
             !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.READ_CALL_LOG)
         latest.value(granted, permanent)
     }
-    return remember(launcher, context) {
+    // Notifications source: first ask for READ_CONTACTS (yes/no "saved contact" checks; names never leave the phone),
+    // then open Notification access whatever the answer. Contacts are optional: without them is_contact stays unknown
+    // and sender names are always replaced by a code.
+    val contactsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        context.openNotificationAccessSettings()
+    }
+    return remember(launcher, contactsLauncher, context) {
         { request ->
             when (request) {
-                SystemRequest.OpenNotificationAccess -> context.openNotificationAccessSettings()
+                SystemRequest.OpenNotificationAccess -> {
+                    val needContacts = androidx.core.content.ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.READ_CONTACTS,
+                    ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                    if (needContacts) contactsLauncher.launch(Manifest.permission.READ_CONTACTS)
+                    else context.openNotificationAccessSettings()
+                }
                 SystemRequest.OpenAppSettings -> context.openAppSettings()
                 SystemRequest.RequestCallPermission -> launcher.launch(Manifest.permission.READ_CALL_LOG)
             }

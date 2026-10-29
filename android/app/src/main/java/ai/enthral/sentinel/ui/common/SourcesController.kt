@@ -20,6 +20,10 @@ data class SourcesState(
     /** READ_CALL_LOG was denied and the system will not ask again: only app settings can fix it. */
     val callPermissionBlocked: Boolean = false,
     val postNotifications: Boolean = false,
+    /** READ_CONTACTS (yes/no saved-contact checks). */
+    val contacts: Boolean = false,
+    /** Exempt from battery optimisation. Defaults to true so nothing nags before the first real read. */
+    val batteryExempt: Boolean = true,
 ) {
     val notifications: SourceStatus get() = status(notificationsIntent, notificationAccess)
     val calls: SourceStatus get() = status(callsIntent, callAccess)
@@ -54,6 +58,8 @@ class SourcesController(
             notificationAccess = access.notificationAccessGranted(),
             callAccess = access.callLogGranted(),
             postNotifications = access.postNotificationsGranted(),
+            contacts = access.contactsGranted(),
+            batteryExempt = access.batteryOptimizationIgnored(),
         ),
     )
     val state: StateFlow<SourcesState> = _state.asStateFlow()
@@ -77,6 +83,8 @@ class SourcesController(
             callAccess = callGranted,
             callPermissionBlocked = it.callPermissionBlocked && !callGranted,
             postNotifications = access.postNotificationsGranted(),
+            contacts = access.contactsGranted(),
+            batteryExempt = access.batteryOptimizationIgnored(),
         )
     }
 

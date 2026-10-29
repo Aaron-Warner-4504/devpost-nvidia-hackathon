@@ -52,6 +52,7 @@ import ai.enthral.sentinel.ui.common.rememberSystemRequester
 import ai.enthral.sentinel.ui.components.ConsentSheet
 import ai.enthral.sentinel.ui.components.GroupedDivider
 import ai.enthral.sentinel.ui.components.GroupedRow
+import ai.enthral.sentinel.ui.common.requestBatteryExemption
 import ai.enthral.sentinel.ui.components.GroupedSection
 import ai.enthral.sentinel.ui.components.IconRowDividerInset
 import ai.enthral.sentinel.ui.components.IconTile
@@ -281,6 +282,18 @@ private fun SourcesPage(
                     title = stringResource(R.string.onboarding_alerts_title),
                     icon = SentinelIcons.Alerts,
                     trailing = { PlainButton(stringResource(R.string.consent_allow), onAllowNotifications) },
+                )
+            }
+        }
+        // Capture is useless if Android kills it: offer the battery exemption once Notifications is chosen.
+        if (state.sources.notificationsIntent && !state.sources.batteryExempt) {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            GroupedSection(Modifier.padding(top = Spacing.x2), footer = stringResource(R.string.settings_battery_footer)) {
+                GroupedRow(
+                    title = stringResource(R.string.settings_battery_title),
+                    subtitle = stringResource(R.string.settings_battery_restricted),
+                    icon = SentinelIcons.Clock,
+                    trailing = { PlainButton(stringResource(R.string.consent_allow), { context.requestBatteryExemption() }) },
                 )
             }
         }

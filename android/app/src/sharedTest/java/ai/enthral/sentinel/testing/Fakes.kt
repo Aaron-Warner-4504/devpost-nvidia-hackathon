@@ -231,6 +231,7 @@ class FakeCaptureStatus(
     override val queueSize: StateFlow<Int> = queue
     override val watchedPackages: List<String> = listOf("com.whatsapp", "com.google.android.apps.messaging")
     override fun rateWindowCounts(): Map<String, Int> = emptyMap()
+    override fun installedWatchedApps() = listOf(ai.enthral.sentinel.capture.WatchedApp("com.whatsapp", "WhatsApp"))
     override suspend fun clearQueue(): Int { clears++; val n = queue.value; queue.value = 0; return n }
 }
 

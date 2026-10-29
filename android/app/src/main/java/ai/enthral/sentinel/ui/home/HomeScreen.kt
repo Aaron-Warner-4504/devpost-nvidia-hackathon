@@ -41,7 +41,10 @@ import ai.enthral.sentinel.domain.ConsentSource
 import ai.enthral.sentinel.domain.ProtectionStatus
 import ai.enthral.sentinel.domain.SourceStatus
 import ai.enthral.sentinel.domain.Tier
+import ai.enthral.sentinel.ui.common.CaptureState
 import ai.enthral.sentinel.ui.common.graphViewModel
+import ai.enthral.sentinel.ui.common.openNotificationAccessSettings
+import ai.enthral.sentinel.ui.components.CaptureStatusCard
 import ai.enthral.sentinel.ui.components.AlertCard
 import ai.enthral.sentinel.ui.components.ErrorState
 import ai.enthral.sentinel.ui.components.GroupedHeader
@@ -121,6 +124,19 @@ fun HomeContent(
             item(key = "offline") {
                 NoteCard(stringResource(R.string.home_offline_note), Modifier.padding(top = Spacing.x1).animateItem(), icon = SentinelIcons.CloudOff)
             }
+        }
+
+        item(key = "capture") {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            CaptureStatusCard(
+                state = state.capture,
+                numbers = state.captureNumbers,
+                now = java.time.Instant.now(),
+                onFix = {
+                    if (state.capture == CaptureState.NeedsAccess) context.openNotificationAccessSettings() else onOpenSettings()
+                },
+                modifier = CardPadding.padding(top = Spacing.x15).animateItem(),
+            )
         }
 
         // Today's summary only ever shows real data: never claim "nothing was flagged" when nothing could be loaded.
