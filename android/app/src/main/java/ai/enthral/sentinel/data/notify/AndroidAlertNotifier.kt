@@ -59,7 +59,11 @@ class AndroidAlertNotifier(private val context: Context) : AlertNotifier {
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
                 PackageManager.PERMISSION_GRANTED)
 
-    override fun notify(alert: Alert) {
+    override fun notify(alert: Alert) = show(alert, ringing = false)
+
+    override fun notifyIncomingCall(alert: Alert) = show(alert, ringing = true)
+
+    private fun show(alert: Alert, ringing: Boolean) {
         if (!alert.tier.interrupts || !canNotify()) return
         ensureChannels()
         val critical = alert.tier == Tier.Critical
@@ -72,7 +76,8 @@ class AndroidAlertNotifier(private val context: Context) : AlertNotifier {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val title = context.getString(R.string.notification_title, tierLabel)
+        val title = if (ringing) context.getString(R.string.call_scam_title)
+        else context.getString(R.string.notification_title, tierLabel)
         // Lock screen shows only a generic line; the headline appears once the phone is unlocked.
         val public = NotificationCompat.Builder(context, channelId(critical))
             .setSmallIcon(R.drawable.ic_shield)
@@ -84,7 +89,7 @@ class AndroidAlertNotifier(private val context: Context) : AlertNotifier {
             .setContentText(alert.headline)
             .setStyle(NotificationCompat.BigTextStyle().bigText(alert.headline + "\n" + alert.nextStep))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setCategory(if (ringing) NotificationCompat.CATEGORY_CALL else NotificationCompat.CATEGORY_MESSAGE)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(public)
             .setAutoCancel(true)

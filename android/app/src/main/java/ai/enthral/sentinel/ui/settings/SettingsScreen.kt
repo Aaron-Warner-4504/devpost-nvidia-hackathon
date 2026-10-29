@@ -31,7 +31,11 @@ import ai.enthral.sentinel.R
 import ai.enthral.sentinel.data.notify.NotificationChannels
 import ai.enthral.sentinel.domain.ConsentSource
 import ai.enthral.sentinel.domain.Tier
+import ai.enthral.sentinel.capture.Counter
+import ai.enthral.sentinel.ui.common.CaptureState
 import ai.enthral.sentinel.ui.common.graphViewModel
+import ai.enthral.sentinel.ui.common.openDefaultAppsSettings
+import ai.enthral.sentinel.ui.common.requestBatteryExemption
 import ai.enthral.sentinel.ui.common.openAppNotificationSettings
 import ai.enthral.sentinel.ui.common.openChannelSettings
 import ai.enthral.sentinel.ui.common.rememberPostNotificationsRequester
@@ -63,11 +67,17 @@ fun SettingsScreen(onOpenDemo: () -> Unit) {
     val state by vm.state.collectAsStateWithLifecycle()
     val requester = rememberSystemRequester(vm::onCallPermissionResult)
     val askPost = rememberPostNotificationsRequester { vm.onPostNotificationsResult() }
+    val context = LocalContext.current
+    val askScreening = ai.enthral.sentinel.ui.common.rememberScreeningRoleRequester { vm.onScreeningResult() }
     LaunchedEffect(vm) {
         vm.events.flow.collect { e ->
             when (e) {
                 is SettingsEvent.Request -> requester(e.request)
                 SettingsEvent.RequestPostNotifications -> askPost()
+                SettingsEvent.RequestBatteryExemption -> context.requestBatteryExemption()
+                is SettingsEvent.QueueCleared -> Unit
+                SettingsEvent.RequestScreeningRole -> askScreening()
+                SettingsEvent.OpenDefaultApps -> context.openDefaultAppsSettings()
             }
         }
     }
@@ -83,6 +93,9 @@ fun SettingsScreen(onOpenDemo: () -> Unit) {
         onTrueBlack = vm::setTrueBlack,
         onReduceTransparency = vm::setReduceTransparency,
         onAllowNotifications = vm::requestPostNotifications,
+        onBattery = vm::requestBatteryExemption,
+        onScreening = vm::setScreening,
+        onClearQueue = vm::clearQueue,
         onDelete = vm::deleteEverything,
         onDismissDeleteFailure = vm::dismissDeleteFailure,
         onOpenDemo = onOpenDemo,
@@ -102,6 +115,9 @@ fun SettingsContent(
     onTrueBlack: (Boolean) -> Unit,
     onReduceTransparency: (Boolean) -> Unit,
     onAllowNotifications: () -> Unit,
+    onBattery: () -> Unit,
+    onScreening: (Boolean) -> Unit,
+    onClearQueue: () -> Unit,
     onDelete: () -> Unit,
     onDismissDeleteFailure: () -> Unit,
     onOpenDemo: () -> Unit,
@@ -110,6 +126,8 @@ fun SettingsContent(
     var sheet by rememberSaveable { mutableStateOf<String?>(null) }
     var showDelete by rememberSaveable { mutableStateOf(false) }
     var showPrivacy by rememberSaveable { mutableStateOf(false) }
+    var showApps by rememberSaveable { mutableStateOf(false) }
+    var showClearQueue by rememberSaveable { mutableStateOf(false) }
     val privacyRequest = ai.enthral.sentinel.ui.common.LocalPrivacyRequest.current
     LaunchedEffect(privacyRequest.value) {
         if (privacyRequest.value) { showPrivacy = true; privacyRequest.value = false }
@@ -145,6 +163,40 @@ fun SettingsContent(
                     SentinelIcons.CloudOff,
                     SentinelTheme.colors[Tier.Caution].content,
                     Modifier.padding(horizontal = Spacing.gutter, vertical = Spacing.x1),
+                )
+            }
+        }
+
+        item(key = "capture") {
+            CaptureSection(state, onShowApps = { showApps = true }, onClearQueue = { showClearQueue = true })
+        }
+        if (state.sources.screeningAvailable) {
+            item(key = "screening") {
+                GroupedSection(footer = stringResource(R.string.settings_screening_footer)) {
+                    ToggleRow(
+                        title = stringResource(R.string.settings_screening_title),
+                        subtitle = stringResource(
+                            if (state.sources.callsIntent) R.string.settings_screening_body else R.string.settings_screening_needs_calls,
+                        ),
+                        checked = state.sources.screeningRole,
+                        onCheckedChange = onScreening,
+                        icon = SentinelIcons.Phone,
+                        enabled = state.sources.callsIntent || state.sources.screeningRole,
+                    )
+                }
+            }
+        }
+        item(key = "battery") {
+            GroupedSection(header = stringResource(R.string.settings_battery), footer = stringResource(R.string.settings_battery_footer)) {
+                GroupedRow(
+                    title = stringResource(R.string.settings_battery_title),
+                    subtitle = stringResource(
+                        if (state.sources.batteryExempt) R.string.settings_battery_ok else R.string.settings_battery_restricted,
+                    ),
+                    icon = SentinelIcons.Clock,
+                    trailing = if (state.sources.batteryExempt) null else {
+                        { PlainButton(stringResource(R.string.consent_allow), onBattery) }
+                    },
                 )
             }
         }
@@ -253,6 +305,16 @@ fun SettingsContent(
         )
     }
     if (showPrivacy) PrivacySheet(onDismiss = { showPrivacy = false })
+    if (showApps) WatchedAppsSheet(state, onDismiss = { showApps = false })
+    if (showClearQueue) {
+        ConfirmSheet(
+            title = stringResource(R.string.settings_clear_queue_title),
+            body = stringResource(R.string.settings_clear_queue_body),
+            confirmLabel = stringResource(R.string.settings_clear_queue_confirm),
+            onConfirm = { showClearQueue = false; onClearQueue() },
+            onDismiss = { showClearQueue = false },
+        )
+    }
     if (showDelete) {
         DeleteSheet(
             deleting = state.deleting,
@@ -345,5 +407,66 @@ private fun DeleteSheet(
                 SentinelTheme.colors[Tier.Critical].content,
             )
         }
+    }
+}
+
+@Composable
+private fun CaptureSection(state: SettingsUiState, onShowApps: () -> Unit, onClearQueue: () -> Unit) {
+    val n = state.captureNumbers
+    val (statusTitle, statusIcon) = when (state.capture) {
+        CaptureState.Active -> R.string.capture_card_active_title to SentinelIcons.ShieldCheck
+        CaptureState.Paused -> R.string.capture_card_paused_title to SentinelIcons.ShieldPause
+        CaptureState.NeedsAccess -> R.string.capture_card_access_title to SentinelIcons.ShieldAlert
+        CaptureState.Off -> R.string.capture_card_off_title to SentinelIcons.ShieldAlert
+    }
+    GroupedSection(header = stringResource(R.string.settings_capture), footer = stringResource(R.string.settings_capture_footer)) {
+        GroupedRow(stringResource(statusTitle), icon = statusIcon)
+        GroupedDivider(IconRowDividerInset)
+        GroupedRow(
+            title = stringResource(R.string.settings_watched_apps),
+            subtitle = stringResource(R.string.settings_watched_apps_summary, state.watchedApps.size, state.supportedApps),
+            icon = SentinelIcons.Message,
+            onClick = onShowApps,
+            chevron = true,
+        )
+        GroupedDivider(IconRowDividerInset)
+        ValueRow(stringResource(R.string.capture_count_captured), n.stats[Counter.Captured].toString())
+        GroupedDivider()
+        ValueRow(stringResource(R.string.capture_count_sent), n.stats[Counter.Sent].toString())
+        GroupedDivider()
+        ValueRow(stringResource(R.string.capture_count_queued), n.queued.toString())
+        GroupedDivider()
+        ValueRow(stringResource(R.string.capture_count_duplicate), n.stats[Counter.Duplicate].toString())
+        GroupedDivider()
+        ValueRow(stringResource(R.string.capture_count_rate_limited), n.stats[Counter.RateLimited].toString())
+        GroupedDivider()
+        ValueRow(stringResource(R.string.capture_count_dropped), n.stats[Counter.Dropped].toString())
+        GroupedDivider(IconRowDividerInset)
+        GroupedRow(
+            stringResource(R.string.settings_clear_queue),
+            icon = SentinelIcons.Trash,
+            onClick = onClearQueue,
+            enabled = n.queued > 0,
+        )
+    }
+}
+
+@Composable
+private fun WatchedAppsSheet(state: SettingsUiState, onDismiss: () -> Unit) {
+    SentinelSheet(onDismiss) {
+        Text(stringResource(R.string.settings_watched_apps), style = SentinelTheme.type.title2, modifier = Modifier.semantics { heading() })
+        Text(stringResource(R.string.settings_watched_apps_body), style = SentinelTheme.type.callout, color = SentinelTheme.palette.secondaryLabel)
+        if (state.watchedApps.isEmpty()) {
+            Text(stringResource(R.string.settings_watched_apps_none), style = SentinelTheme.type.body)
+        }
+        state.watchedApps.forEach { app ->
+            Text(app.label, style = SentinelTheme.type.body, modifier = Modifier.padding(vertical = Spacing.x05))
+        }
+        Text(
+            stringResource(R.string.settings_watched_apps_supported, state.supportedApps),
+            style = SentinelTheme.type.footnote,
+            color = SentinelTheme.palette.secondaryLabel,
+        )
+        PrimaryButton(stringResource(R.string.action_got_it), onDismiss, Modifier.fillMaxWidth().padding(top = Spacing.x2))
     }
 }

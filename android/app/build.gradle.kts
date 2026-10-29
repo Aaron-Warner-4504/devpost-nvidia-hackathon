@@ -127,6 +127,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.datastore.preferences)
+    // Outbox drain, late-alert follow-up and the 15-minute catch-up (no foreground service).
+    implementation(libs.androidx.work.runtime)
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)

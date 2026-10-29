@@ -3,6 +3,8 @@ package ai.enthral.sentinel
 import android.content.Context
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.preferencesDataStoreFile
+import ai.enthral.sentinel.capture.CaptureModule
+import ai.enthral.sentinel.capture.CaptureStatus
 import ai.enthral.sentinel.data.api.HttpClientFactory
 import ai.enthral.sentinel.data.api.OkHttpSentinelApi
 import ai.enthral.sentinel.data.api.SentinelApi
@@ -56,10 +58,12 @@ class AppContainer(private val context: Context) : AppGraph {
         SettingsStore(PreferenceDataStoreFactory.create(scope = ioScope) { context.preferencesDataStoreFile("settings") })
     }
 
+    private val cipher by lazy { KeystoreTokenCipher() }
+
     private val tokenStore: SecureTokenStore by lazy {
         SecureTokenStore(
             PreferenceDataStoreFactory.create(scope = ioScope) { context.preferencesDataStoreFile("secure") },
-            KeystoreTokenCipher(),
+            cipher,
         )
     }
 
@@ -75,7 +79,15 @@ class AppContainer(private val context: Context) : AppGraph {
     override val checks: CheckRepository by lazy { NetworkCheckRepository(api, session, alerts) }
     override val consent: ConsentRepository by lazy { NetworkConsentRepository(api, session) }
     override val family: FamilyRepository by lazy { NetworkFamilyRepository(api, session) }
-    override val account: AccountRepository by lazy { NetworkAccountRepository(api, session, settings, alerts) }
+    override val account: AccountRepository by lazy {
+        NetworkAccountRepository(api, session, settings, alerts, onWipe = { capture.wipe() })
+    }
+
+    /** Notification capture -> on-phone masking -> encrypted outbox -> sync (capture/, sync/). */
+    val capture: CaptureModule by lazy {
+        CaptureModule(context, api, session, settings, notifier, access, KeystoreTokenCipher(alias = "sentinel_outbox_key"))
+    }
+    override val captureStatus: CaptureStatus get() = capture
     override val demo: DemoRepository by lazy { NetworkDemoRepository(api, session, alerts) }
     override val locale: LocaleController by lazy { AppCompatLocaleController() }
     override val access: SystemAccess by lazy { AndroidSystemAccess(context) }

@@ -7,8 +7,10 @@ see [`docs/design.md`](docs/design.md) and the **Design system** section below.
 * Phase 2 (this): the real product screens: onboarding and consent (A2), alerts list and detail (A9), Check this with
   share target (A10), an alert timeline built from the alerts' "why" items (A11, see below), family pairing and
   settings and delete-my-data (A12), in-app demo mode (A14).
-* Not built yet: notification-listener and call capture, the encrypted local database, outbox and sync
-  (A3 to A8, A13). Repositories are interfaces so those slot in without touching screens.
+* Phase 3: always-on capture (A4, A6, A7, A8, A13): notification listener for allowlisted apps, on-phone redaction
+  (golden parity with the backend), encrypted outbox + WorkManager sync, local heads-up alerts with late-upgrade
+  follow-ups, call-log capture after each call and opt-in call screening. See **Capture** below and
+  [`../docs/capture.md`](../docs/capture.md). (No encrypted local alert database: alerts are read from the server.)
 
 Plan deviations: hand-written `AppContainer` instead of Hilt, OkHttp instead of Retrofit, minSdk 26 instead of 29.
 
@@ -105,7 +107,8 @@ Timeline (A11): no endpoint exposes event history to the app (`/v1/dashboard/tim
 | `data/api` | `SentinelApi`, `OkHttpSentinelApi` (all I/O on `Dispatchers.IO`), DTOs, `ApiResult`, mappers |
 | `data/repo` | interfaces + network implementations: `DeviceSession` (register, `authed` with one re-register on 401), `AlertsRepository` (cache + notifications), `CheckRepository`, `ConsentRepository`, `FamilyRepository`, `AccountRepository` |
 | `data/store` | `SecureTokenStore` (Keystore AES-GCM), `AppSettings`/`SettingsStore` (DataStore) |
-| `data/system` | `SystemAccess` (live OS permission state), `LocaleController`, `ShareIntake`, `FcmTokenProvider` (placeholder), `SentinelNotificationListener` (empty stub, see below) |
+| `data/system` | `SystemAccess` (live OS permission state, battery exemption, call-screening role), `LocaleController`, `ShareIntake`, `FcmTokenProvider` (placeholder) |
+| `capture`, `sync` | always-on capture and delivery (see **Capture**) |
 | `data/notify`, `data/image`, `data/demo` | notifier + channels, image downscaling (< 4.5 MB), demo timeline + runner |
 | `ui/theme`, `ui/components` | design tokens (palette, Inter type scale, spacing/radii/motion) and the component library (large-title scaffolds, tab bar, grouped lists, buttons, sheets, tier glyphs, timeline, illustrations, `SentinelIcons`); previews in `Previews.kt` (light/dark, font scales, Hindi) |
 | `ui/nav` | typed routes, root scaffold (bottom bar keeps each tab's state, hidden while the keyboard is up), deep link, share hand-off |
@@ -115,9 +118,25 @@ Architecture rules: unidirectional data flow, no network in composables, ViewMod
 with `SavedStateHandle` (Check) and `rememberSaveable` (inputs, sheets, pager), `collectAsStateWithLifecycle`,
 stable lazy keys. Content width is capped at 640 dp (`AdaptiveBox`) for tablets and landscape.
 
-The notification listener class is declared only so Android lists Sentinel under "Notification access". It overrides
-nothing, so it reads and stores nothing; capture arrives with plan task A6. The system dialog still words the grant
-generically ("read your notifications").
+## Capture
+Full description, privacy rules, limits and adb test recipe: [`../docs/capture.md`](../docs/capture.md).
+
+| Piece | Where |
+|---|---|
+| Allowlist (+ debug-only `com.android.shell` in `src/debug`) | `capture/CaptureAllowlist.kt`, manifest `<queries>` |
+| Listener → pipeline (gate, filter, extract, redact, sender policy, dedupe/rate limit) | `capture/SentinelNotificationListener.kt`, `CapturePipeline.kt`, `NotificationFilter.kt`, `SenderPolicy.kt`, `CaptureGuard.kt` |
+| Redactor (port of `backend/app/pipeline/redact.py`) | `capture/Redactor.kt`; golden file from `scripts/gen-redact-golden.py` |
+| Encrypted outbox, sender, alert dispatch, follow-ups | `sync/Outbox.kt`, `sync/EventSender.kt`, `sync/Workers.kt` |
+| Calls: call log after each call, opt-in screening | `capture/CallCapture.kt`, `AndroidCallLog.kt`, `SentinelCallScreeningService.kt` |
+| Status UI | Home capture card, Settings → Notification capture / Check callers while ringing / Battery |
+
+Regenerate the redaction golden file after any change to `redact.py`:
+`cd backend && uv run python ../android/scripts/gen-redact-golden.py`.
+
+Quick phone test (debug build, live server): `./gradlew assembleDebug -PsentinelApiBaseUrl=https://interns.enthral.ai/sentinel`,
+finish onboarding with Notifications on, then
+`adb shell cmd notification post -S bigtext -t 'VM-HDFCBK' t1 'Your OTP is 482913. -HDFC Bank'` and watch
+Settings → Notification capture (captured / sent / queued).
 
 ## Design system
 The full spec is [`docs/design.md`](docs/design.md) (principles, colour, type, spacing, motion, components, do/don't,

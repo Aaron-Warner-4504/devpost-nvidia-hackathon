@@ -210,10 +210,29 @@ class FakeAccess(
     var notification: Boolean = false,
     var callLog: Boolean = false,
     var post: Boolean = true,
+    var contacts: Boolean = false,
+    var batteryExempt: Boolean = false,
 ) : SystemAccess {
     override fun notificationAccessGranted() = notification
     override fun callLogGranted() = callLog
     override fun postNotificationsGranted() = post
+    override fun contactsGranted() = contacts
+    override fun batteryOptimizationIgnored() = batteryExempt
+}
+
+class FakeCaptureStatus(
+    initial: ai.enthral.sentinel.capture.StatsSnapshot = ai.enthral.sentinel.capture.StatsSnapshot(),
+    queued: Int = 0,
+) : ai.enthral.sentinel.capture.CaptureStatus {
+    val statsFlow = MutableStateFlow(initial)
+    val queue = MutableStateFlow(queued)
+    var clears = 0
+    override val stats: Flow<ai.enthral.sentinel.capture.StatsSnapshot> = statsFlow
+    override val queueSize: StateFlow<Int> = queue
+    override val watchedPackages: List<String> = listOf("com.whatsapp", "com.google.android.apps.messaging")
+    override fun rateWindowCounts(): Map<String, Int> = emptyMap()
+    override fun installedWatchedApps() = listOf(ai.enthral.sentinel.capture.WatchedApp("com.whatsapp", "WhatsApp"))
+    override suspend fun clearQueue(): Int { clears++; val n = queue.value; queue.value = 0; return n }
 }
 
 class FakeNotifier : AlertNotifier {
@@ -249,6 +268,7 @@ class FakeGraph(
     override val images: FakeImages = FakeImages(),
     override val shareIntake: ShareIntake = ShareIntake(),
     override val fcm: FakeFcm = FakeFcm(),
+    override val captureStatus: FakeCaptureStatus = FakeCaptureStatus(),
     override val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
     override val demoEnabled: Boolean = true,
     override val debugInfo: DebugInfo? = DebugInfo("http://test", "debug"),
