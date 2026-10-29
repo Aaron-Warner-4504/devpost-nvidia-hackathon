@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Call number/time/duration/direction only, requested at runtime with an explanation. Never audio. -->
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <!-- Only to notice that a call has ended (then the new call-log row is read). -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <!-- Yes/no "is this sender a saved contact" checks only; names never leave the phone. -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- Re-arms the 15-minute outbox flush / alert check after a reboot. -->
@@ -112,6 +114,16 @@
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Call ended -> read the new call-log row 5 s later (Call info consent only). -->
+        <receiver
+            android:name=".capture.PhoneStateReceiver"
+            android:exported="true"
+            android:permission="android.permission.READ_PHONE_STATE">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>
         </receiver>
 

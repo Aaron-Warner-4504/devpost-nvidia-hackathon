@@ -78,7 +78,10 @@ private fun Context.startSafely(intent: Intent): Boolean = try {
 fun rememberSystemRequester(onCallResult: (granted: Boolean, permanentlyDenied: Boolean) -> Unit): (SystemRequest) -> Unit {
     val context = LocalContext.current
     val latest = rememberUpdatedState(onCallResult)
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+    // Call info: the call log (number, time, duration, direction), phone state (to notice when a call ends) and
+    // contacts (yes/no "is this number saved"), asked together after the consent sheet. Only READ_CALL_LOG is required.
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        val granted = result[Manifest.permission.READ_CALL_LOG] == true
         val activity = context.findActivity()
         // Denied and the system will not show its dialog again -> only app settings can fix it.
         val permanent = !granted && activity != null &&
@@ -102,11 +105,17 @@ fun rememberSystemRequester(onCallResult: (granted: Boolean, permanentlyDenied: 
                     else context.openNotificationAccessSettings()
                 }
                 SystemRequest.OpenAppSettings -> context.openAppSettings()
-                SystemRequest.RequestCallPermission -> launcher.launch(Manifest.permission.READ_CALL_LOG)
+                SystemRequest.RequestCallPermission -> launcher.launch(CALL_PERMISSIONS)
             }
         }
     }
 }
+
+val CALL_PERMISSIONS = arrayOf(
+    Manifest.permission.READ_CALL_LOG,
+    Manifest.permission.READ_PHONE_STATE,
+    Manifest.permission.READ_CONTACTS,
+)
 
 /** Launcher for POST_NOTIFICATIONS (API 33+); below that the call just opens the app's notification settings. */
 @Composable

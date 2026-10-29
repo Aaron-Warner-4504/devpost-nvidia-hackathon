@@ -35,8 +35,21 @@ interface CursorStore {
     suspend fun clear()
 }
 
+/** Call capture state: the call-log cursor and recently screened (ringing) calls, keyed by a number hash. */
+interface CallState {
+    suspend fun callCursor(): Long?
+    suspend fun setCallCursor(date: Long)
+
+    /** sha256(E.164 number) -> time the call was screened (last 24 h only). */
+    suspend fun screened(): Map<String, Long>
+    suspend fun addScreened(number: String, at: Long)
+}
+
 /** One DataStore file for stats and cursors. Conversation keys are stored as SHA-256 (they can contain names). */
-class DataStoreCaptureState(private val store: DataStore<Preferences>) : CaptureStats, CursorStore {
+class DataStoreCaptureState(
+    private val store: DataStore<Preferences>,
+    private val clock: () -> Long = System::currentTimeMillis,
+) : CaptureStats, CursorStore, CallState {
     override val snapshot: Flow<StatsSnapshot> = store.data.map { p ->
         StatsSnapshot(
             counts = Counter.entries.associateWith { p[counterKey(it)] ?: 0L },
@@ -66,6 +79,27 @@ class DataStoreCaptureState(private val store: DataStore<Preferences>) : Capture
         }
     }
 
+    override suspend fun callCursor(): Long? = store.data.first()[CALL_CURSOR]
+
+    override suspend fun setCallCursor(date: Long) {
+        store.edit { if ((it[CALL_CURSOR] ?: Long.MIN_VALUE) < date) it[CALL_CURSOR] = date }
+    }
+
+    override suspend fun screened(): Map<String, Long> = parseScreened(store.data.first()[SCREENED].orEmpty())
+
+    override suspend fun addScreened(number: String, at: Long) {
+        store.edit { prefs ->
+            val now = clock()
+            val kept = parseScreened(prefs[SCREENED].orEmpty()).filterValues { now - it < 24L * 3600 * 1000 }
+            prefs[SCREENED] = (kept + (sha256Hex(number) to at)).map { (h, t) -> "$h|$t" }.toSet()
+        }
+    }
+
+    private fun parseScreened(raw: Set<String>): Map<String, Long> = raw.mapNotNull { e ->
+        val t = e.substringAfter('|', "").toLongOrNull() ?: return@mapNotNull null
+        e.substringBefore('|') to t
+    }.toMap()
+
     override suspend fun clear() {
         store.edit { it.clear() }
     }
@@ -76,5 +110,7 @@ class DataStoreCaptureState(private val store: DataStore<Preferences>) : Capture
     private companion object {
         val LAST_CAPTURED = longPreferencesKey("last_captured_at")
         val LAST_SENT = longPreferencesKey("last_sent_at")
+        val CALL_CURSOR = longPreferencesKey("call_log_cursor")
+        val SCREENED = androidx.datastore.preferences.core.stringSetPreferencesKey("screened_calls")
     }
 }

@@ -21,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -87,13 +88,37 @@ class CaptureModule(
             filter = NotificationFilter(allowlist, context.packageName),
             cursors = state,
             guard = guard,
-            senders = SenderPolicy(Pseudonymizer(pseudonymKeys::key), AndroidContactChecker(context)),
+            senders = SenderPolicy(Pseudonymizer(pseudonymKeys::key), contacts),
             outbox = outbox,
             stats = state,
             clock = clock,
             onQueued = ::sendNow,
         )
     }
+
+    private val e164 by lazy { E164Formatter(context) }
+    private val contacts by lazy { AndroidContactChecker(context) }
+
+    /** Call-log capture (P3): gated by the Call-info consent and READ_CALL_LOG. */
+    val callLog: CallLogCapture by lazy {
+        CallLogCapture(
+            gate = ::callsAllowed,
+            source = AndroidCallLogSource(context),
+            state = state,
+            outbox = outbox,
+            stats = state,
+            e164 = { e164.format(it) },
+            isContact = { contacts.isSavedNumber(it) },
+            clock = clock,
+            onQueued = ::sendNow,
+        )
+    }
+
+    suspend fun callsAllowed(): Boolean =
+        settings.onboardingDone.first() &&
+            settings.consentIntent(ai.enthral.sentinel.domain.ConsentSource.Calls).first() &&
+            !settings.monitoringPaused.first() &&
+            access.callLogGranted()
 
     init {
         scope.launch { outbox.warmUp() }

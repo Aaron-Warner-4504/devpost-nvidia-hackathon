@@ -77,7 +77,7 @@
     <string name="consent_calls_never_1">Call audio or recordings</string>
     <string name="consent_calls_never_2">What you or the caller say</string>
     <string name="consent_calls_never_3">Your contact list or contact names</string>
-    <string name="consent_calls_permission_note">Android will ask for permission to read the call log. Choose Allow to turn this on.</string>
+    <string name="consent_calls_permission_note">Android will ask to read the call log (number, time, duration, direction), to notice when a call ends, and to check whether a number is saved in your contacts. Only the call log is required. Choose Allow to turn this on.</string>
     <string name="consent_check_read_1">Only the text you paste or share into Check this</string>
     <string name="consent_check_read_2">Screenshots you pick, read only to find the text (the picture itself is not stored)</string>
     <string name="consent_check_never_1">Anything you did not choose to send</string>

@@ -77,7 +77,7 @@
     <string name="consent_calls_never_1">कॉल का ऑडियो या रिकॉर्डिंग</string>
     <string name="consent_calls_never_2">आप या कॉल करने वाला क्या कहता है</string>
     <string name="consent_calls_never_3">आपकी संपर्क सूची या संपर्कों के नाम</string>
-    <string name="consent_calls_permission_note">एंड्रॉइड कॉल लॉग पढ़ने की अनुमति माँगेगा। इसे चालू करने के लिए अनुमति दें चुनें।</string>
+    <string name="consent_calls_permission_note">एंड्रॉइड कॉल लॉग (नंबर, समय, अवधि, दिशा) पढ़ने, कॉल खत्म होने का पता लगाने और यह जाँचने की अनुमति माँगेगा कि नंबर आपके संपर्कों में सेव है या नहीं। केवल कॉल लॉग ज़रूरी है। इसे चालू करने के लिए अनुमति दें चुनें।</string>
     <string name="consent_check_read_1">केवल वह पाठ जो आप इसे जाँचें में पेस्ट या साझा करते हैं</string>
     <string name="consent_check_read_2">आपके चुने स्क्रीनशॉट, केवल पाठ ढूँढने के लिए पढ़े जाते हैं (तस्वीर सहेजी नहीं जाती)</string>
     <string name="consent_check_never_1">ऐसा कुछ भी जो आपने भेजना नहीं चुना</string>

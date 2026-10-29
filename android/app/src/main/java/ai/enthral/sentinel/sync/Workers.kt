@@ -30,10 +30,20 @@ class FollowUpWorker(context: Context, params: WorkerParameters) : CoroutineWork
         if (applicationContext.capture.sender.checkAlerts()) Result.success() else Result.failure()
 }
 
-/** Every 15 minutes: flush anything still queued and look for alerts that were never notified. */
+/** New call-log rows -> outbox -> send. Unique ("call-log-sync"), replaced by a newer call end. */
+class CallLogSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result {
+        val c = applicationContext.capture
+        c.callLog.run()
+        return Result.success()
+    }
+}
+
+/** Every 15 minutes: catch up the call log, flush anything still queued, look for alerts never notified. */
 class PeriodicSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val c = applicationContext.capture
+        runCatching { c.callLog.run() }
         c.sender.drain()
         c.sender.checkAlerts()
         return Result.success()
@@ -64,6 +74,13 @@ class WorkManagerSyncScheduler(private val context: Context) : SyncScheduler {
         }
     }
 
+    override fun scheduleCallLogSync(delayMs: Long) {
+        val req = OneTimeWorkRequestBuilder<CallLogSyncWorker>()
+            .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
+            .build()
+        wm.enqueueUniqueWork(CALL_LOG, ExistingWorkPolicy.REPLACE, req)
+    }
+
     fun schedulePeriodic() {
         val req = PeriodicWorkRequestBuilder<PeriodicSyncWorker>(15, TimeUnit.MINUTES)
             .setConstraints(online)
@@ -74,6 +91,7 @@ class WorkManagerSyncScheduler(private val context: Context) : SyncScheduler {
     fun cancelAll() {
         wm.cancelUniqueWork(SYNC)
         wm.cancelUniqueWork(PERIODIC)
+        wm.cancelUniqueWork(CALL_LOG)
         FollowUpPolicy.DELAYS_MS.forEach { wm.cancelUniqueWork("$FOLLOW_UP-$it") }
     }
 
@@ -81,5 +99,6 @@ class WorkManagerSyncScheduler(private val context: Context) : SyncScheduler {
         const val SYNC = "event-sync"
         const val FOLLOW_UP = "alert-follow-up"
         const val PERIODIC = "periodic-sync"
+        const val CALL_LOG = "call-log-sync"
     }
 }

@@ -23,6 +23,9 @@ interface SyncScheduler {
 
     /** One-time GET /v1/alerts checks for late background-review upgrades. */
     fun scheduleFollowUps(delaysMs: List<Long>)
+
+    /** Read new call-log rows (after a call ends). */
+    fun scheduleCallLogSync(delayMs: Long) = Unit
 }
 
 /**
