@@ -317,10 +317,10 @@
     <string name="settings_capture">सूचना कैप्चर</string>
     <string name="settings_capture_footer">केवल गिनती। संदेश का पाठ कतार में डालने या भेजने से पहले आपके फ़ोन पर छिपाया जाता है, और भेजने के बाद रखा नहीं जाता।</string>
     <string name="settings_watched_apps">जिन ऐप पर नज़र है</string>
-    <string name="settings_watched_apps_summary">%2$d समर्थित में से %1$d इंस्टॉल हैं</string>
+    <string name="settings_watched_apps_summary">इंस्टॉल: %1$d · समर्थित: %2$d</string>
     <string name="settings_watched_apps_body">सेंटिनल केवल इन ऐप की सूचनाएँ पढ़ता है। बाकी सभी ऐप अनदेखे रहते हैं।</string>
     <string name="settings_watched_apps_none">समर्थित ऐप में से कोई इंस्टॉल नहीं है।</string>
-    <string name="settings_watched_apps_supported">कुल %1$d समर्थित ऐप (एसएमएस, व्हाट्सऐप, टेलीग्राम, ईमेल, यूपीआई और बैंक ऐप)।</string>
+    <string name="settings_watched_apps_supported">कुल समर्थित ऐप: %1$d (एसएमएस, व्हाट्सऐप, टेलीग्राम, ईमेल, यूपीआई और बैंक ऐप)।</string>
     <string name="capture_count_captured">कैप्चर किए गए</string>
     <string name="capture_count_sent">भेजे गए</string>
     <string name="capture_count_queued">भेजने की प्रतीक्षा में</string>

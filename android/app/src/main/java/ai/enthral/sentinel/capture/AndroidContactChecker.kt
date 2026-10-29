@@ -8,6 +8,7 @@ import android.provider.ContactsContract
 import android.telephony.PhoneNumberUtils
 import android.telephony.TelephonyManager
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 
 /**
  * ContactsContract lookups, only answering yes/no. No contact data is copied, stored or sent.
@@ -40,7 +41,7 @@ class AndroidContactChecker(private val context: Context) : ContactChecker {
 
     /** Proof only when the validated lookup uri resolves to exactly one contact row whose _ID is [expectedId]. */
     override fun isSavedContactUri(uri: String, expectedId: Long): Boolean? = query {
-        context.contentResolver.query(Uri.parse(uri), arrayOf(ContactsContract.Contacts._ID), null, null, null)
+        context.contentResolver.query(uri.toUri(), arrayOf(ContactsContract.Contacts._ID), null, null, null)
             ?.use { it.count == 1 && it.moveToFirst() && it.getLong(0) == expectedId } ?: false
     }
 

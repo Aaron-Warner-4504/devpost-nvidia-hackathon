@@ -317,10 +317,10 @@
     <string name="settings_capture">Notification capture</string>
     <string name="settings_capture_footer">Counts only. Message text is masked on your phone before it is queued or sent, and is never kept after sending.</string>
     <string name="settings_watched_apps">Watched apps</string>
-    <string name="settings_watched_apps_summary">%1$d installed of %2$d supported</string>
+    <string name="settings_watched_apps_summary">Installed: %1$d · supported: %2$d</string>
     <string name="settings_watched_apps_body">Sentinel reads notifications from these apps only. All other apps are ignored.</string>
     <string name="settings_watched_apps_none">None of the supported apps are installed.</string>
-    <string name="settings_watched_apps_supported">%1$d supported apps in total (SMS, WhatsApp, Telegram, email, UPI and bank apps).</string>
+    <string name="settings_watched_apps_supported">Supported apps in total: %1$d (SMS, WhatsApp, Telegram, email, UPI and bank apps).</string>
     <string name="capture_count_captured">Captured</string>
     <string name="capture_count_sent">Sent</string>
     <string name="capture_count_queued">Waiting to send</string>
