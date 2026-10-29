@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.ContactsContract
+import android.telephony.PhoneNumberUtils
+import android.telephony.TelephonyManager
 import androidx.core.content.ContextCompat
 
 /**
@@ -15,6 +17,14 @@ class AndroidContactChecker(private val context: Context) : ContactChecker {
     private fun granted() = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) ==
         PackageManager.PERMISSION_GRANTED
 
+    /** SIM country (falls back to network country, then IN). */
+    private val region: String by lazy {
+        val tm = context.getSystemService(TelephonyManager::class.java)
+        (tm?.simCountryIso?.takeIf { it.length == 2 } ?: tm?.networkCountryIso?.takeIf { it.length == 2 } ?: "in").uppercase()
+    }
+
+    private val e164Fallback: (String, String) -> String? = { n, r -> PhoneNumberUtils.formatNumberToE164(n, r) }
+
     private inline fun query(block: () -> Boolean): Boolean? {
         if (!granted()) return null
         return try {
@@ -23,19 +33,33 @@ class AndroidContactChecker(private val context: Context) : ContactChecker {
             null
         } catch (_: IllegalArgumentException) {
             false
+        } catch (_: UnsupportedOperationException) {
+            false
         }
     }
 
+    /** Proof only when the (already validated, single-contact) uri resolves to exactly one contact row. */
     override fun isSavedContactUri(uri: String): Boolean? = query {
         context.contentResolver.query(Uri.parse(uri), arrayOf(ContactsContract.Contacts._ID), null, null, null)
-            ?.use { it.moveToFirst() } ?: false
+            ?.use { it.count == 1 } ?: false
     }
 
+    /**
+     * PhoneLookup matches loosely (by trailing digits), so a hit is only a candidate: the matched row's number must
+     * normalise to exactly the same E.164 number as [number].
+     */
     override fun isSavedNumber(number: String): Boolean? = query {
-        if (number.count { it.isDigit() } < 6) return@query false
+        val target = PhoneNormalizer.toE164(number, region, e164Fallback) ?: return@query false
         val lookup = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number))
-        context.contentResolver.query(lookup, arrayOf(ContactsContract.PhoneLookup._ID), null, null, null)
-            ?.use { it.moveToFirst() } ?: false
+        val cols = arrayOf(ContactsContract.PhoneLookup.NUMBER, ContactsContract.PhoneLookup.NORMALIZED_NUMBER)
+        context.contentResolver.query(lookup, cols, null, null, null)?.use { c ->
+            var exact = false
+            while (!exact && c.moveToNext()) {
+                val candidates = listOfNotNull(c.getString(1), c.getString(0))
+                exact = candidates.any { PhoneNormalizer.toE164(it, region, e164Fallback) == target }
+            }
+            exact
+        } ?: false
     }
 
     override fun isContactName(name: String): Boolean? = query {

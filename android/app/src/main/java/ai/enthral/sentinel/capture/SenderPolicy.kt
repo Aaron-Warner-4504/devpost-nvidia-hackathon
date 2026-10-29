@@ -5,10 +5,13 @@ import javax.crypto.spec.SecretKeySpec
 
 /** Contact checks backed by ContactsContract. Every call returns null when READ_CONTACTS is not granted. */
 interface ContactChecker {
-    /** True when [uri] (a Person uri: contacts lookup uri or `tel:`) resolves to a saved contact. */
+    /**
+     * True when [uri] resolves to exactly ONE saved contact. Only called with uris [ContactUris] accepted as
+     * single-contact uris.
+     */
     fun isSavedContactUri(uri: String): Boolean?
 
-    /** True when [number] belongs to a saved contact (PhoneLookup). */
+    /** True when [number] EXACTLY (E.164) equals a saved contact's number; a loose PhoneLookup hit is not enough. */
     fun isSavedNumber(number: String): Boolean?
 
     /** True when a saved contact has exactly this display name. Never used to set is_contact (names are spoofable). */
@@ -16,9 +19,11 @@ interface ContactChecker {
 }
 
 /** Opaque, stable, per-install pseudonym: `c_<8 hex of HMAC-SHA256(key, name)>`. The key never leaves the phone. */
-class Pseudonymizer(private val key: ByteArray) {
+class Pseudonymizer(private val key: () -> ByteArray) {
+    constructor(fixed: ByteArray) : this({ fixed })
+
     fun pseudonym(name: String): String {
-        val mac = Mac.getInstance("HmacSHA256").apply { init(SecretKeySpec(key, "HmacSHA256")) }
+        val mac = Mac.getInstance("HmacSHA256").apply { init(SecretKeySpec(key(), "HmacSHA256")) }
         val digest = mac.doFinal(name.trim().lowercase().toByteArray(Charsets.UTF_8))
         return "c_" + digest.take(4).joinToString("") { "%02x".format(it) }
     }
@@ -74,9 +79,11 @@ class SenderPolicy(private val pseudonyms: Pseudonymizer, private val contacts: 
         if (isGroup) return false
         var unknown = false
         for (uri in uris) {
-            val r = if (uri.startsWith("tel:")) contacts.isSavedNumber(uri.removePrefix("tel:"))
-            else if (uri.startsWith("content://com.android.contacts/")) contacts.isSavedContactUri(uri)
-            else false
+            val r = when (val kind = ContactUris.classify(uri)) {
+                is ContactUris.Kind.Number -> contacts.isSavedNumber(kind.number)
+                is ContactUris.Kind.Contact -> contacts.isSavedContactUri(kind.uri)
+                null -> false // collection, foreign or malformed uri: never proof
+            }
             if (r == true) return true
             if (r == null) unknown = true
         }
