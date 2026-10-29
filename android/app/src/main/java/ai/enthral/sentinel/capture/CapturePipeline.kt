@@ -30,6 +30,9 @@ sealed interface CaptureOutcome {
     data object Duplicate : CaptureOutcome
     data object RateLimited : CaptureOutcome
     data class Queued(val event: EventIn) : CaptureOutcome
+
+    /** Processing threw; counted as [Counter.Failed] and dropped. Capture carries on with the next notification. */
+    data object Failed : CaptureOutcome
 }
 
 /**
@@ -48,6 +51,19 @@ class CapturePipeline(
     private val clock: () -> Long,
     private val onQueued: () -> Unit,
 ) {
+    /** Never throws (except cancellation): one hostile or odd notification must not stop capture. */
+    suspend fun onPostedSafely(n: RawNotification): CaptureOutcome = try {
+        onPosted(n)
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        runCatching { stats.add(Counter.Failed) }
+        CaptureOutcome.Failed
+    } catch (_: StackOverflowError) {
+        runCatching { stats.add(Counter.Failed) }
+        CaptureOutcome.Failed
+    }
+
     suspend fun onPosted(n: RawNotification): CaptureOutcome {
         if (!gate.allowed()) return CaptureOutcome.Gated
         val source = when (val d = filter.decide(n)) {

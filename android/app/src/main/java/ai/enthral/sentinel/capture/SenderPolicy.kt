@@ -6,10 +6,10 @@ import javax.crypto.spec.SecretKeySpec
 /** Contact checks backed by ContactsContract. Every call returns null when READ_CONTACTS is not granted. */
 interface ContactChecker {
     /**
-     * True when [uri] resolves to exactly ONE saved contact. Only called with uris [ContactUris] accepted as
-     * single-contact uris.
+     * True when the lookup [uri] resolves to exactly ONE saved contact whose _ID is [expectedId]. Only called with
+     * uris [ContactUris] accepted.
      */
-    fun isSavedContactUri(uri: String): Boolean?
+    fun isSavedContactUri(uri: String, expectedId: Long): Boolean?
 
     /** True when [number] EXACTLY (E.164) equals a saved contact's number; a loose PhoneLookup hit is not enough. */
     fun isSavedNumber(number: String): Boolean?
@@ -52,7 +52,7 @@ class SenderPolicy(private val pseudonyms: Pseudonymizer, private val contacts: 
             val isContact = when {
                 isGroup -> false
                 byNumber == true || byUri == true -> true
-                byNumber == null && byUri == null -> null
+                byNumber == null || byUri == null -> null // could not check (no permission): unknown
                 else -> false
             }
             return SenderInfo(t.take(MAX_SENDER), isContact)
@@ -81,7 +81,7 @@ class SenderPolicy(private val pseudonyms: Pseudonymizer, private val contacts: 
         for (uri in uris) {
             val r = when (val kind = ContactUris.classify(uri)) {
                 is ContactUris.Kind.Number -> contacts.isSavedNumber(kind.number)
-                is ContactUris.Kind.Contact -> contacts.isSavedContactUri(kind.uri)
+                is ContactUris.Kind.Contact -> contacts.isSavedContactUri(kind.uri, kind.id)
                 null -> false // collection, foreign or malformed uri: never proof
             }
             if (r == true) return true

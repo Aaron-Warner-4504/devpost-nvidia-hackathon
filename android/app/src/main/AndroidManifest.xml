@@ -26,11 +26,13 @@
         <package android:name="com.fss.unbipay" />
         <package android:name="com.google.android.apps.messaging" />
         <package android:name="com.google.android.apps.nbu.paisa.user" />
+        <package android:name="com.google.android.gm" />
         <package android:name="com.idbibank.abhay_card" />
         <package android:name="com.idfcfirstbank.optimus" />
         <package android:name="com.infrasofttech.indianBank" />
         <package android:name="com.kotak811mobilebankingapp.instantsavingsupiscanandpayrecharge" />
         <package android:name="com.lcode.smartz" />
+        <package android:name="com.microsoft.office.outlook" />
         <package android:name="com.mobikwik_new" />
         <package android:name="com.motorola.messaging" />
         <package android:name="com.msf.kbank.mobile" />
@@ -41,10 +43,13 @@
         <package android:name="com.sbi.SBIFreedomPlus" />
         <package android:name="com.sbi.lotusintouch" />
         <package android:name="com.snapwork.hdfc" />
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
         <package android:name="com.yesbank" />
         <package android:name="in.amazon.mShop.android.shopping" />
         <package android:name="in.org.npci.upiapp" />
         <package android:name="net.one97.paytm" />
+        <package android:name="org.telegram.messenger" />
     </queries>
 
     <application

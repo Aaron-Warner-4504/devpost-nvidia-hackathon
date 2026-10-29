@@ -8,7 +8,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-enum class Counter { Captured, Sent, Dropped, RateLimited, Duplicate }
+/** [Failed]: a notification that could not be processed (malformed extras, provider errors). Counted, never logged. */
+enum class Counter { Captured, Sent, Dropped, RateLimited, Duplicate, Failed }
 
 /** Numbers only: never content, senders or package-level detail beyond counts. */
 data class StatsSnapshot(

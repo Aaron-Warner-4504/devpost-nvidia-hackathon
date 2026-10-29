@@ -15,6 +15,7 @@ import ai.enthral.sentinel.sync.EncryptedFileOutbox
 import ai.enthral.sentinel.sync.EventSender
 import ai.enthral.sentinel.sync.WorkManagerSyncScheduler
 import java.io.File
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -55,8 +56,15 @@ class CaptureModule(
 
     /** Serial: notifications are processed one at a time, in arrival order. */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
-    private val sendScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1) + failureHandler())
+    private val sendScope = CoroutineScope(SupervisorJob() + Dispatchers.IO + failureHandler())
+
+    /** Last line of defence: an unexpected exception is counted (no content) instead of crashing the process. */
+    private fun failureHandler() = CoroutineExceptionHandler { _, _ -> countFailure() }
+
+    fun countFailure() {
+        CoroutineScope(Dispatchers.IO).launch { runCatching { state.add(Counter.Failed) } }
+    }
 
     private val state = DataStoreCaptureState(
         PreferenceDataStoreFactory.create(scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)) {

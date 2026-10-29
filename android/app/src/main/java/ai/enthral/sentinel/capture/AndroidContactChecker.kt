@@ -38,10 +38,10 @@ class AndroidContactChecker(private val context: Context) : ContactChecker {
         }
     }
 
-    /** Proof only when the (already validated, single-contact) uri resolves to exactly one contact row. */
-    override fun isSavedContactUri(uri: String): Boolean? = query {
+    /** Proof only when the validated lookup uri resolves to exactly one contact row whose _ID is [expectedId]. */
+    override fun isSavedContactUri(uri: String, expectedId: Long): Boolean? = query {
         context.contentResolver.query(Uri.parse(uri), arrayOf(ContactsContract.Contacts._ID), null, null, null)
-            ?.use { it.count == 1 } ?: false
+            ?.use { it.count == 1 && it.moveToFirst() && it.getLong(0) == expectedId } ?: false
     }
 
     /**

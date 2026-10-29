@@ -29,12 +29,13 @@ class SentinelNotificationListener : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         if (sbn == null) return
         val c = capture
-        if (sbn.packageName !in c.allowlist || sbn.packageName == packageName) return
         val raw = try {
+            if (sbn.packageName !in c.allowlist || sbn.packageName == packageName) return
             AndroidNotificationReader.read(sbn)
         } catch (_: RuntimeException) {
-            return // malformed extras (bad parcelables from the posting app): skip it
+            c.countFailure() // malformed extras (bad parcelables from the posting app): skip it, keep capturing
+            return
         }
-        c.scope.launch { c.pipeline.onPosted(raw) }
+        c.scope.launch { c.pipeline.onPostedSafely(raw) }
     }
 }

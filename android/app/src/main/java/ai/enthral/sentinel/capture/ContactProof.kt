@@ -8,27 +8,41 @@ import java.security.SecureRandom
 
 /**
  * Which Person uris may prove "saved contact". Only uris naming ONE contact are accepted:
- *  - `content://com.android.contacts/contacts/lookup/<key>` and `.../contacts/lookup/<key>/<id>`
- *  - `content://com.android.contacts/contacts/<id>`
- *  - `content://com.android.contacts/phone_lookup/<number>` and `tel:<number>` (checked as an exact phone number)
- * Collections (`contacts`, `contacts/filter/...`, `data/...`), other authorities, query strings, fragments, `.`/`..`
- * or empty segments and anything else are rejected (never proof). The Android checker additionally requires the
- * accepted uri to resolve to exactly one row.
+ *  - `content://com.android.contacts/contacts/lookup/<key>/<id>` (key not display-name derived); the phone then
+ *    requires it to resolve to exactly one contact whose _ID equals <id>;
+ *  - `content://com.android.contacts/phone_lookup/<number>` and `tel:<number>` (checked as an exact E.164 number).
+ * Bare `contacts/<id>`, lookup keys without an id, collections (`contacts`, `contacts/filter/...`, `data/...`), other
+ * authorities, query strings, fragments, escapes in content paths, `.`/`..` or empty segments, malformed escapes and
+ * anything else are rejected (never proof, never an exception).
  */
 object ContactUris {
     sealed interface Kind {
-        data class Contact(val uri: String) : Kind
+        /** A lookup uri with its contact id; proof only if it resolves to exactly that one contact. */
+        data class Contact(val uri: String, val id: Long) : Kind
         data class Number(val number: String) : Kind
     }
 
     private const val AUTHORITY = "com.android.contacts"
-    private val LOOKUP_KEY = Regex("""^[A-Za-z0-9._%\-]{1,512}$""")
-    private val ID = Regex("""^[0-9]{1,18}$""")
+    private val LOOKUP_KEY = Regex("""^[A-Za-z0-9._\-]{1,512}$""")
+    private val ID = Regex("""^[1-9][0-9]{0,17}$""")
     private val NUMBER = Regex("""^\+?[0-9 ()\-.]{6,24}$""")
 
-    fun classify(raw: String): Kind? {
+    /**
+     * Lookup-key parts are `<account hash><type><data>`; type `n` means the key was derived from the DISPLAY NAME
+     * only (no stable row identity), which a spoofed name could reproduce: never proof.
+     */
+    private val NAME_KEY_PART = Regex("""^[0-9]*n""")
+
+    fun classify(raw: String): Kind? = try {
+        classifyStrict(raw)
+    } catch (_: RuntimeException) {
+        null // malformed escapes, odd encodings: never proof, never a crash
+    }
+
+    private fun classifyStrict(raw: String): Kind? {
+        if (raw.length > 2048) return null
         if (raw.startsWith("tel:")) {
-            val n = java.net.URLDecoder.decode(raw.removePrefix("tel:"), "UTF-8").trim()
+            val n = percentDecode(raw.removePrefix("tel:"))?.trim() ?: return null
             return if (NUMBER.matches(n)) Kind.Number(n) else null
         }
         val uri = try {
@@ -39,19 +53,49 @@ object ContactUris {
         if (uri.scheme != "content" || uri.rawAuthority != AUTHORITY) return null
         if (uri.rawQuery != null || uri.rawFragment != null || uri.rawUserInfo != null) return null
         val path = uri.rawPath ?: return null
-        if (!path.startsWith("/")) return null
+        if (!path.startsWith("/") || path.contains('%')) return null
         val segs = path.substring(1).split('/')
-        if (segs.any { it.isEmpty() || it == "." || it == ".." || it.contains("%2F", true) || it.contains("%2E%2E", true) }) return null
+        if (segs.any { it.isEmpty() || it == "." || it == ".." }) return null
         return when {
-            segs.size == 2 && segs[0] == "contacts" && ID.matches(segs[1]) -> Kind.Contact(raw)
-            segs.size == 3 && segs[0] == "contacts" && segs[1] == "lookup" && LOOKUP_KEY.matches(segs[2]) -> Kind.Contact(raw)
+            // Only content://com.android.contacts/contacts/lookup/<key>/<id>. A bare contacts/<id> or a lookup key
+            // without its id is not accepted: the id must be corroborated by the key (checked on the phone).
             segs.size == 4 && segs[0] == "contacts" && segs[1] == "lookup" && LOOKUP_KEY.matches(segs[2]) &&
-                ID.matches(segs[3]) -> Kind.Contact(raw)
+                ID.matches(segs[3]) && segs[2].split('.').none { NAME_KEY_PART.containsMatchIn(it) } ->
+                Kind.Contact(raw, segs[3].toLong())
             segs.size == 2 && segs[0] == "phone_lookup" -> {
-                val n = java.net.URLDecoder.decode(segs[1], "UTF-8").trim()
+                val n = percentDecode(segs[1])?.trim() ?: return null
                 if (NUMBER.matches(n)) Kind.Number(n) else null
             }
             else -> null
+        }
+    }
+
+    /** RFC 3986 percent-decoding ('+' stays '+'); null on a malformed escape or invalid UTF-8. */
+    internal fun percentDecode(s: String): String? {
+        if ('%' !in s) return s
+        val out = java.io.ByteArrayOutputStream()
+        var i = 0
+        while (i < s.length) {
+            val c = s[i]
+            if (c == '%') {
+                if (i + 2 >= s.length) return null
+                val hi = Character.digit(s[i + 1], 16)
+                val lo = Character.digit(s[i + 2], 16)
+                if (hi < 0 || lo < 0) return null
+                out.write(hi * 16 + lo)
+                i += 3
+            } else {
+                out.write(c.toString().toByteArray(Charsets.UTF_8))
+                i++
+            }
+        }
+        val decoder = Charsets.UTF_8.newDecoder()
+            .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+            .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
+        return try {
+            decoder.decode(java.nio.ByteBuffer.wrap(out.toByteArray())).toString()
+        } catch (_: java.nio.charset.CharacterCodingException) {
+            null
         }
     }
 }
@@ -96,9 +140,10 @@ object PhoneNormalizer {
 class PseudonymKeyStore(private val file: File, private val cipher: TokenCipher, private val random: SecureRandom = SecureRandom()) {
     private var cached: ByteArray? = null
 
+    /** Returns a COPY: callers may keep using it while [reset] runs on another thread. */
     @Synchronized
     fun key(): ByteArray {
-        cached?.let { return it }
+        cached?.let { return it.copyOf() }
         val loaded = if (file.exists()) cipher.decrypt(file.readBytes())?.takeIf { it.size == 32 } else null
         val key = loaded ?: ByteArray(32).also {
             random.nextBytes(it)
@@ -106,12 +151,12 @@ class PseudonymKeyStore(private val file: File, private val cipher: TokenCipher,
             file.writeBytes(cipher.encrypt(it))
         }
         cached = key
-        return key
+        return key.copyOf()
     }
 
+    /** Drops the reference (never zeroes an array another thread may be reading) and deletes the file. */
     @Synchronized
     fun reset() {
-        cached?.fill(0)
         cached = null
         file.delete()
     }
