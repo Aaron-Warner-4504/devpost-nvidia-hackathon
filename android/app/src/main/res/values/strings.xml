@@ -336,6 +336,12 @@
     <string name="settings_battery_ok">Not restricted</string>
     <string name="settings_battery_restricted">Restricted: Android may stop Sentinel in the background</string>
     <string name="settings_battery_footer">Some phones stop apps in the background to save battery. Allowing Sentinel keeps checks running; it uses very little battery because it only wakes when a watched app posts a notification.</string>
+    <string name="call_scam_title">Possible scam caller</string>
+    <string name="call_checking">Checking an incoming call</string>
+    <string name="settings_screening_title">Check callers while ringing</string>
+    <string name="settings_screening_body">Sentinel checks the number of an incoming call and warns you if it looks like a scam. Calls are never blocked or silenced.</string>
+    <string name="settings_screening_needs_calls">Turn on Call info above first.</string>
+    <string name="settings_screening_footer">Android asks you to choose Sentinel as the call screening app. Only the number, the time and whether it is saved in your contacts are checked. To turn this off, change the call screening app in Android\'s Default apps.</string>
     <plurals name="capture_watching_apps">
         <item quantity="one">watching %d app</item>
         <item quantity="other">watching %d apps</item>

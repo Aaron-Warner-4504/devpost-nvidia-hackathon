@@ -114,6 +114,51 @@ class CaptureModule(
         )
     }
 
+    /** Call screening needs the Call-info consent but not READ_CALL_LOG (the number comes from the screening API). */
+    suspend fun screeningAllowed(): Boolean =
+        settings.onboardingDone.first() &&
+            settings.consentIntent(ai.enthral.sentinel.domain.ConsentSource.Calls).first() &&
+            !settings.monitoringPaused.first()
+
+    /**
+     * From the screening service (main thread, must return fast). The event goes into the ENCRYPTED outbox on the
+     * capture thread; the expedited job only drains, so the caller's number never sits in WorkManager's plain database.
+     */
+    fun onIncomingCall(number: String?, at: Long) {
+        scope.launch {
+            if (screenIncomingCall(number, at)) {
+                scheduler.scheduleScreeningDrain()
+                sendNow()
+            }
+        }
+    }
+
+    /**
+     * Ringing call -> event (number, time, contact yes/no, duration 0, direction in) -> encrypted outbox. The call is
+     * remembered (hashed number + time) so the later call-log row is not sent a second time. Returns true if queued.
+     */
+    suspend fun screenIncomingCall(number: String?, at: Long): Boolean {
+        if (!screeningAllowed()) return false
+        return try {
+            val raw = number?.trim().orEmpty()
+            val formatted = if (CallEvents.isHidden(raw)) "" else e164.format(raw) ?: raw
+            val ev = CallEvents.toEvent(CallRow(0, raw, at, 0, CallEvents.INCOMING), { e164.format(it) },
+                { contacts.isSavedNumber(it) }, ringing = true) ?: return false
+            if (formatted.isNotEmpty()) state.addScreened(formatted, at)
+            val added = outbox.add(ai.enthral.sentinel.sync.OutboxItem(ev, enqueuedAt = clock(), ringing = true))
+            if (added) {
+                state.add(Counter.Captured)
+                state.markCaptured(clock())
+            }
+            added
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            countFailure()
+            false
+        }
+    }
+
     suspend fun callsAllowed(): Boolean =
         settings.onboardingDone.first() &&
             settings.consentIntent(ai.enthral.sentinel.domain.ConsentSource.Calls).first() &&

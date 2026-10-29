@@ -10,4 +10,7 @@ interface AlertNotifier {
     fun canNotify(): Boolean
 
     fun notify(alert: Alert)
+
+    /** A high/critical answer about a call that is ringing right now ("Possible scam caller"). */
+    fun notifyIncomingCall(alert: Alert) = notify(alert)
 }

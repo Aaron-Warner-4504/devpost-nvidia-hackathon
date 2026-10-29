@@ -34,6 +34,7 @@ import ai.enthral.sentinel.domain.Tier
 import ai.enthral.sentinel.capture.Counter
 import ai.enthral.sentinel.ui.common.CaptureState
 import ai.enthral.sentinel.ui.common.graphViewModel
+import ai.enthral.sentinel.ui.common.openDefaultAppsSettings
 import ai.enthral.sentinel.ui.common.requestBatteryExemption
 import ai.enthral.sentinel.ui.common.openAppNotificationSettings
 import ai.enthral.sentinel.ui.common.openChannelSettings
@@ -67,6 +68,7 @@ fun SettingsScreen(onOpenDemo: () -> Unit) {
     val requester = rememberSystemRequester(vm::onCallPermissionResult)
     val askPost = rememberPostNotificationsRequester { vm.onPostNotificationsResult() }
     val context = LocalContext.current
+    val askScreening = ai.enthral.sentinel.ui.common.rememberScreeningRoleRequester { vm.onScreeningResult() }
     LaunchedEffect(vm) {
         vm.events.flow.collect { e ->
             when (e) {
@@ -74,6 +76,8 @@ fun SettingsScreen(onOpenDemo: () -> Unit) {
                 SettingsEvent.RequestPostNotifications -> askPost()
                 SettingsEvent.RequestBatteryExemption -> context.requestBatteryExemption()
                 is SettingsEvent.QueueCleared -> Unit
+                SettingsEvent.RequestScreeningRole -> askScreening()
+                SettingsEvent.OpenDefaultApps -> context.openDefaultAppsSettings()
             }
         }
     }
@@ -90,6 +94,7 @@ fun SettingsScreen(onOpenDemo: () -> Unit) {
         onReduceTransparency = vm::setReduceTransparency,
         onAllowNotifications = vm::requestPostNotifications,
         onBattery = vm::requestBatteryExemption,
+        onScreening = vm::setScreening,
         onClearQueue = vm::clearQueue,
         onDelete = vm::deleteEverything,
         onDismissDeleteFailure = vm::dismissDeleteFailure,
@@ -111,6 +116,7 @@ fun SettingsContent(
     onReduceTransparency: (Boolean) -> Unit,
     onAllowNotifications: () -> Unit,
     onBattery: () -> Unit,
+    onScreening: (Boolean) -> Unit,
     onClearQueue: () -> Unit,
     onDelete: () -> Unit,
     onDismissDeleteFailure: () -> Unit,
@@ -163,6 +169,22 @@ fun SettingsContent(
 
         item(key = "capture") {
             CaptureSection(state, onShowApps = { showApps = true }, onClearQueue = { showClearQueue = true })
+        }
+        if (state.sources.screeningAvailable) {
+            item(key = "screening") {
+                GroupedSection(footer = stringResource(R.string.settings_screening_footer)) {
+                    ToggleRow(
+                        title = stringResource(R.string.settings_screening_title),
+                        subtitle = stringResource(
+                            if (state.sources.callsIntent) R.string.settings_screening_body else R.string.settings_screening_needs_calls,
+                        ),
+                        checked = state.sources.screeningRole,
+                        onCheckedChange = onScreening,
+                        icon = SentinelIcons.Phone,
+                        enabled = state.sources.callsIntent || state.sources.screeningRole,
+                    )
+                }
+            }
         }
         item(key = "battery") {
             GroupedSection(header = stringResource(R.string.settings_battery), footer = stringResource(R.string.settings_battery_footer)) {

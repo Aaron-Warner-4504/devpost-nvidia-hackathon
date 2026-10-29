@@ -336,6 +336,12 @@
     <string name="settings_battery_ok">प्रतिबंधित नहीं</string>
     <string name="settings_battery_restricted">प्रतिबंधित: एंड्रॉइड बैकग्राउंड में सेंटिनल को रोक सकता है</string>
     <string name="settings_battery_footer">कुछ फ़ोन बैटरी बचाने के लिए बैकग्राउंड में ऐप रोक देते हैं। सेंटिनल को अनुमति देने से जाँच चलती रहती है; यह बहुत कम बैटरी लेता है क्योंकि यह केवल तब जागता है जब कोई चुना गया ऐप सूचना भेजता है।</string>
+    <string name="call_scam_title">संभावित धोखेबाज़ कॉल</string>
+    <string name="call_checking">आने वाली कॉल जाँची जा रही है</string>
+    <string name="settings_screening_title">बजती कॉल पर ही कॉलर जाँचें</string>
+    <string name="settings_screening_body">सेंटिनल आने वाली कॉल का नंबर जाँचता है और धोखाधड़ी जैसा लगे तो आपको चेतावनी देता है। कॉल कभी ब्लॉक या साइलेंट नहीं की जातीं।</string>
+    <string name="settings_screening_needs_calls">पहले ऊपर कॉल जानकारी चालू करें।</string>
+    <string name="settings_screening_footer">एंड्रॉइड आपसे सेंटिनल को कॉल स्क्रीनिंग ऐप चुनने को कहेगा। केवल नंबर, समय और यह कि नंबर आपके संपर्कों में सेव है या नहीं, जाँचा जाता है। इसे बंद करने के लिए एंड्रॉइड की डिफ़ॉल्ट ऐप सेटिंग में कॉल स्क्रीनिंग ऐप बदलें।</string>
     <plurals name="capture_watching_apps">
         <item quantity="one">%d ऐप पर नज़र</item>
         <item quantity="other">%d ऐप पर नज़र</item>

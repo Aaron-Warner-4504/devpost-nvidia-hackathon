@@ -146,6 +146,23 @@ class EventSenderTest {
         assertEquals(1, outbox.size.value)
     }
 
+    @Test fun `a ringing call jumps the queue and its alert is a scam-caller warning`() = runBlocking {
+        val calls = mutableListOf<String>()
+        val n = object : ai.enthral.sentinel.data.notify.AlertNotifier {
+            override fun ensureChannels() = Unit
+            override fun canNotify() = true
+            override fun notify(alert: ai.enthral.sentinel.domain.Alert) { calls += "notify:${alert.id}" }
+            override fun notifyIncomingCall(alert: ai.enthral.sentinel.domain.Alert) { calls += "call:${alert.id}" }
+        }
+        val s2 = EventSender(api, session, settings, outbox, stats, AlertDispatcher(settings, n), scheduler, { now })
+        queue("old1", "old2")
+        outbox.add(OutboxItem(event("ring"), now, ringing = true))
+        api.answer({ ev -> ok(alertOut("a-${ev.deviceEventId}", if (ev.deviceEventId == "ring") Tier.Critical else Tier.High))(ev) })
+        s2.drain()
+        assertEquals(listOf("ring", "old1", "old2"), api.posted.map { it.deviceEventId })
+        assertEquals(listOf("call:a-ring", "notify:a-old1", "notify:a-old2"), calls)
+    }
+
     @Test fun `server duplicate counts as delivered`() = runBlocking {
         api.answer({ ApiResult.Success(EventResult("srv", true, null)) })
         queue("a")

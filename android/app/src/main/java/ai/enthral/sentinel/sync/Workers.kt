@@ -39,6 +39,27 @@ class CallLogSyncWorker(context: Context, params: WorkerParameters) : CoroutineW
     }
 }
 
+/**
+ * A call is ringing (call screening) and its event is already in the encrypted outbox: drain now. Expedited so it
+ * runs within seconds even though the screening service is unbound right after allowing the call (on API < 31
+ * WorkManager runs it as a short foreground job with the low-importance notification of [getForegroundInfo]).
+ */
+class CallScreeningWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result = when (applicationContext.capture.sender.drain()) {
+        DrainResult.Done, DrainResult.NotReady -> Result.success()
+        DrainResult.Retry, DrainResult.Backoff -> { applicationContext.capture.scheduler.scheduleSync(); Result.success() }
+    }
+
+    override suspend fun getForegroundInfo(): androidx.work.ForegroundInfo {
+        val n = androidx.core.app.NotificationCompat.Builder(applicationContext, ai.enthral.sentinel.data.notify.NotificationChannels.UPDATES)
+            .setSmallIcon(ai.enthral.sentinel.R.drawable.ic_shield)
+            .setContentTitle(applicationContext.getString(ai.enthral.sentinel.R.string.call_checking))
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW)
+            .build()
+        return androidx.work.ForegroundInfo(0x5E17, n)
+    }
+}
+
 /** Every 15 minutes: catch up the call log, flush anything still queued, look for alerts never notified. */
 class PeriodicSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
@@ -81,6 +102,14 @@ class WorkManagerSyncScheduler(private val context: Context) : SyncScheduler {
         wm.enqueueUniqueWork(CALL_LOG, ExistingWorkPolicy.REPLACE, req)
     }
 
+    fun scheduleScreeningDrain() {
+        val req = OneTimeWorkRequestBuilder<CallScreeningWorker>()
+            .setExpedited(androidx.work.OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .setConstraints(online)
+            .build()
+        wm.enqueueUniqueWork(SCREEN, ExistingWorkPolicy.REPLACE, req)
+    }
+
     fun schedulePeriodic() {
         val req = PeriodicWorkRequestBuilder<PeriodicSyncWorker>(15, TimeUnit.MINUTES)
             .setConstraints(online)
@@ -100,5 +129,6 @@ class WorkManagerSyncScheduler(private val context: Context) : SyncScheduler {
         const val FOLLOW_UP = "alert-follow-up"
         const val PERIODIC = "periodic-sync"
         const val CALL_LOG = "call-log-sync"
+        const val SCREEN = "call-screen"
     }
 }

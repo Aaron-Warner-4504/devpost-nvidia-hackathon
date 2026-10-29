@@ -35,14 +35,14 @@ interface SyncScheduler {
 class AlertDispatcher(private val settings: AppSettings, private val notifier: AlertNotifier) {
     private val lock = Mutex()
 
-    /** Returns the alerts that were newly notified. */
-    suspend fun dispatch(alerts: List<Alert>): List<Alert> = lock.withLock {
+    /** Returns the alerts that were newly notified. [ringingCall]: the alert is about a call that is ringing now. */
+    suspend fun dispatch(alerts: List<Alert>, ringingCall: Boolean = false): List<Alert> = lock.withLock {
         if (alerts.isEmpty()) return emptyList()
         val seen = settings.notifiedAlertIds.first().orEmpty()
         val fresh = alerts.filter { it.id !in seen }.distinctBy { it.id }
         if (fresh.isEmpty()) return emptyList()
         val loud = fresh.filter { it.tier.interrupts }.sortedBy { it.createdAt }
-        loud.forEach { notifier.notify(it) }
+        loud.forEach { if (ringingCall) notifier.notifyIncomingCall(it) else notifier.notify(it) }
         settings.markNotified(fresh.map { it.id }.toSet())
         loud
     }
@@ -72,7 +72,7 @@ enum class DrainResult {
 }
 
 /**
- * Drains the outbox oldest-first. One drain at a time (mutex), so the fast path and the worker never double-post;
+ * Drains the outbox oldest-first (a ringing call goes first). One drain at a time (mutex), so the fast path and the worker never double-post;
  * even if they did, the stable device_event_id makes the server answer `duplicate: true`.
  *  - 2xx: remove, count, surface the alert;
  *  - 401: DeviceSession re-registers once and retries; still 401 -> Retry later;
@@ -99,7 +99,7 @@ class EventSender(
         var result = DrainResult.Done
         var processed = 0
         loop@ while (processed < maxItems) {
-            val item = outbox.oldest(1).firstOrNull() ?: break
+            val item = outbox.next() ?: break
             processed++
             val r = try {
                 withTimeout(requestTimeoutMs) { session.authed { api.postEvent(item.event) } }
@@ -115,7 +115,7 @@ class EventSender(
                     r.value.alert?.let { out ->
                         val alert = out.toDomain()
                         if (maxTier == null || alert.tier > maxTier!!) maxTier = alert.tier
-                        dispatcher.dispatch(listOf(alert))
+                        dispatcher.dispatch(listOf(alert), ringingCall = item.ringing)
                     }
                 }
                 is ApiResult.HttpError -> when {

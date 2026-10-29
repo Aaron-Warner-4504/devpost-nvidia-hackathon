@@ -57,6 +57,8 @@ sealed interface SettingsEvent {
     data class Request(val request: SystemRequest) : SettingsEvent
     data object RequestPostNotifications : SettingsEvent
     data object RequestBatteryExemption : SettingsEvent
+    data object RequestScreeningRole : SettingsEvent
+    data object OpenDefaultApps : SettingsEvent
     data class QueueCleared(val count: Int) : SettingsEvent
 }
 
@@ -164,6 +166,11 @@ class SettingsViewModel(
     fun requestPostNotifications() = events.send(SettingsEvent.RequestPostNotifications)
 
     fun requestBatteryExemption() = events.send(SettingsEvent.RequestBatteryExemption)
+
+    /** On: system role dialog. Off: Android only lets the user remove the role in Default apps. */
+    fun setScreening(on: Boolean) = events.send(if (on) SettingsEvent.RequestScreeningRole else SettingsEvent.OpenDefaultApps)
+
+    fun onScreeningResult() = sources.refreshAccess()
 
     /** Caller confirmed. Drops events that were never sent (they are masked already, but the user asked). */
     fun clearQueue() {

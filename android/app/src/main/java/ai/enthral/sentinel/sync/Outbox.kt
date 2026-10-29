@@ -16,7 +16,13 @@ import kotlinx.serialization.builtins.ListSerializer
 
 /** One queued event. [event] is already redacted: raw text never reaches the outbox. */
 @Serializable
-data class OutboxItem(val event: EventIn, val enqueuedAt: Long, val attempts: Int = 0) {
+data class OutboxItem(
+    val event: EventIn,
+    val enqueuedAt: Long,
+    val attempts: Int = 0,
+    /** A call that is ringing right now (call screening): a high/critical answer becomes "Possible scam caller". */
+    val ringing: Boolean = false,
+) {
     val id: String get() = event.deviceEventId
 }
 
@@ -28,6 +34,9 @@ interface Outbox {
 
     /** Oldest first (enqueue order), after expiring items older than the TTL. */
     suspend fun oldest(limit: Int): List<OutboxItem>
+
+    /** Next item to send: a ringing call first (its warning is only useful while it rings), else the oldest. */
+    suspend fun next(): OutboxItem? = oldest(Int.MAX_VALUE).let { all -> all.firstOrNull { it.ringing } ?: all.firstOrNull() }
     suspend fun remove(id: String)
     suspend fun recordAttempt(id: String)
     suspend fun clear(): Int

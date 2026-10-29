@@ -117,6 +117,34 @@ val CALL_PERMISSIONS = arrayOf(
     Manifest.permission.READ_CONTACTS,
 )
 
+/**
+ * Asks for ROLE_CALL_SCREENING (system dialog). [onResult] runs afterwards; read the role state again there.
+ * Turning it off happens in the system "Default apps" screen ([Context.openDefaultAppsSettings]).
+ */
+@Composable
+fun rememberScreeningRoleRequester(onResult: () -> Unit): () -> Unit {
+    val context = LocalContext.current
+    val latest = rememberUpdatedState(onResult)
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { latest.value() }
+    return remember(launcher, context) {
+        {
+            val rm = if (android.os.Build.VERSION.SDK_INT >= 29) context.getSystemService(android.app.role.RoleManager::class.java) else null
+            if (rm != null && android.os.Build.VERSION.SDK_INT >= 29) {
+                try {
+                    launcher.launch(rm.createRequestRoleIntent(android.app.role.RoleManager.ROLE_CALL_SCREENING))
+                } catch (_: ActivityNotFoundException) {
+                    context.openDefaultAppsSettings()
+                }
+            }
+        }
+    }
+}
+
+fun Context.openDefaultAppsSettings() {
+    val ok = startSafely(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+    if (!ok) openAppSettings()
+}
+
 /** Launcher for POST_NOTIFICATIONS (API 33+); below that the call just opens the app's notification settings. */
 @Composable
 fun rememberPostNotificationsRequester(onResult: () -> Unit): () -> Unit {

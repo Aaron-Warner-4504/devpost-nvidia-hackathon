@@ -24,6 +24,10 @@ data class SourcesState(
     val contacts: Boolean = false,
     /** Exempt from battery optimisation. Defaults to true so nothing nags before the first real read. */
     val batteryExempt: Boolean = true,
+    /** Android 10+: the call-screening role can be requested. */
+    val screeningAvailable: Boolean = false,
+    /** Sentinel holds the call-screening role (checks callers while ringing). */
+    val screeningRole: Boolean = false,
 ) {
     val notifications: SourceStatus get() = status(notificationsIntent, notificationAccess)
     val calls: SourceStatus get() = status(callsIntent, callAccess)
@@ -60,6 +64,8 @@ class SourcesController(
             postNotifications = access.postNotificationsGranted(),
             contacts = access.contactsGranted(),
             batteryExempt = access.batteryOptimizationIgnored(),
+            screeningAvailable = access.callScreeningAvailable(),
+            screeningRole = access.callScreeningRoleHeld(),
         ),
     )
     val state: StateFlow<SourcesState> = _state.asStateFlow()
@@ -85,6 +91,8 @@ class SourcesController(
             postNotifications = access.postNotificationsGranted(),
             contacts = access.contactsGranted(),
             batteryExempt = access.batteryOptimizationIgnored(),
+            screeningAvailable = access.callScreeningAvailable(),
+            screeningRole = access.callScreeningRoleHeld(),
         )
     }
 

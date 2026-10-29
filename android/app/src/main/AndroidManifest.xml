@@ -117,6 +117,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- Opt-in call screening (ROLE_CALL_SCREENING): always ALLOWS the call, then checks the number. -->
+        <service
+            android:name=".capture.SentinelCallScreeningService"
+            android:exported="true"
+            android:permission="android.permission.BIND_SCREENING_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.CallScreeningService" />
+            </intent-filter>
+        </service>
+
         <!-- Call ended -> read the new call-log row 5 s later (Call info consent only). -->
         <receiver
             android:name=".capture.PhoneStateReceiver"
