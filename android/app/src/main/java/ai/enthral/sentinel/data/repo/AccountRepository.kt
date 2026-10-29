@@ -17,6 +17,8 @@ class NetworkAccountRepository(
     private val session: DeviceSession,
     private val settings: AppSettings,
     private val alerts: AlertsRepository,
+    /** Wipes on-device capture state (outbox, counters, pseudonym key, scheduled work). */
+    private val onWipe: suspend () -> Unit = {},
 ) : AccountRepository {
     override suspend fun deleteEverything(): ApiResult<Unit> {
         if (session.isRegistered()) {
@@ -27,6 +29,7 @@ class NetworkAccountRepository(
             }
         }
         session.reset()
+        onWipe()
         alerts.clear()
         settings.clearAll()
         return ApiResult.Success(Unit)

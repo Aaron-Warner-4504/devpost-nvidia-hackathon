@@ -1,5 +1,6 @@
 package ai.enthral.sentinel
 
+import ai.enthral.sentinel.capture.CaptureStatus
 import ai.enthral.sentinel.data.demo.DemoRepository
 import ai.enthral.sentinel.data.image.ImagePreparer
 import ai.enthral.sentinel.data.notify.AlertNotifier
@@ -33,6 +34,9 @@ interface AppGraph {
     val images: ImagePreparer
     val shareIntake: ShareIntake
     val fcm: FcmTokenProvider
+
+    /** Capture counters, queue size and watched apps (numbers and states only). */
+    val captureStatus: CaptureStatus
 
     /** Outlives screens: used to finish work (e.g. a pending feedback) after the user navigates away. */
     val appScope: CoroutineScope
