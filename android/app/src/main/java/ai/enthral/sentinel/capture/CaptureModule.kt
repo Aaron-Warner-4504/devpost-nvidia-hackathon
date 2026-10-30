@@ -3,16 +3,25 @@ package ai.enthral.sentinel.capture
 import android.content.Context
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.preferencesDataStoreFile
+import ai.enthral.sentinel.data.api.ApiResult
 import ai.enthral.sentinel.data.api.SentinelApi
+import ai.enthral.sentinel.data.db.DatabasePassphraseProvider
+import ai.enthral.sentinel.data.db.LocalStore
+import ai.enthral.sentinel.data.db.RoomLocalStore
+import ai.enthral.sentinel.data.db.SentinelDatabase
 import ai.enthral.sentinel.data.notify.AlertNotifier
+import ai.enthral.sentinel.data.repo.AlertsRepository
 import ai.enthral.sentinel.data.repo.DeviceSession
 import ai.enthral.sentinel.data.store.AppSettings
 import ai.enthral.sentinel.data.store.TokenCipher
 import ai.enthral.sentinel.data.system.SystemAccess
+import ai.enthral.sentinel.domain.ConsentSource
 import ai.enthral.sentinel.sync.AlertDispatcher
 import ai.enthral.sentinel.sync.DrainResult
-import ai.enthral.sentinel.sync.EncryptedFileOutbox
 import ai.enthral.sentinel.sync.EventSender
+import ai.enthral.sentinel.sync.RoomOutbox
+import ai.enthral.sentinel.sync.SyncCounts
+import ai.enthral.sentinel.sync.importLegacyOutbox
 import ai.enthral.sentinel.sync.WorkManagerSyncScheduler
 import java.io.File
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -31,6 +40,9 @@ interface CaptureStatus {
     val stats: Flow<StatsSnapshot>
     val queueSize: StateFlow<Int>
 
+    /** Delivery states of the outbox (pending / sending / retrying / sent / gave up) and the next retry time. */
+    val sync: StateFlow<SyncCounts>
+
     /** Allowlisted packages (release list; the debug-only adb shell is not shown). */
     val watchedPackages: List<String>
 
@@ -40,6 +52,9 @@ interface CaptureStatus {
     /** Events per package in the current 10-minute rate window. */
     fun rateWindowCounts(): Map<String, Int>
     suspend fun clearQueue(): Int
+
+    /** A consent was turned off: drop everything queued under it, right now and offline too. */
+    suspend fun purge(source: ConsentSource): Int
 }
 
 data class WatchedApp(val packageName: String, val label: String)
@@ -53,6 +68,8 @@ class CaptureModule(
     notifier: AlertNotifier,
     private val access: SystemAccess,
     private val cipher: TokenCipher,
+    /** Refreshed after a sync so the Alerts list shows the server's results; null in tests. */
+    private val alerts: AlertsRepository? = null,
 ) : CaptureStatus {
     private val clock: () -> Long = System::currentTimeMillis
 
@@ -76,10 +93,32 @@ class CaptureModule(
     private val dir = File(context.noBackupFilesDir, "capture")
     private val pseudonymKeys = PseudonymKeyStore(File(dir, KEY_FILE), cipher)
 
-    val outbox = EncryptedFileOutbox(File(dir, "outbox.bin"), cipher, clock, onDropped = { state.add(Counter.Dropped, it.toLong()) })
+    /** Room + SQLCipher; the passphrase is sealed with the same Keystore key as the pseudonym key. */
+    private val database = SentinelDatabase(
+        context,
+        DatabasePassphraseProvider(
+            PreferenceDataStoreFactory.create(scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)) {
+                context.preferencesDataStoreFile("db_key")
+            },
+            cipher,
+        ),
+    )
+    val localStore: LocalStore = RoomLocalStore({ database.get() }, onWipe = { database.wipe() })
+    val outbox = RoomOutbox({ database.get().outboxDao() }, clock, onDropped = { state.add(Counter.Dropped, it.toLong()) })
     val scheduler = WorkManagerSyncScheduler(context)
     val dispatcher = AlertDispatcher(settings, notifier)
-    val sender = EventSender(api, session, settings, outbox, state, dispatcher, scheduler, clock)
+    val sender = EventSender(
+        api, session, settings, outbox, state, dispatcher, scheduler, clock,
+        consentGranted = { settings.consentIntent(it).first() },
+        localStore = localStore,
+        onSynced = ::refreshAlerts,
+    )
+
+    /** After a sync: the server's view of the alerts, reconciled into the local assessments (upgrade-only). */
+    private suspend fun refreshAlerts() {
+        val r = alerts?.refresh() ?: return
+        if (r is ApiResult.Success) sender.reconcile(r.value)
+    }
     private val guard = CaptureGuard(clock)
     val allowlist: Map<String, ai.enthral.sentinel.domain.Source> = CaptureAllowlist.active
 
@@ -171,7 +210,12 @@ class CaptureModule(
             access.callLogGranted()
 
     init {
-        scope.launch { outbox.warmUp() }
+        scope.launch {
+            importLegacyOutbox(File(dir, "outbox.bin"), cipher, outbox)
+            // A revocation that happened while the process was dying, or before this build: purge it now.
+            ConsentSource.entries.forEach { if (!settings.consentIntent(it).first()) outbox.purge(it) }
+            outbox.warmUp()
+        }
         // Call info turned on (or the app process started with it on): read new call-log rows now instead of waiting
         // up to 15 minutes for the periodic worker. The cursor makes repeated runs free.
         scope.launch {
@@ -194,6 +238,7 @@ class CaptureModule(
 
     override val stats: Flow<StatsSnapshot> = state.snapshot
     override val queueSize: StateFlow<Int> = outbox.size
+    override val sync: StateFlow<SyncCounts> = outbox.counts
     override val watchedPackages: List<String> = CaptureAllowlist.userVisible
     override fun rateWindowCounts(): Map<String, Int> = guard.counts()
 
@@ -210,9 +255,18 @@ class CaptureModule(
     }
     override suspend fun clearQueue(): Int = outbox.clear()
 
-    /** Delete-my-data: queue, counters, cursors, pseudonym key, scheduled work. */
+    override suspend fun purge(source: ConsentSource): Int = outbox.purge(source)
+
+    /** Delete-my-data, step 1 (before the server call, so it also happens offline): nothing queued may leave. */
+    suspend fun purgeQueue() {
+        scheduler.cancelAll()
+        outbox.deleteAll()
+    }
+
+    /** Delete-my-data: queue, local database (file and key), counters, cursors, pseudonym key, scheduled work. */
     suspend fun wipe() {
-        outbox.clear()
+        outbox.deleteAll()
+        localStore.deleteEverything()
         state.clear()
         pseudonymKeys.reset() // new key on next use: pseudonyms after a wipe are unlinkable to earlier ones
         scheduler.cancelAll()

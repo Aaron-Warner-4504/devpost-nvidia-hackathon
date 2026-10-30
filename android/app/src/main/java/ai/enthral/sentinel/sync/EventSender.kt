@@ -5,10 +5,12 @@ import ai.enthral.sentinel.capture.Counter
 import ai.enthral.sentinel.data.api.ApiResult
 import ai.enthral.sentinel.data.api.SentinelApi
 import ai.enthral.sentinel.data.api.toDomain
+import ai.enthral.sentinel.data.db.LocalStore
 import ai.enthral.sentinel.data.notify.AlertNotifier
 import ai.enthral.sentinel.data.repo.DeviceSession
 import ai.enthral.sentinel.data.store.AppSettings
 import ai.enthral.sentinel.domain.Alert
+import ai.enthral.sentinel.domain.ConsentSource
 import ai.enthral.sentinel.domain.Tier
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.first
@@ -79,10 +81,12 @@ enum class DrainResult {
 /**
  * Drains the outbox oldest-first (a ringing call goes first). One drain at a time (mutex), so the fast path and the worker never double-post;
  * even if they did, the stable device_event_id makes the server answer `duplicate: true`.
- *  - 2xx: remove, count, surface the alert;
- *  - 401: DeviceSession re-registers once and retries; still 401 -> Retry later;
- *  - 422 / 413 / other 4xx: the item can never succeed -> drop and count;
- *  - 429: stop, Backoff;  - 5xx, 408, network, timeout: stop, Retry.
+ *  - 2xx: sent, count, surface the alert, upgrade the local assessment;
+ *  - 401: DeviceSession re-registers once and retries; still 401 -> failed (backoff), Retry later;
+ *  - 422 / 413 / other 4xx: the item can never succeed -> dead, counted as dropped;
+ *  - 429: failed (at least 60 s), stop, Backoff;  - 5xx, 408, network, timeout: failed (backoff), stop, Retry.
+ * A row whose consent was revoked meanwhile is purged instead of sent. After anything was sent, [onSynced] refreshes
+ * the alert list. Server results only ever raise a local assessment, never lower it ([LocalStore.recordAssessment]).
  */
 class EventSender(
     private val api: SentinelApi,
@@ -98,6 +102,11 @@ class EventSender(
      * the retry gets `duplicate: true` and the +10/+30/+90 s follow-ups fetch the alert.
      */
     private val requestTimeoutMs: Long = 50_000L,
+    /** Is this consent still on? Checked right before each send, so a revocation wins even over a claimed row. */
+    private val consentGranted: suspend (ConsentSource) -> Boolean = { true },
+    private val localStore: LocalStore? = null,
+    /** After a drain that sent something: refresh the alerts list (and reconcile it, see [reconcile]). */
+    private val onSynced: suspend () -> Unit = {},
 ) {
     private val lock = Mutex()
 
@@ -108,8 +117,12 @@ class EventSender(
         var result = DrainResult.Done
         var processed = 0
         loop@ while (processed < maxItems) {
-            val item = outbox.next() ?: break
+            val item = outbox.claimNext() ?: break
             processed++
+            if (!consentGranted(item.consent)) {
+                outbox.purge(item.consent)
+                continue
+            }
             val r = try {
                 withTimeout(requestTimeoutMs) { session.authed { api.postEvent(item.event) } }
             } catch (_: TimeoutCancellationException) {
@@ -121,33 +134,34 @@ class EventSender(
                         "sent", "source" to item.event.source.name.lowercase(), "duplicate" to r.value.duplicate,
                         "tier" to (r.value.alert?.tier?.name?.lowercase() ?: "none"), "ringing" to item.ringing,
                     )
-                    outbox.remove(item.id)
+                    outbox.markSent(item.id, r.value.eventId)
                     stats.add(Counter.Sent)
                     stats.markSent(clock())
                     sentAny = true
                     r.value.alert?.let { out ->
                         val alert = out.toDomain()
                         if (maxTier == null || alert.tier > maxTier!!) maxTier = alert.tier
+                        upgradeLocal(item.id, alert)
                         dispatcher.dispatch(listOf(alert), ringingCall = item.ringing)
                     }
                 }
                 is ApiResult.HttpError -> when {
                     r.status == 429 -> {
                         ai.enthral.sentinel.capture.CaptureTrace.log("send_failed", "status" to 429)
-                        outbox.recordAttempt(item.id); result = DrainResult.Backoff; break@loop
+                        fail(item, r.status, RetryPolicy.RATE_LIMIT_MS); result = DrainResult.Backoff; break@loop
                     }
                     r.status == 401 || r.status == 408 || r.status >= 500 -> {
                         ai.enthral.sentinel.capture.CaptureTrace.log("send_failed", "status" to r.status)
-                        outbox.recordAttempt(item.id); result = DrainResult.Retry; break@loop
+                        fail(item, r.status); result = DrainResult.Retry; break@loop
                     }
                     else -> { // 413, 422, other 4xx: can never succeed
                         ai.enthral.sentinel.capture.CaptureTrace.log("dropped", "reason" to "http_${r.status}")
-                        outbox.remove(item.id); stats.add(Counter.Dropped)
+                        outbox.markDead(item.id, r.status); stats.add(Counter.Dropped)
                     }
                 }
                 is ApiResult.NetworkError -> {
                     ai.enthral.sentinel.capture.CaptureTrace.log("send_failed", "status" to "network")
-                    outbox.recordAttempt(item.id); result = DrainResult.Retry; break@loop
+                    fail(item, null); result = DrainResult.Retry; break@loop
                 }
             }
         }
@@ -156,7 +170,35 @@ class EventSender(
         }
         if (result == DrainResult.Done && outbox.oldest(1).isNotEmpty()) result = DrainResult.Retry
         ai.enthral.sentinel.capture.CaptureTrace.log("queue", "size" to outbox.size.value, "result" to result.name)
+        if (sentAny) quietly { onSynced() }
         result
+    }
+
+    private suspend fun fail(item: OutboxItem, status: Int?, minDelayMs: Long = 0) {
+        if (outbox.markFailed(item.id, status, minDelayMs)) stats.add(Counter.Dropped)
+    }
+
+    /**
+     * Server alerts (from a send, a follow-up or a list refresh) -> local assessments, upgrade-only. Alerts for events
+     * this phone did not send recently (checks, other devices, pruned rows) are skipped.
+     */
+    suspend fun reconcile(alerts: List<Alert>) {
+        if (localStore == null) return
+        alerts.forEach { a -> outbox.deviceEventIdFor(a.eventId)?.let { upgradeLocal(it, a) } }
+    }
+
+    private suspend fun upgradeLocal(deviceEventId: String, alert: Alert) {
+        val store = localStore ?: return
+        quietly {
+            store.recordAssessment(
+                stableEventId = deviceEventId,
+                tier = alert.tier,
+                signals = alert.signals,
+                stages = emptySet(),
+                explanation = alert.headline,
+                origin = "server",
+            )
+        }
     }
 
     /**
@@ -168,12 +210,25 @@ class EventSender(
         val since = java.time.Instant.ofEpochMilli(clock() - lookbackMs).toString()
         return when (val r = session.authed { api.getAlerts(since) }) {
             is ApiResult.Success -> {
-                val fresh = dispatcher.dispatch(r.value.map { it.toDomain() })
+                val alerts = r.value.map { it.toDomain() }
+                reconcile(alerts)
+                val fresh = dispatcher.dispatch(alerts)
                 ai.enthral.sentinel.capture.CaptureTrace.log("follow_up", "alerts" to r.value.size, "new_loud" to fresh.size)
                 true
             }
             is ApiResult.HttpError -> r.status in 400..499 && r.status != 401 && r.status != 429
             is ApiResult.NetworkError -> false
         }
+    }
+}
+
+/** Best-effort side work (local store, list refresh): a failure must not fail the delivery that already happened. */
+private suspend fun quietly(block: suspend () -> Unit) {
+    try {
+        block()
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        Unit
     }
 }

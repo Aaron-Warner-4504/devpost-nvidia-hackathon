@@ -325,6 +325,8 @@
     <string name="capture_count_captured">Captured</string>
     <string name="capture_count_sent">Sent</string>
     <string name="capture_count_queued">Waiting to send</string>
+    <string name="capture_count_retrying">Retrying (will send when possible)</string>
+    <string name="capture_count_dead">Could not send</string>
     <string name="capture_count_duplicate">Duplicates skipped</string>
     <string name="capture_count_rate_limited">Skipped (too many)</string>
     <string name="capture_count_dropped">Dropped</string>

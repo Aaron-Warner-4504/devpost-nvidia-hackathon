@@ -2,7 +2,7 @@ package ai.enthral.sentinel.capture
 
 import ai.enthral.sentinel.domain.ConsentSource
 import ai.enthral.sentinel.domain.Source
-import ai.enthral.sentinel.sync.EncryptedFileOutbox
+import ai.enthral.sentinel.sync.RoomOutbox
 import ai.enthral.sentinel.testing.FakeSettings
 import ai.enthral.sentinel.ui.common.CaptureState
 import ai.enthral.sentinel.ui.common.SourcesState
@@ -18,6 +18,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34])
 class CapturePipelineTest {
     @get:Rule val tmp = TemporaryFolder()
     private var now = 1_761_732_000_000L
@@ -25,14 +27,14 @@ class CapturePipelineTest {
     private var access = true
     private val stats = MemoryStats()
     private var queuedCalls = 0
-    private lateinit var outbox: EncryptedFileOutbox
+    private lateinit var outbox: RoomOutbox
     private lateinit var pipeline: CapturePipeline
     private val pseudo = Pseudonymizer(ByteArray(32) { 3 })
 
     @Before fun setUp() = runBlocking {
         settings.done.value = true
         settings.setConsentIntent(ConsentSource.Notifications, true)
-        outbox = EncryptedFileOutbox(File(tmp.root, "o.bin"), XorCipher(), { now })
+        outbox = testOutbox({ now })
         pipeline = CapturePipeline(
             gate = SettingsCaptureGate(settings) { access },
             filter = NotificationFilter(CaptureAllowlist.release + ("com.android.shell" to Source.Sms), "ai.enthral.sentinel"),
@@ -59,7 +61,6 @@ class CapturePipelineTest {
         assertEquals("en", ev.lang)
         assertEquals(64, ev.deviceEventId.length)
         assertEquals("2025-10-29T10:00:00Z", ev.ts)
-        assertFalse(File(tmp.root, "o.bin").readBytes().toString(Charsets.ISO_8859_1).contains("482913"))
         assertFalse(outbox.oldest(10).single().event.text!!.contains("482913"))
         assertEquals(1L, stats[Counter.Captured])
         assertEquals(now, stats.lastCaptured)

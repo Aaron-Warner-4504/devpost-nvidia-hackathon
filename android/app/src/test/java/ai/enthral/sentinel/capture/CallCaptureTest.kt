@@ -2,7 +2,7 @@ package ai.enthral.sentinel.capture
 
 import ai.enthral.sentinel.domain.CallDirection
 import ai.enthral.sentinel.domain.Source
-import ai.enthral.sentinel.sync.EncryptedFileOutbox
+import ai.enthral.sentinel.sync.RoomOutbox
 import java.io.File
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -13,6 +13,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34])
 class CallCaptureTest {
     @get:Rule val tmp = TemporaryFolder()
     private var now = 1_761_732_000_000L
@@ -80,7 +82,7 @@ class CallCaptureTest {
     }
 
     private fun capture(rows: List<CallRow>, state: MemCallState, gate: Boolean = true, stats: MemoryStats = MemoryStats(),
-                        outbox: EncryptedFileOutbox = EncryptedFileOutbox(File(tmp.root, "o${rows.hashCode()}.bin"), XorCipher(), { now })): Triple<CallLogCapture, EncryptedFileOutbox, MutableList<Long>> {
+                        outbox: RoomOutbox = testOutbox({ now })): Triple<CallLogCapture, RoomOutbox, MutableList<Long>> {
         val asked = mutableListOf<Long>()
         val src = CallLogSource { after, limit -> asked += after; rows.filter { it.date > after }.sortedBy { it.date }.take(limit) }
         return Triple(CallLogCapture({ gate }, src, state, outbox, stats, e164, isContact, pseudo, { now }, {}), outbox, asked)
@@ -176,7 +178,7 @@ class CallCaptureTest {
         val state = MemCallState()
         val asked = mutableListOf<Long>()
         val rows = listOf(CallRow(1, "5550000000", now - 2000, 1, 1), CallRow(2, "9876543210", now - 1000, 1, 1))
-        val outbox = EncryptedFileOutbox(File(tmp.root, "b.bin"), XorCipher(), { now })
+        val outbox = testOutbox({ now })
         val c = CallLogCapture({ true }, { a, _ -> asked += a; rows }, state, outbox, stats,
             { if (it == "5550000000") throw IllegalStateException("x") else e164(it) }, isContact, pseudo, { now }, {})
         assertEquals(1, c.run())

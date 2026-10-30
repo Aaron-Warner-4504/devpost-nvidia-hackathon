@@ -17,6 +17,10 @@ import ai.enthral.sentinel.domain.FeedbackLabel
 import ai.enthral.sentinel.domain.Source
 import ai.enthral.sentinel.domain.Tier
 import ai.enthral.sentinel.sync.SyncScheduler
+import ai.enthral.sentinel.sync.RoomOutbox
+import ai.enthral.sentinel.data.db.AppDatabase
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
 
 /** Reversible, obviously-not-plaintext cipher (XOR + marker) so tests can assert nothing readable hits disk. */
 class XorCipher : TokenCipher {
@@ -117,3 +121,16 @@ val offline: (EventIn) -> ApiResult<EventResult> = { ApiResult.NetworkError("Unk
 fun event(id: String, text: String = "masked $id") = EventIn(
     deviceEventId = id, source = Source.Sms, ts = "2026-10-29T10:00:00Z", sender = "VM-HDFCBK", text = text, triageScore = 0.0,
 )
+
+/** A real [RoomOutbox] over an in-memory Room database (needs the Robolectric runner). Plain SQLite: SQLCipher is native-only. */
+fun testOutbox(clock: () -> Long, onDropped: suspend (Int) -> Unit = {}, maxItems: Int = 500): RoomOutbox {
+    val db = testDatabase()
+    return RoomOutbox({ db.outboxDao() }, clock, maxItems = maxItems, onDropped = onDropped)
+}
+
+fun testDatabase(name: String? = null): AppDatabase {
+    val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
+    val builder = if (name == null) Room.inMemoryDatabaseBuilder(ctx, AppDatabase::class.java)
+    else Room.databaseBuilder(ctx, AppDatabase::class.java, name)
+    return builder.allowMainThreadQueries().build()
+}

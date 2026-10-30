@@ -325,6 +325,8 @@
     <string name="capture_count_captured">कैप्चर किए गए</string>
     <string name="capture_count_sent">भेजे गए</string>
     <string name="capture_count_queued">भेजने की प्रतीक्षा में</string>
+    <string name="capture_count_retrying">फिर से कोशिश (संभव होते ही भेजेंगे)</string>
+    <string name="capture_count_dead">भेजे नहीं जा सके</string>
     <string name="capture_count_duplicate">दोहराए गए, छोड़े गए</string>
     <string name="capture_count_rate_limited">छोड़े गए (बहुत अधिक)</string>
     <string name="capture_count_dropped">हटाए गए</string>
