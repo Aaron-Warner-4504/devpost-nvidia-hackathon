@@ -132,6 +132,7 @@ class FakeAlerts(initial: List<Alert> = emptyList()) : AlertsRepository {
         return r
     }
     override suspend fun get(id: String) = _alerts.value.firstOrNull { it.id == id } ?: remembered.firstOrNull { it.id == id }
+    override suspend fun getLatest(id: String): Alert? { refresh(); return get(id) }
     override suspend fun remember(alert: Alert) { remembered += alert }
     override suspend fun sendFeedback(alertId: String, label: FeedbackLabel): ApiResult<Unit> {
         feedback += alertId to label

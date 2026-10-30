@@ -72,7 +72,7 @@
     <string name="consent_notif_never_2">Your photos, files or your contact list (we only check yes or no whether a sender is saved)</string>
     <string name="consent_notif_never_3">Anything before you turn this on, or after you turn it off</string>
     <string name="consent_notif_permission_note">Android will first ask to check your contacts (only to tell whether a sender is saved; names never leave your phone), then open the Notification access screen. Switch Sentinel on there, then come back.</string>
-    <string name="consent_calls_read_1">The number, time, duration and direction (incoming, outgoing, missed) of calls</string>
+    <string name="consent_calls_read_1">The number, time, duration and direction (incoming, outgoing, missed) of calls. For a number saved in your contacts, the number never leaves your phone: it is replaced on your phone by a code</string>
     <string name="consent_calls_read_2">Whether the number is saved in your contacts</string>
     <string name="consent_calls_never_1">Call audio or recordings</string>
     <string name="consent_calls_never_2">What you or the caller say</string>
@@ -258,7 +258,7 @@
     <string name="settings_privacy_summary">Message text is masked on your phone before it is sent. Names of your contacts never leave your phone.</string>
     <string name="settings_privacy_show">Show details</string>
     <string name="privacy_leaves_title">What leaves your phone</string>
-    <string name="privacy_leaves_body">From the watched apps: the notification text, masked on your phone first (OTPs, card, account, Aadhaar and PAN numbers hidden), the sender number or SMS sender ID (a saved contact\'s name is replaced by a code), the time and a risk score. For calls: the number, time, duration and direction. Plus anything you choose to check.</string>
+    <string name="privacy_leaves_body">From the watched apps: the notification text, masked on your phone first (OTPs, card, account, Aadhaar and PAN numbers hidden), the sender number or SMS sender ID (a saved contact\'s name is replaced by a code), the time and a risk score. For calls: the number (never the number of a saved contact, which is replaced by a code), time, duration and direction. Plus anything you choose to check.</string>
     <string name="privacy_stays_title">What stays on your phone</string>
     <string name="privacy_stays_body">The original message text, the names in your contacts, notifications of all other apps, photos, files and any call audio (which is never recorded).</string>
     <string name="privacy_retention_title">How long we keep it</string>

@@ -61,8 +61,12 @@ class AlertDetailViewModel(
 
     init {
         viewModelScope.launch {
-            val alert = repo.get(alertId)
-            if (alert != null) loaded.value = alert else notFound.value = true
+            // Show the cached copy at once, then replace it with the latest server version (a refined alert keeps
+            // its id but may have a new headline or tier).
+            val cached = repo.get(alertId)
+            if (cached != null) loaded.value = cached
+            val latest = repo.getLatest(alertId)
+            if (latest != null) loaded.value = latest else if (cached == null) notFound.value = true
         }
     }
 

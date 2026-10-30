@@ -96,7 +96,7 @@ class EventSenderTest {
         assertFalse(FollowUpPolicy.shouldFollowUp(Tier.Info, null, now))
         assertTrue(FollowUpPolicy.shouldFollowUp(null, now - 30_000, now))
         assertFalse(FollowUpPolicy.shouldFollowUp(null, now - 61_000, now))
-        assertEquals(listOf(10_000L, 30_000L, 90_000L), FollowUpPolicy.DELAYS_MS)
+        assertEquals(listOf(15_000L, 45_000L, 120_000L), FollowUpPolicy.DELAYS_MS)
     }
 
     @Test fun `422 and 413 drop the item and count it, the rest continues`() = runBlocking {

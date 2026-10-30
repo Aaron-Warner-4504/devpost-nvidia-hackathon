@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewmodel.initializer
+import ai.enthral.sentinel.data.api.ApiResult
 import ai.enthral.sentinel.domain.FeedbackLabel
 import ai.enthral.sentinel.testing.FakeAlerts
 import ai.enthral.sentinel.testing.FakeSettings
@@ -43,6 +44,21 @@ class AlertDetailViewModelTest {
         val s = vm.state.value as DetailState.Content
         assertEquals(alert, s.alert)
         assertEquals(FeedbackLabel.Safe, s.reaction)
+    }
+
+    @Test fun `opening the detail loads the latest server version, not the stale cached one`() = runTest {
+        // the server refined the headline after the list was cached
+        repo.refreshResult = ApiResult.Success(listOf(alert.copy(headline = "Refined headline")))
+        val vm = make()
+        val s = vm.state.value as DetailState.Content
+        assertEquals("Refined headline", s.alert.headline)
+        assertEquals(1, repo.refreshCalls)
+    }
+
+    @Test fun `a failed refresh keeps the cached alert on screen`() = runTest {
+        repo.refreshResult = httpError(500)
+        val vm = make()
+        assertEquals(alert, (vm.state.value as DetailState.Content).alert)
     }
 
     @Test fun `unknown alert id ends in NotFound`() = runTest {

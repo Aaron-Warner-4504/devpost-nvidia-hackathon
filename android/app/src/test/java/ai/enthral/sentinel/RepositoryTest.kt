@@ -125,6 +125,20 @@ class RepositoryTest {
         assertEquals("no repeat for already notified alerts", 2, notifier.notified.size)
     }
 
+    @Test fun `getLatest sees a refined headline and a refined alert never notifies again`() = runTest {
+        tokens.save("t")
+        val repo = NetworkAlertsRepository(api, session, settings, notifier)
+        server.enqueue(json("[]"))
+        repo.refresh() // baseline
+        val first = alertJson("a1", "e1", "critical")
+        server.enqueue(json("[$first]"))
+        assertEquals("h a1", repo.get("a1")?.headline.also { })
+        assertEquals(1, notifier.notified.size)
+        server.enqueue(json("[${first.replace("h a1", "Refined by the agent")}]"))
+        assertEquals("Refined by the agent", repo.getLatest("a1")?.headline)
+        assertEquals("same id: no second notification", 1, notifier.notified.size)
+    }
+
     @Test fun `get falls back to one refresh and finds remembered check results`() = runTest {
         tokens.save("t")
         val repo = NetworkAlertsRepository(api, session, settings, notifier)
