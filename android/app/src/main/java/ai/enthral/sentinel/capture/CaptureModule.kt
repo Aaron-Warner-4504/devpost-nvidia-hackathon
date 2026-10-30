@@ -21,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -147,6 +148,8 @@ class CaptureModule(
             if (formatted.isNotEmpty()) state.addScreened(formatted, at)
             val added = outbox.add(ai.enthral.sentinel.sync.OutboxItem(ev, enqueuedAt = clock(), ringing = true))
             if (added) {
+                CaptureTrace.log("captured", "source" to "call", "direction" to "in", "ringing" to true,
+                    "is_contact" to ev.call?.isContact)
                 state.add(Counter.Captured)
                 state.markCaptured(clock())
             }
@@ -167,6 +170,13 @@ class CaptureModule(
 
     init {
         scope.launch { outbox.warmUp() }
+        // Call info turned on (or the app process started with it on): read new call-log rows now instead of waiting
+        // up to 15 minutes for the periodic worker. The cursor makes repeated runs free.
+        scope.launch {
+            settings.consentIntent(ai.enthral.sentinel.domain.ConsentSource.Calls)
+                .distinctUntilChanged()
+                .collect { on -> if (on) scheduler.scheduleCallLogSync(2_000L) }
+        }
     }
 
     /** Fast path: try right away; whatever is left goes to the WorkManager drain with backoff. */

@@ -109,12 +109,16 @@ class CallLogCapture(
     private val onQueued: () -> Unit,
 ) {
     suspend fun run(maxRows: Int = 200): Int {
-        if (!gate()) return 0
+        if (!gate()) {
+            CaptureTrace.log("call_log", "gated" to true)
+            return 0
+        }
         val now = clock()
         val after = CallEvents.startAfter(state.callCursor(), now)
         val rows = source.rowsAfter(after, maxRows)
         if (rows.isEmpty()) {
             if (state.callCursor() == null) state.setCallCursor(after)
+            CaptureTrace.log("call_log", "rows" to 0, "queued" to 0)
             return 0
         }
         val screened = state.screened()
@@ -126,6 +130,8 @@ class CallLogCapture(
                 if (formatted.isNotEmpty() && CallEvents.alreadyScreened(formatted, row.date, screened)) continue
                 val ev = CallEvents.toEvent(row, e164, isContact) ?: continue
                 if (outbox.add(ai.enthral.sentinel.sync.OutboxItem(ev, enqueuedAt = now))) {
+                    CaptureTrace.log("captured", "source" to "call", "direction" to ev.call?.direction?.name?.lowercase(),
+                        "is_contact" to ev.call?.isContact, "hidden" to (ev.call?.number?.isEmpty() == true))
                     queued++
                     stats.add(Counter.Captured)
                     stats.markCaptured(now)
@@ -137,6 +143,7 @@ class CallLogCapture(
             }
         }
         state.setCallCursor(rows.maxOf { it.date })
+        CaptureTrace.log("call_log", "rows" to rows.size, "queued" to queued)
         if (queued > 0) onQueued()
         return queued
     }

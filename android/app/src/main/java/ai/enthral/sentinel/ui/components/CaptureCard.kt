@@ -45,7 +45,12 @@ fun CaptureStatusCard(
             title = stringResource(R.string.capture_card_active_title)
             val watching = pluralStringResource(R.plurals.capture_watching_apps, numbers.watchedApps, numbers.watchedApps)
             val last = numbers.stats.lastCapturedAt?.let {
-                stringResource(R.string.capture_last_event, relativeTimeText(Instant.ofEpochMilli(it), now))
+                val then = Instant.ofEpochMilli(it)
+                if (ai.enthral.sentinel.ui.common.relativeTime(then, now) == ai.enthral.sentinel.ui.common.RelativeTime.JustNow) {
+                    stringResource(R.string.capture_last_event_now)
+                } else {
+                    stringResource(R.string.capture_last_event, relativeTimeText(then, now))
+                }
             } ?: stringResource(R.string.capture_no_events_yet)
             body = stringResource(R.string.capture_card_active_body, watching, last, numbers.queued)
         }

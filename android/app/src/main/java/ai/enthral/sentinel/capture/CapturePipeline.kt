@@ -53,15 +53,30 @@ class CapturePipeline(
 ) {
     /** Never throws (except cancellation): one hostile or odd notification must not stop capture. */
     suspend fun onPostedSafely(n: RawNotification): CaptureOutcome = try {
-        onPosted(n)
+        onPosted(n).also { trace(it) }
     } catch (e: kotlinx.coroutines.CancellationException) {
         throw e
     } catch (_: Exception) {
         runCatching { stats.add(Counter.Failed) }
+        CaptureTrace.log("dropped", "reason" to "failed")
         CaptureOutcome.Failed
     } catch (_: StackOverflowError) {
         runCatching { stats.add(Counter.Failed) }
         CaptureOutcome.Failed
+    }
+
+    /** Content-free trace for debug builds (enum names and numbers only). */
+    private fun trace(o: CaptureOutcome) = when (o) {
+        is CaptureOutcome.Queued -> CaptureTrace.log(
+            "captured", "source" to o.event.source.name.lowercase(), "chars" to o.event.text?.length,
+            "masked" to Regex("""\[(OTP|CARD|ACCT|AADHAAR|PAN)]""").findAll(o.event.text.orEmpty()).count(),
+            "is_contact" to o.event.isContact, "triage" to o.event.triageScore,
+        )
+        is CaptureOutcome.Ignored -> if (o.reason != IgnoreReason.NotAllowlisted) CaptureTrace.log("dropped", "reason" to o.reason.name) else Unit
+        CaptureOutcome.Duplicate -> CaptureTrace.log("dropped", "reason" to "Duplicate")
+        CaptureOutcome.RateLimited -> CaptureTrace.log("dropped", "reason" to "RateLimited")
+        CaptureOutcome.Gated -> CaptureTrace.log("dropped", "reason" to "Gated")
+        CaptureOutcome.Failed -> Unit
     }
 
     suspend fun onPosted(n: RawNotification): CaptureOutcome {
