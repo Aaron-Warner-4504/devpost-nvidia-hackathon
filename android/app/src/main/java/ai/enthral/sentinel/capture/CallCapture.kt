@@ -109,12 +109,16 @@ class CallLogCapture(
     private val onQueued: () -> Unit,
 ) {
     suspend fun run(maxRows: Int = 200): Int {
-        if (!gate()) return 0
+        if (!gate()) {
+            CaptureTrace.log("call_log", "gated" to true)
+            return 0
+        }
         val now = clock()
         val after = CallEvents.startAfter(state.callCursor(), now)
         val rows = source.rowsAfter(after, maxRows)
         if (rows.isEmpty()) {
             if (state.callCursor() == null) state.setCallCursor(after)
+            CaptureTrace.log("call_log", "rows" to 0, "queued" to 0)
             return 0
         }
         val screened = state.screened()

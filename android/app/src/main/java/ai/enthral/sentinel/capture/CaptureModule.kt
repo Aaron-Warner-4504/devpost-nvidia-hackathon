@@ -169,6 +169,12 @@ class CaptureModule(
 
     init {
         scope.launch { outbox.warmUp() }
+        // Call info turned on (or the app process started with it on): read new call-log rows now instead of waiting
+        // up to 15 minutes for the periodic worker. The cursor makes repeated runs free.
+        scope.launch {
+            settings.consentIntent(ai.enthral.sentinel.domain.ConsentSource.Calls)
+                .collect { on -> if (on) scheduler.scheduleCallLogSync(2_000L) }
+        }
     }
 
     /** Fast path: try right away; whatever is left goes to the WorkManager drain with backoff. */
