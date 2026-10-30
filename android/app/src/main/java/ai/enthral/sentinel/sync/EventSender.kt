@@ -91,8 +91,11 @@ class EventSender(
     private val dispatcher: AlertDispatcher,
     private val scheduler: SyncScheduler,
     private val clock: () -> Long,
-    /** Above the server's worst case: the agent can take 15-25 s on the live server (observed 20 s+). */
-    private val requestTimeoutMs: Long = 35_000L,
+    /**
+     * Above the server's worst case (escalated events took 25-35 s on the live server). A slower answer is not lost:
+     * the retry gets `duplicate: true` and the +10/+30/+90 s follow-ups fetch the alert.
+     */
+    private val requestTimeoutMs: Long = 50_000L,
 ) {
     private val lock = Mutex()
 
