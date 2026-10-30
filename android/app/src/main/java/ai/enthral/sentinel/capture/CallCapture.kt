@@ -126,6 +126,8 @@ class CallLogCapture(
                 if (formatted.isNotEmpty() && CallEvents.alreadyScreened(formatted, row.date, screened)) continue
                 val ev = CallEvents.toEvent(row, e164, isContact) ?: continue
                 if (outbox.add(ai.enthral.sentinel.sync.OutboxItem(ev, enqueuedAt = now))) {
+                    CaptureTrace.log("captured", "source" to "call", "direction" to ev.call?.direction?.name?.lowercase(),
+                        "is_contact" to ev.call?.isContact, "hidden" to (ev.call?.number?.isEmpty() == true))
                     queued++
                     stats.add(Counter.Captured)
                     stats.markCaptured(now)
@@ -137,6 +139,7 @@ class CallLogCapture(
             }
         }
         state.setCallCursor(rows.maxOf { it.date })
+        CaptureTrace.log("call_log", "rows" to rows.size, "queued" to queued)
         if (queued > 0) onQueued()
         return queued
     }

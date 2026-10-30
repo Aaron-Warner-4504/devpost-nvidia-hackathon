@@ -147,6 +147,8 @@ class CaptureModule(
             if (formatted.isNotEmpty()) state.addScreened(formatted, at)
             val added = outbox.add(ai.enthral.sentinel.sync.OutboxItem(ev, enqueuedAt = clock(), ringing = true))
             if (added) {
+                CaptureTrace.log("captured", "source" to "call", "direction" to "in", "ringing" to true,
+                    "is_contact" to ev.call?.isContact)
                 state.add(Counter.Captured)
                 state.markCaptured(clock())
             }

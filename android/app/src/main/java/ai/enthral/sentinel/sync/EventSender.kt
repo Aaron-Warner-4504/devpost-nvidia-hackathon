@@ -42,7 +42,10 @@ class AlertDispatcher(private val settings: AppSettings, private val notifier: A
         val fresh = alerts.filter { it.id !in seen }.distinctBy { it.id }
         if (fresh.isEmpty()) return emptyList()
         val loud = fresh.filter { it.tier.interrupts }.sortedBy { it.createdAt }
-        loud.forEach { if (ringingCall) notifier.notifyIncomingCall(it) else notifier.notify(it) }
+        loud.forEach {
+            if (ringingCall) notifier.notifyIncomingCall(it) else notifier.notify(it)
+            ai.enthral.sentinel.capture.CaptureTrace.log("notified", "tier" to it.tier.name.lowercase(), "ringing" to ringingCall)
+        }
         settings.markNotified(fresh.map { it.id }.toSet())
         loud
     }
@@ -88,7 +91,8 @@ class EventSender(
     private val dispatcher: AlertDispatcher,
     private val scheduler: SyncScheduler,
     private val clock: () -> Long,
-    private val requestTimeoutMs: Long = 20_000L,
+    /** Above the server's worst case: the agent can take 15-25 s on the live server (observed 20 s+). */
+    private val requestTimeoutMs: Long = 35_000L,
 ) {
     private val lock = Mutex()
 
@@ -108,6 +112,10 @@ class EventSender(
             }
             when (r) {
                 is ApiResult.Success -> {
+                    ai.enthral.sentinel.capture.CaptureTrace.log(
+                        "sent", "source" to item.event.source.name.lowercase(), "duplicate" to r.value.duplicate,
+                        "tier" to (r.value.alert?.tier?.name?.lowercase() ?: "none"), "ringing" to item.ringing,
+                    )
                     outbox.remove(item.id)
                     stats.add(Counter.Sent)
                     stats.markSent(clock())
@@ -119,19 +127,30 @@ class EventSender(
                     }
                 }
                 is ApiResult.HttpError -> when {
-                    r.status == 429 -> { outbox.recordAttempt(item.id); result = DrainResult.Backoff; break@loop }
+                    r.status == 429 -> {
+                        ai.enthral.sentinel.capture.CaptureTrace.log("send_failed", "status" to 429)
+                        outbox.recordAttempt(item.id); result = DrainResult.Backoff; break@loop
+                    }
                     r.status == 401 || r.status == 408 || r.status >= 500 -> {
+                        ai.enthral.sentinel.capture.CaptureTrace.log("send_failed", "status" to r.status)
                         outbox.recordAttempt(item.id); result = DrainResult.Retry; break@loop
                     }
-                    else -> { outbox.remove(item.id); stats.add(Counter.Dropped) } // 413, 422, other 4xx
+                    else -> { // 413, 422, other 4xx: can never succeed
+                        ai.enthral.sentinel.capture.CaptureTrace.log("dropped", "reason" to "http_${r.status}")
+                        outbox.remove(item.id); stats.add(Counter.Dropped)
+                    }
                 }
-                is ApiResult.NetworkError -> { outbox.recordAttempt(item.id); result = DrainResult.Retry; break@loop }
+                is ApiResult.NetworkError -> {
+                    ai.enthral.sentinel.capture.CaptureTrace.log("send_failed", "status" to "network")
+                    outbox.recordAttempt(item.id); result = DrainResult.Retry; break@loop
+                }
             }
         }
         if (sentAny && FollowUpPolicy.shouldFollowUp(maxTier, clock(), clock())) {
             scheduler.scheduleFollowUps(FollowUpPolicy.DELAYS_MS)
         }
         if (result == DrainResult.Done && outbox.oldest(1).isNotEmpty()) result = DrainResult.Retry
+        ai.enthral.sentinel.capture.CaptureTrace.log("queue", "size" to outbox.size.value, "result" to result.name)
         result
     }
 
@@ -143,7 +162,11 @@ class EventSender(
         if (!settings.onboardingDone.first()) return true
         val since = java.time.Instant.ofEpochMilli(clock() - lookbackMs).toString()
         return when (val r = session.authed { api.getAlerts(since) }) {
-            is ApiResult.Success -> { dispatcher.dispatch(r.value.map { it.toDomain() }); true }
+            is ApiResult.Success -> {
+                val fresh = dispatcher.dispatch(r.value.map { it.toDomain() })
+                ai.enthral.sentinel.capture.CaptureTrace.log("follow_up", "alerts" to r.value.size, "new_loud" to fresh.size)
+                true
+            }
             is ApiResult.HttpError -> r.status in 400..499 && r.status != 401 && r.status != 429
             is ApiResult.NetworkError -> false
         }
