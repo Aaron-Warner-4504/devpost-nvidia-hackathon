@@ -280,6 +280,33 @@ def reserve_agent_slot(db: Session, user_id: str, event_id: str, cap: int) -> bo
     return True
 
 
+def refine_alert(db: Session, user, event_id: str, assessment_id: str | None, ev_, llm, deps) -> bool:
+    """Replace the wording of a fast-first (rules, `stage: "rules"`) alert by the agent's, IN PLACE: same alert
+    id, created_at, tier and user label; no new row, no policy decision, no hooks. Row locks on the
+    assessment and its alert serialise this with feedback and with a duplicate run; a refined (or otherwise
+    changed) assessment is never overwritten. Returns True if the text was replaced. Caller commits."""
+    if not assessment_id:
+        return False
+    asm = db.scalar(select(Assessment).where(
+        Assessment.id == assessment_id, Assessment.user_id == user.id,
+        Assessment.event_id == event_id).with_for_update())
+    if asm is None or asm.tier != ev_.tier or not isinstance(asm.payload, dict) \
+            or asm.payload.get("stage") != "rules":
+        return False
+    db.scalars(select(Alert.id).where(Alert.assessment_id == asm.id, Alert.user_id == user.id)
+               .with_for_update()).all()
+    v = ev_.verdict
+    asm.payload = {**asm.payload, "headline": ev_.headline, "next_step": ev_.next_step,
+                   "why": [w.model_dump(mode="json") for w in ev_.why], "used_tools": list(v.used_tools),
+                   "raised_by": list(v.raised_by), "mode": ev_.mode, "stages": ev_.stages, "stage": "agent"}
+    asm.explanation = ev_.headline
+    asm.signals = list(ev_.names)
+    asm.model = getattr(llm, "model", "") or deps.settings.llm_model or "llm"
+    asm.degraded = False
+    log.info("review refined alert wording of event %s in place", event_id)
+    return True
+
+
 def _review(db: Session, user, event_id: str, payload: dict, llm, deps) -> _ReviewOutcome:
     import hashlib
     import time
@@ -321,6 +348,11 @@ def _review(db: Session, user, event_id: str, payload: dict, llm, deps) -> _Revi
         ev_ = orch.evaluate(db, user, rev, rev, entities, event_id, skey, False, llm, deps, semantic=True,
                             run_agent=True)
     if _rank(ev_.tier) <= _rank(best):
+        # fast-first: the agent's wording refines the rules alert in place when the tier is unchanged; a
+        # lower agent tier never lowers anything (and its wording would understate the tier: not used)
+        if (fast is not None and ran and _rank(ev_.tier) == _rank(best) and not ev_.verdict.degraded
+                and ev_.tier == ev_.verdict.tier):
+            refine_alert(db, user, event_id, fast.get("assessment"), ev_, llm, deps)
         db.commit()
         return _ReviewOutcome(agent_ran=ran)
     # upgrade: a new assessment + alert for the same event; tier increase passes dedupe, flood / ceiling /
