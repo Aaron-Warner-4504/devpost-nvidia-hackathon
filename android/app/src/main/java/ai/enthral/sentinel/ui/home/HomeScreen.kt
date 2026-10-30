@@ -131,7 +131,7 @@ fun HomeContent(
             CaptureStatusCard(
                 state = state.capture,
                 numbers = state.captureNumbers,
-                now = java.time.Instant.now(),
+                now = minuteTick(),
                 onFix = {
                     if (state.capture == CaptureState.NeedsAccess) context.openNotificationAccessSettings() else onOpenSettings()
                 },
@@ -269,4 +269,16 @@ private fun QuickAction(icon: ImageVector, label: String, onClick: () -> Unit, m
         }
         Text(label, style = SentinelTheme.type.headline, color = p.label, modifier = Modifier.padding(top = Spacing.x15))
     }
+}
+
+/** The current time, refreshed every 30 s so "last event 3 min ago" stays true while the screen is open. */
+@Composable
+private fun minuteTick(): java.time.Instant {
+    val now = androidx.compose.runtime.produceState(java.time.Instant.now()) {
+        while (true) {
+            kotlinx.coroutines.delay(30_000)
+            value = java.time.Instant.now()
+        }
+    }
+    return now.value
 }

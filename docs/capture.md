@@ -16,7 +16,7 @@ call rings (opt-in) ─▶ CallScreeningService: ALLOW at once ─▶ outbox ─
 | Source | When | What leaves the phone |
 |---|---|---|
 | Notifications (consent "Notifications" + Android Notification access) | every new notification of an **allowlisted** app | `source` (sms / whatsapp / email / notification), `ts`, `sender`, masked `text` (≤ 10 000 chars), `triage_score`, `lang`, `is_contact`, `device_event_id` |
-| Call log (consent "Call info" + READ_CALL_LOG) | 5 s after each call ends, and every 15 min | `source=call`, `ts` (call time), `sender` = E.164 number, `call{number, duration_s, is_contact, direction}`, `triage_score=0`, `device_event_id`. No text. |
+| Call log (consent "Call info" + READ_CALL_LOG) | 5 s after each call ends, when the app process starts or Call info is turned on, and every 15 min | `source=call`, `ts` (call time), `sender` = E.164 number, `call{number, duration_s, is_contact, direction}`, `triage_score=0`, `device_event_id`. No text. |
 | Ringing calls (opt-in "Check callers while ringing", ROLE_CALL_SCREENING) | when an incoming call starts ringing | as a call-log event with `duration_s=0`, `direction=in` |
 
 Allowlist (`capture/CaptureAllowlist.kt`, mirrored in the manifest `<queries>` and checked by a unit test):
@@ -70,7 +70,10 @@ senders, numbers or tokens; see "Testing" for the logcat check).
 
 ## Sending, alerts and follow-ups
 
-* Fast path: right after queueing, a coroutine drains the outbox (20 s per request; the agent can take ~15 s).
+* Fast path: right after queueing, a coroutine drains the outbox (50 s per request, OkHttp read timeout 45 s: on the
+  live server escalated events took 20-35 s, measured on the test phone; with the brief's 20 s they were cancelled).
+  If an answer is still too slow, nothing is lost: the retry gets `duplicate: true` and the follow-ups below fetch the
+  alert (observed on the phone: critical heads-up ~12 s after the retry).
   Whatever is left goes to `EventSyncWorker` (unique, CONNECTED, exponential backoff from 30 s). One drain at a
   time; `device_event_id` = SHA-256 of `package|key|postTime|masked text` (MessagingStyle: newest message time;
   calls: `call|rowId|date`), so retries are idempotent (`duplicate: true` from the server counts as delivered).
@@ -131,6 +134,34 @@ immediately. Call screening needs the Call-info consent but not READ_CALL_LOG.
   that number within 2 minutes (the server does not use duration, so nothing is lost and the call is not counted
   twice).
 
+## Manual test with another phone
+
+`android/scripts/watch-capture.sh` (debug build only) shows what capture does, live, as counters and event types:
+`captured source=sms chars=141 masked=0 is_contact=false triage=0.3`, `dropped reason=Duplicate`,
+`sent source=sms duplicate=false tier=critical`, `send_failed status=network`, `queue size=0`, `notified tier=critical`,
+`follow_up alerts=4 new_loud=1`, `call_log rows=1 queued=1`. It never shows message text, titles, senders or numbers:
+the app logs none (tag `SentinelCapture`, compiled out of release builds) and the script additionally suppresses any
+line that is not an event word followed by plain `key=value` tokens. Ctrl+C prints totals.
+
+1. Phone A (protected): debug build installed, onboarding done with **Notifications** and **Call info** on, Android
+   Notification access granted, alert notifications allowed. Plug it in and run
+   `ANDROID_SERIAL=<A> android/scripts/watch-capture.sh`.
+2. From phone B, send phone A an **SMS**: `Your parcel is held. Pay Rs 49 redelivery fee at http://parcel-redeliver.in/pay`.
+   Expect `captured source=sms` within a second, then `sent ... tier=none|caution|high|critical` (up to ~35 s when
+   the agent runs). Send it again: `dropped reason=Duplicate`.
+3. Send a **WhatsApp** message from B: `This is a customs officer. Pay Rs 25,000 penalty to customs.clear@ybl or face
+   arrest. Do not tell anyone.` Expect `captured source=whatsapp ... is_contact=false` (true only if B is a saved
+   contact *and* WhatsApp attached its contact uri), then `sent ... tier=high|critical` and `notified tier=...` with a
+   heads-up "Sentinel alert · Critical" on A. If B is a saved contact its name is sent only as `c_<8 hex>`.
+4. Send an OTP-like SMS (`Your OTP is 482913`): `captured ... masked=1`, `sent ... tier=none`, no heads-up.
+5. **Call** A from B, let it ring, hang up. ~5 s later: `call_log rows=1 queued=1`, `captured source=call
+   direction=missed|in`, `sent source=call`. With "Check callers while ringing" on (Settings; Android asks to make
+   Sentinel the caller ID & spam app), a `captured source=call ... ringing=true` appears while it rings and, for a
+   high/critical answer, a "Possible scam caller" heads-up; the later call-log row is skipped (no double count).
+6. Turn on Settings → Pause protection and repeat step 2: `dropped reason=Gated`.
+7. Afterwards: Settings → Delete my data; turn the Notification access off; give the call-screening role back to
+   the previous app (Android Settings → Default apps → Caller ID & spam app).
+
 ## Testing
 
 Unit tests (`./gradlew testDebugUnitTest`): `RedactorParityTest`, `NotificationFilterTest`, `SenderPolicyTest`
@@ -147,7 +178,8 @@ export ANDROID_SERIAL=<serial>
 adb shell cmd notification post -S bigtext -t 'VM-HDFCBK' otp1 'Your OTP is 482913. Do not share it with anyone. -HDFC Bank'
 adb shell cmd notification post -S bigtext -t '+917700112233' story1 'Your BlueDart parcel is held at the depot due to an incomplete address. Call 9876543210 or visit http://bluedart-redelivery.in to reschedule.'
 adb shell cmd notification post -S bigtext -t '+919876543210' story3 'This is a customs officer. Your parcel is seized with illegal items. Pay Rs 25,000 penalty immediately to customs.clear@ybl or face arrest. Do not tell anyone.'
-adb logcat -d | grep -c 482913     # must print 0
-adb shell cmd notification cancel ... # or: adb shell service call notification 1 (clears shell notifications)
+adb logcat -d | grep -v adbd | grep -c 482913     # must print 0 (adbd echoes your own command line)
+android/scripts/watch-capture.sh --dump           # what happened, counters only
+adb shell cmd notification cancel <tag> <id>      # or clear them from the shade
 ```
 Settings → Notification capture shows the counters; Home shows "watching N apps · last event … · queue N".
