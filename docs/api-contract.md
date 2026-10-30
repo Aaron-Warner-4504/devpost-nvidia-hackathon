@@ -159,6 +159,19 @@ is also pushed to the user's own device (and `critical` to guardians) by the exi
 are never downgraded or retracted: the earlier alert for the event stays in the list. Clients should poll
 `GET /v1/alerts?since=...` (or rely on the push) and may show two alerts with the same `event_id`; the
 newest one is the current assessment.
+**Fast-first alerts (default, `FAST_FIRST=true`; `/v1/events` only).** For an escalated event `/v1/events`
+answers within milliseconds with the alert computed from the rules (template wording: headline, `next_step`,
+`why` from the signals and history); it no longer waits 20 to 35 s for the AI agent. The agent then runs in the
+background and either (a) agrees on the tier: the SAME alert (same `id`, `created_at`, `tier`) gets the
+agent's more specific `headline`, `next_step`, `why` and `signals`; it is not re-sent, not re-pushed, not
+counted again by the dedupe / daily cap, and a user label (`/feedback`) is kept; or (b) finds a HIGHER tier:
+a NEW alert for the same `event_id` is created exactly like an upgrade above (pushed when it interrupts); or
+(c) fails, is over budget or finds a lower tier: the rules alert stays unchanged (alerts are never lowered or
+retracted). So the text of an alert returned by `/v1/events` can change once, usually within 5 to 40 s, and an
+upgrade may follow. Clients should poll `GET /v1/alerts?since=...` after sending events (the Android app does
+at +15 s, +45 s and +120 s) and replace a shown alert by the one with the same `id` from the list. No schema
+change. `/v1/check` is unchanged: it still waits for the agent and returns its explanation.
+
 ```json
 [{"id": "alr_123", "event_id": "evt_123", "tier": "high", "headline": "Likely bank-impersonation scam", "why": [], "next_step": "Call your bank.", "signals": ["credential_or_otp_ask"], "created_at": "2026-10-17T10:00:00Z"}]
 ```
