@@ -14,3 +14,6 @@
 -dontwarn org.bouncycastle.**
 -dontwarn org.conscrypt.**
 -dontwarn org.openjsse.**
+# SQLCipher: JNI calls back into these classes by name.
+-keep class net.zetetic.database.** { *; }
+-dontwarn net.zetetic.database.**

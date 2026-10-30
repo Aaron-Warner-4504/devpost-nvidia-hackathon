@@ -6,7 +6,8 @@ import ai.enthral.sentinel.data.repo.ApiDeviceSession
 import ai.enthral.sentinel.domain.Tier
 import ai.enthral.sentinel.sync.AlertDispatcher
 import ai.enthral.sentinel.sync.DrainResult
-import ai.enthral.sentinel.sync.EncryptedFileOutbox
+import ai.enthral.sentinel.sync.RoomOutbox
+import ai.enthral.sentinel.sync.RetryPolicy
 import ai.enthral.sentinel.sync.EventSender
 import ai.enthral.sentinel.sync.FollowUpPolicy
 import ai.enthral.sentinel.sync.OutboxItem
@@ -28,6 +29,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34])
 class EventSenderTest {
     @get:Rule val tmp = TemporaryFolder()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -37,14 +40,14 @@ class EventSenderTest {
     private val notifier = FakeNotifier()
     private val stats = MemoryStats()
     private val scheduler = RecordingScheduler()
-    private lateinit var outbox: EncryptedFileOutbox
+    private lateinit var outbox: RoomOutbox
     private lateinit var sender: EventSender
     private lateinit var session: ApiDeviceSession
 
     @Before fun setUp() = runBlocking {
         settings.done.value = true
         settings.notified.value = emptySet()
-        outbox = EncryptedFileOutbox(File(tmp.root, "o.bin"), XorCipher(), { now }, onDropped = { stats.add(Counter.Dropped, it.toLong()) })
+        outbox = testOutbox({ now }, onDropped = { stats.add(Counter.Dropped, it.toLong()) })
         session = ApiDeviceSession(api, testTokenStore(File(tmp.root, "t.preferences_pb"), scope))
         sender = EventSender(api, session, settings, outbox, stats, AlertDispatcher(settings, notifier), scheduler, { now }, requestTimeoutMs = 500)
     }
@@ -121,7 +124,11 @@ class EventSenderTest {
         api.answer(http(503), offline, ok())
         queue("a")
         assertEquals(DrainResult.Retry, sender.drain())
+        assertEquals(DrainResult.Retry, sender.drain()) // still backing off: not re-posted yet
+        assertEquals(1, api.posted.size)
+        now += RetryPolicy.delayMs(1)
         assertEquals(DrainResult.Retry, sender.drain())
+        now += RetryPolicy.delayMs(2)
         assertEquals(DrainResult.Done, sender.drain())
         assertEquals(listOf("a", "a", "a"), api.posted.map { it.deviceEventId })
         api.hang = true

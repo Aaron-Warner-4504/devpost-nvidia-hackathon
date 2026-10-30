@@ -72,7 +72,7 @@ class SettingsViewModel(
     private val demoEnabled: Boolean,
     private val capture: CaptureStatus? = null,
 ) : ViewModel() {
-    private val sources = SourcesController(settings, access, viewModelScope)
+    private val sources = SourcesController(settings, access, viewModelScope, onRevoked = { capture?.purge(it) })
     private val extra = MutableStateFlow(Extra())
     private val lastSynced = mutableMapOf<ConsentSource, Boolean>()
     val events = Events<SettingsEvent>()

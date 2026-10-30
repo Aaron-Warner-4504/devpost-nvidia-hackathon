@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
 }
 
 // Optional release signing: android/keystore.properties (gitignored). Absent => release stays unsigned.
@@ -16,6 +17,7 @@ val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPas
 
 // Release API base URL: -PsentinelApiBaseUrl=https://host/path. https only, trailing slashes are stripped.
 // Unset keeps an invalid placeholder so an unconfigured release build fails visibly at startup.
+// TODO(release): set the production API origin here (or in CI via -PsentinelApiBaseUrl) once the Nebius host is final.
 val releaseApiBaseUrl: String = run {
     val raw = (project.findProperty("sentinelApiBaseUrl") as String?)?.trim()
     if (raw.isNullOrEmpty()) return@run "https://api.example.invalid"
@@ -92,6 +94,8 @@ android {
 
     testOptions {
         unitTests.isReturnDefaultValues = true
+        // Robolectric (Room tests) needs the merged resources and manifest.
+        unitTests.isIncludeAndroidResources = true
     }
 
     // Fakes shared by JVM unit tests and instrumented Compose tests.
@@ -129,6 +133,12 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     // Outbox drain, late-alert follow-up and the 15-minute catch-up (no foreground service).
     implementation(libs.androidx.work.runtime)
+    // On-device store and sync outbox: Room over SQLCipher (passphrase sealed by the Android Keystore).
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.sqlite)
+    implementation(libs.sqlcipher.android)
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
@@ -140,6 +150,8 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.okhttp.logging)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)

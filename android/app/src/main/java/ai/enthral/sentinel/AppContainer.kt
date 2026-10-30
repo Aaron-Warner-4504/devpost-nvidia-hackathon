@@ -80,12 +80,12 @@ class AppContainer(private val context: Context) : AppGraph {
     override val consent: ConsentRepository by lazy { NetworkConsentRepository(api, session) }
     override val family: FamilyRepository by lazy { NetworkFamilyRepository(api, session) }
     override val account: AccountRepository by lazy {
-        NetworkAccountRepository(api, session, settings, alerts, onWipe = { capture.wipe() })
+        NetworkAccountRepository(api, session, settings, alerts, onWipe = { capture.wipe() }, onPurgeQueued = { capture.purgeQueue() })
     }
 
-    /** Notification capture -> on-phone masking -> encrypted outbox -> sync (capture/, sync/). */
+    /** Notification capture -> on-phone masking -> encrypted Room outbox -> sync (capture/, sync/, data/db/). */
     val capture: CaptureModule by lazy {
-        CaptureModule(context, api, session, settings, notifier, access, KeystoreTokenCipher(alias = "sentinel_outbox_key"))
+        CaptureModule(context, api, session, settings, notifier, access, KeystoreTokenCipher(alias = "sentinel_outbox_key"), alerts)
     }
     override val captureStatus: CaptureStatus get() = capture
     override val demo: DemoRepository by lazy { NetworkDemoRepository(api, session, alerts) }

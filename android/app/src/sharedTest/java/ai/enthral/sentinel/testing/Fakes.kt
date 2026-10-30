@@ -234,6 +234,10 @@ class FakeCaptureStatus(
     override fun rateWindowCounts(): Map<String, Int> = emptyMap()
     override fun installedWatchedApps() = listOf(ai.enthral.sentinel.capture.WatchedApp("com.whatsapp", "WhatsApp"))
     override suspend fun clearQueue(): Int { clears++; val n = queue.value; queue.value = 0; return n }
+    val syncFlow = MutableStateFlow(ai.enthral.sentinel.sync.SyncCounts())
+    override val sync: StateFlow<ai.enthral.sentinel.sync.SyncCounts> = syncFlow
+    val purged = mutableListOf<ai.enthral.sentinel.domain.ConsentSource>()
+    override suspend fun purge(source: ai.enthral.sentinel.domain.ConsentSource): Int { purged += source; return 0 }
 }
 
 class FakeNotifier : AlertNotifier {

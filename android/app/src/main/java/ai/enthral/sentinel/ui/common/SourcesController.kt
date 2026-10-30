@@ -56,6 +56,8 @@ class SourcesController(
     private val settings: AppSettings,
     private val access: SystemAccess,
     scope: CoroutineScope,
+    /** A source was turned off: purge what is queued under it (local, so it works offline). */
+    private val onRevoked: suspend (ConsentSource) -> Unit = {},
 ) {
     private val _state = MutableStateFlow(
         SourcesState(
@@ -109,6 +111,8 @@ class SourcesController(
                 ConsentSource.Check -> it
             }
         }
+        // Persist first: the capture gate reads it, so nothing new is queued while the purge runs.
         settings.setConsentIntent(source, on)
+        if (!on) onRevoked(source)
     }
 }
