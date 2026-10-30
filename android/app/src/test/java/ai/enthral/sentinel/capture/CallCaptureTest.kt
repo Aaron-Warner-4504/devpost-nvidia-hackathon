@@ -73,8 +73,8 @@ class CallCaptureTest {
         }
     }
 
-    @Test fun `first run reads only the last 24 hours, later runs never more than 7 days`() {
-        assertEquals(now - CallEvents.DAY_MS, CallEvents.startAfter(null, now))
+    @Test fun `first run reads only the last 6 hours, later runs never more than 7 days`() {
+        assertEquals(now - 6 * 3_600_000L, CallEvents.startAfter(null, now))
         assertEquals(now - 1000, CallEvents.startAfter(now - 1000, now))
         assertEquals(now - 7 * CallEvents.DAY_MS, CallEvents.startAfter(now - 30 * CallEvents.DAY_MS, now))
     }
@@ -88,18 +88,38 @@ class CallCaptureTest {
 
     @Test fun `worker queues new rows once and advances the cursor`() = runBlocking {
         val rows = listOf(
-            CallRow(1, "9876543210", now - 2 * CallEvents.DAY_MS, 10, 1), // older than 24 h: never read on first run
+            CallRow(1, "9876543210", now - 7 * 3_600_000L, 10, 1), // older than 6 h: never read on first run
             CallRow(2, "9876543210", now - 3_600_000, 240, 1),
             CallRow(3, "9123456789", now - 60_000, 0, 3),
         )
         val state = MemCallState()
         val (c, outbox, asked) = capture(rows, state)
         assertEquals(2, c.run())
-        assertEquals(now - CallEvents.DAY_MS, asked.first())
+        assertEquals(now - 6 * 3_600_000L, asked.first())
         assertEquals(now - 60_000, state.cursor)
         assertEquals(listOf(CallDirection.In, CallDirection.Missed), outbox.oldest(10).map { it.event.call!!.direction })
         assertEquals(0, c.run())
         assertEquals(2, outbox.size.value)
+    }
+
+    @Test fun `first run keeps only the 30 newest rows and the cursor passes the dropped ones`() = runBlocking {
+        val rows = (1..45).map { CallRow(it.toLong(), "98765432%02d".format(it), now - 5 * 3_600_000L + it * 1_000L, 5, 1) }
+        val state = MemCallState()
+        val (c, outbox, _) = capture(rows, state)
+        assertEquals(30, c.run())
+        assertEquals(rows.last().date, state.cursor)
+        val numbers = outbox.oldest(100).map { it.event.call!!.number }.toSet()
+        assertTrue("+919876543245" in numbers && "+919876543216" in numbers)
+        assertFalse("+919876543215" in numbers) // the 15 oldest are dropped
+        assertEquals(0, c.run())
+    }
+
+    @Test fun `later runs are not capped to 30 and only read rows after the cursor`() = runBlocking {
+        val rows = (1..45).map { CallRow(it.toLong(), "98765432%02d".format(it), now - 60_000L + it * 1_000L, 5, 1) }
+        val state = MemCallState().also { it.cursor = now - 120_000L }
+        val (c, _, asked) = capture(rows, state)
+        assertEquals(45, c.run())
+        assertEquals(now - 120_000L, asked.first())
     }
 
     @Test fun `saved contacts are sent as pseudonyms only, other numbers as E164`() {

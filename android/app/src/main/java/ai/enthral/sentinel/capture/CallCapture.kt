@@ -30,6 +30,10 @@ object CallEvents {
 
     const val DAY_MS = 24L * 3600 * 1000
 
+    /** First run: only the last 6 hours, at most 30 rows (the newest ones). */
+    const val FIRST_RUN_MS = 6L * 3600 * 1000
+    const val FIRST_RUN_MAX_ROWS = 30
+
     fun direction(type: Int): CallDirection? = when (type) {
         INCOMING, ANSWERED_EXTERNALLY -> CallDirection.In
         OUTGOING -> CallDirection.Out
@@ -38,11 +42,11 @@ object CallEvents {
     }
 
     /**
-     * Where to start reading: first run -> only the last 24 h (never the whole history); later -> after the stored
+     * Where to start reading: first run -> only the last 6 h (never the whole history); later -> after the stored
      * cursor, but never more than 7 days back (a phone that was off for weeks does not replay old calls).
      */
     fun startAfter(cursor: Long?, now: Long): Long =
-        if (cursor == null) now - DAY_MS else maxOf(cursor, now - 7 * DAY_MS)
+        if (cursor == null) now - FIRST_RUN_MS else maxOf(cursor, now - 7 * DAY_MS)
 
     /** Hidden / private / unknown numbers come as empty or negative presentation codes. */
     fun isHidden(number: String?): Boolean =
@@ -118,7 +122,11 @@ class CallLogCapture(
         if (!gate()) return 0
         val now = clock()
         val after = CallEvents.startAfter(state.callCursor(), now)
-        val rows = source.rowsAfter(after, maxRows)
+        val firstRun = state.callCursor() == null
+        val fetched = source.rowsAfter(after, if (firstRun) 1000 else maxRows)
+        // First run: keep only the newest rows (the oldest are dropped); the cursor still moves past all of them.
+        val rows = if (firstRun) fetched.filter { it.date > after }.sortedByDescending { it.date }
+            .take(CallEvents.FIRST_RUN_MAX_ROWS) else fetched
         if (rows.isEmpty()) {
             if (state.callCursor() == null) state.setCallCursor(after)
             return 0
