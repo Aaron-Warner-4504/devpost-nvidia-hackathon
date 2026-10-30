@@ -306,6 +306,7 @@
     <string name="capture_card_active_title">Watching your notifications</string>
     <string name="capture_card_active_body">%1$s · %2$s · queue %3$d</string>
     <string name="capture_last_event">last event %1$s</string>
+    <string name="capture_last_event_now">last event just now</string>
     <string name="capture_no_events_yet">no events yet</string>
     <string name="capture_card_paused_title">Capture paused</string>
     <string name="capture_card_paused_body">Notifications are not being read. Turn off Pause protection in Settings to resume.</string>

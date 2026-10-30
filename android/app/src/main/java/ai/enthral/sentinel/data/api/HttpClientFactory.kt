@@ -7,7 +7,8 @@ import okhttp3.OkHttpClient
 object HttpClientFactory {
     fun create(enableDebugLogging: Boolean): OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS) // /check runs the full agent and vision model
+        // /check and escalated /v1/events run the agent; on the live server that took 25-35 s (measured on a phone).
+        .readTimeout(45, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .callTimeout(60, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)

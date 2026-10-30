@@ -306,6 +306,7 @@
     <string name="capture_card_active_title">आपकी सूचनाओं पर नज़र है</string>
     <string name="capture_card_active_body">%1$s · %2$s · कतार %3$d</string>
     <string name="capture_last_event">पिछली सूचना %1$s</string>
+    <string name="capture_last_event_now">पिछली सूचना अभी-अभी</string>
     <string name="capture_no_events_yet">अभी कोई सूचना नहीं</string>
     <string name="capture_card_paused_title">कैप्चर रुका हुआ है</string>
     <string name="capture_card_paused_body">सूचनाएँ नहीं पढ़ी जा रहीं। फिर शुरू करने के लिए सेटिंग्स में सुरक्षा रोकें बंद करें।</string>
