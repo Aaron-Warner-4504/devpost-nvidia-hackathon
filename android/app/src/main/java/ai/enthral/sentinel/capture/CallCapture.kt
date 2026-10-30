@@ -51,17 +51,22 @@ object CallEvents {
     /**
      * @param e164 formats a number to E.164 (null when it cannot); the raw number is used as a fallback.
      * @param isContact exact saved-contact check (null when unknown -> false: the schema requires a boolean).
+     * @param pseudonym opaque stable id for a saved contact's number: the number of a saved contact never leaves the
+     *   phone, `sender` and `call.number` carry this instead (and `is_contact` is true). Unknown and hidden numbers
+     *   are sent as before.
      */
     fun toEvent(
         row: CallRow,
         e164: (String) -> String?,
         isContact: (String) -> Boolean?,
+        pseudonym: (String) -> String,
         ringing: Boolean = false,
     ): EventIn? {
         val dir = if (ringing) CallDirection.In else direction(row.type) ?: return null
         val hidden = isHidden(row.number)
-        val number = if (hidden) "" else (e164(row.number!!.trim()) ?: row.number.trim()).take(SenderPolicy.MAX_SENDER)
+        val real = if (hidden) "" else (e164(row.number!!.trim()) ?: row.number.trim()).take(SenderPolicy.MAX_SENDER)
         val contact = if (hidden) false else isContact(row.number!!.trim()) == true
+        val number = if (contact) pseudonym(real) else real
         val id = if (ringing) "screen|${number}|${row.date / 1000}" else "call|${row.id}|${row.date}"
         return EventIn(
             deviceEventId = sha256Hex(id),
@@ -105,6 +110,7 @@ class CallLogCapture(
     private val stats: CaptureStats,
     private val e164: (String) -> String?,
     private val isContact: (String) -> Boolean?,
+    private val pseudonym: (String) -> String,
     private val clock: () -> Long,
     private val onQueued: () -> Unit,
 ) {
@@ -124,7 +130,7 @@ class CallLogCapture(
                 val number = row.number?.trim().orEmpty()
                 val formatted = if (CallEvents.isHidden(number)) "" else e164(number) ?: number
                 if (formatted.isNotEmpty() && CallEvents.alreadyScreened(formatted, row.date, screened)) continue
-                val ev = CallEvents.toEvent(row, e164, isContact) ?: continue
+                val ev = CallEvents.toEvent(row, e164, isContact, pseudonym) ?: continue
                 if (outbox.add(ai.enthral.sentinel.sync.OutboxItem(ev, enqueuedAt = now))) {
                     queued++
                     stats.add(Counter.Captured)

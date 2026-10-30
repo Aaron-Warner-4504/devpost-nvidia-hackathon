@@ -20,6 +20,8 @@ class CallCaptureTest {
     private val saved = setOf("+919999988888")
     private val isContact: (String) -> Boolean? = { n -> saved.any { PhoneNormalizer.sameNumber(it, n, "IN") } }
 
+    private val pseudo: (String) -> String = Pseudonymizer(ByteArray(32) { 7 })::pseudonym
+
     private class MemCallState : CallState {
         var cursor: Long? = null
         val screenedMap = mutableMapOf<String, Long>()
@@ -37,11 +39,11 @@ class CallCaptureTest {
             assertEquals(CallDirection.Missed, CallEvents.direction(it))
         }
         assertNull(CallEvents.direction(42))
-        assertNull(CallEvents.toEvent(CallRow(1, "9876543210", now, 5, 42), e164, isContact))
+        assertNull(CallEvents.toEvent(CallRow(1, "9876543210", now, 5, 42), e164, isContact, pseudo))
     }
 
     @Test fun `row becomes a call event with E164 number and no text`() {
-        val ev = CallEvents.toEvent(CallRow(7, "098765 43210", now, 240, CallEvents.INCOMING), e164, isContact)!!
+        val ev = CallEvents.toEvent(CallRow(7, "098765 43210", now, 240, CallEvents.INCOMING), e164, isContact, pseudo)!!
         assertEquals(Source.Call, ev.source)
         assertEquals("+919876543210", ev.sender)
         assertNull(ev.text)
@@ -51,20 +53,20 @@ class CallCaptureTest {
         assertEquals(CallDirection.In, ev.call!!.direction)
         assertEquals("2025-10-29T10:00:00Z", ev.ts)
         assertEquals(0.0, ev.triageScore, 0.0)
-        assertEquals(ev.deviceEventId, CallEvents.toEvent(CallRow(7, "098765 43210", now, 240, 1), e164, isContact)!!.deviceEventId)
+        assertEquals(ev.deviceEventId, CallEvents.toEvent(CallRow(7, "098765 43210", now, 240, 1), e164, isContact, pseudo)!!.deviceEventId)
     }
 
     @Test fun `saved contact needs an exact number match`() {
-        assertTrue(CallEvents.toEvent(CallRow(1, "99999 88888", now, 1, 1), e164, isContact)!!.call!!.isContact)
-        assertFalse(CallEvents.toEvent(CallRow(1, "+449999988888", now, 1, 1), e164, isContact)!!.call!!.isContact)
-        assertFalse(CallEvents.toEvent(CallRow(1, "88888", now, 1, 1), e164, isContact)!!.call!!.isContact)
+        assertTrue(CallEvents.toEvent(CallRow(1, "99999 88888", now, 1, 1), e164, isContact, pseudo)!!.call!!.isContact)
+        assertFalse(CallEvents.toEvent(CallRow(1, "+449999988888", now, 1, 1), e164, isContact, pseudo)!!.call!!.isContact)
+        assertFalse(CallEvents.toEvent(CallRow(1, "88888", now, 1, 1), e164, isContact, pseudo)!!.call!!.isContact)
         // unknown contact state (no permission) is sent as false: the schema needs a boolean
-        assertFalse(CallEvents.toEvent(CallRow(1, "9999988888", now, 1, 1), e164, { null })!!.call!!.isContact)
+        assertFalse(CallEvents.toEvent(CallRow(1, "9999988888", now, 1, 1), e164, { null }, pseudo)!!.call!!.isContact)
     }
 
     @Test fun `hidden numbers are sent without a number`() {
         listOf(null, "", "-1", "-2", "PRIVATE").forEach { n ->
-            val ev = CallEvents.toEvent(CallRow(1, n, now, 0, CallEvents.MISSED), e164, isContact)!!
+            val ev = CallEvents.toEvent(CallRow(1, n, now, 0, CallEvents.MISSED), e164, isContact, pseudo)!!
             assertEquals("", ev.call!!.number)
             assertNull(ev.sender)
             assertFalse(ev.call!!.isContact)
@@ -81,7 +83,7 @@ class CallCaptureTest {
                         outbox: EncryptedFileOutbox = EncryptedFileOutbox(File(tmp.root, "o${rows.hashCode()}.bin"), XorCipher(), { now })): Triple<CallLogCapture, EncryptedFileOutbox, MutableList<Long>> {
         val asked = mutableListOf<Long>()
         val src = CallLogSource { after, limit -> asked += after; rows.filter { it.date > after }.sortedBy { it.date }.take(limit) }
-        return Triple(CallLogCapture({ gate }, src, state, outbox, stats, e164, isContact, { now }, {}), outbox, asked)
+        return Triple(CallLogCapture({ gate }, src, state, outbox, stats, e164, isContact, pseudo, { now }, {}), outbox, asked)
     }
 
     @Test fun `worker queues new rows once and advances the cursor`() = runBlocking {
@@ -98,6 +100,35 @@ class CallCaptureTest {
         assertEquals(listOf(CallDirection.In, CallDirection.Missed), outbox.oldest(10).map { it.event.call!!.direction })
         assertEquals(0, c.run())
         assertEquals(2, outbox.size.value)
+    }
+
+    @Test fun `saved contacts are sent as pseudonyms only, other numbers as E164`() {
+        val ev = CallEvents.toEvent(CallRow(1, "99999 88888", now, 5, 1), e164, isContact, pseudo)!!
+        val p = pseudo("+919999988888")
+        assertTrue(Regex("c_[0-9a-f]{8}").matches(p))
+        assertEquals(p, ev.sender)
+        assertEquals(p, ev.call!!.number)
+        assertTrue(ev.call!!.isContact)
+        assertFalse(ev.toString().contains("9999988888"))
+        // same pseudonym whatever the number's format; a different key gives a different one
+        assertEquals(p, CallEvents.toEvent(CallRow(2, "+91 99999-88888", now, 5, 2), e164, isContact, pseudo)!!.sender)
+        assertTrue(p != Pseudonymizer(ByteArray(32) { 9 }).pseudonym("+919999988888"))
+        // ringing event for a contact: id carries no raw number either
+        val ring = CallEvents.toEvent(CallRow(0, "9999988888", now, 0, 1), e164, isContact, pseudo, ringing = true)!!
+        assertEquals(p, ring.sender)
+        assertEquals(sha256Hex("screen|$p|${now / 1000}"), ring.deviceEventId)
+        // unknown number and unknown contact state keep the E.164 number
+        assertEquals("+919876543210", CallEvents.toEvent(CallRow(3, "9876543210", now, 5, 1), e164, isContact, pseudo)!!.sender)
+        assertEquals("+919999988888", CallEvents.toEvent(CallRow(4, "9999988888", now, 5, 1), e164, { null }, pseudo)!!.sender)
+    }
+
+    @Test fun `no raw contact number reaches the outbox`() = runBlocking {
+        val state = MemCallState()
+        val (c, outbox, _) = capture(listOf(CallRow(1, "9999988888", now - 1000, 5, 1)), state)
+        assertEquals(1, c.run())
+        val ev = outbox.oldest(1).single().event
+        assertEquals(pseudo("+919999988888"), ev.call!!.number)
+        assertFalse(ev.toString().contains("9999988888"))
     }
 
     @Test fun `gate off reads nothing`() = runBlocking {
@@ -127,7 +158,7 @@ class CallCaptureTest {
         val rows = listOf(CallRow(1, "5550000000", now - 2000, 1, 1), CallRow(2, "9876543210", now - 1000, 1, 1))
         val outbox = EncryptedFileOutbox(File(tmp.root, "b.bin"), XorCipher(), { now })
         val c = CallLogCapture({ true }, { a, _ -> asked += a; rows }, state, outbox, stats,
-            { if (it == "5550000000") throw IllegalStateException("x") else e164(it) }, isContact, { now }, {})
+            { if (it == "5550000000") throw IllegalStateException("x") else e164(it) }, isContact, pseudo, { now }, {})
         assertEquals(1, c.run())
         assertEquals(1L, stats[Counter.Failed])
         assertEquals(now - 1000, state.cursor)
@@ -135,8 +166,8 @@ class CallCaptureTest {
 
     @Test fun `ringing event uses a distinct id`() {
         val row = CallRow(0, "9876543210", now, 0, CallEvents.INCOMING)
-        val ring = CallEvents.toEvent(row, e164, isContact, ringing = true)!!
-        val log = CallEvents.toEvent(row.copy(id = 9), e164, isContact)!!
+        val ring = CallEvents.toEvent(row, e164, isContact, pseudo, ringing = true)!!
+        val log = CallEvents.toEvent(row.copy(id = 9), e164, isContact, pseudo)!!
         assertTrue(ring.deviceEventId != log.deviceEventId)
         assertEquals(CallDirection.In, ring.call!!.direction)
         assertTrue(CallEvents.alreadyScreened("+919876543210", now + 90_000, mapOf(sha256Hex("+919876543210") to now)))

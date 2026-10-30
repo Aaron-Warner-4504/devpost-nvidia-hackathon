@@ -96,6 +96,7 @@ class CaptureModule(
         )
     }
 
+    private val callPseudonyms by lazy { Pseudonymizer(pseudonymKeys::key) }
     private val e164 by lazy { E164Formatter(context) }
     private val contacts by lazy { AndroidContactChecker(context) }
 
@@ -109,6 +110,7 @@ class CaptureModule(
             stats = state,
             e164 = { e164.format(it) },
             isContact = { contacts.isSavedNumber(it) },
+            pseudonym = callPseudonyms::pseudonym,
             clock = clock,
             onQueued = ::sendNow,
         )
@@ -143,7 +145,7 @@ class CaptureModule(
             val raw = number?.trim().orEmpty()
             val formatted = if (CallEvents.isHidden(raw)) "" else e164.format(raw) ?: raw
             val ev = CallEvents.toEvent(CallRow(0, raw, at, 0, CallEvents.INCOMING), { e164.format(it) },
-                { contacts.isSavedNumber(it) }, ringing = true) ?: return false
+                { contacts.isSavedNumber(it) }, callPseudonyms::pseudonym, ringing = true) ?: return false
             if (formatted.isNotEmpty()) state.addScreened(formatted, at)
             val added = outbox.add(ai.enthral.sentinel.sync.OutboxItem(ev, enqueuedAt = clock(), ringing = true))
             if (added) {
