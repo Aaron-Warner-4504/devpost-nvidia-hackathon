@@ -145,7 +145,7 @@ entity links only; semantic neighbours exist from stage 2 on.
    |------------------>| shown alerts newest first (upgrade included)      |
 ```
 
-- Stage 1 is unchanged except one extra INSERT (`event_jobs`) in the same transaction.
+- Stage 1 is unchanged except one extra INSERT (`event_jobs`) in the same transaction (and, with `FAST_FIRST`, no inline agent: see below).
 - Stage 2 runs only when it can change something: semantic memory is on, or `AGENT_REVIEW=all`.
 - Upgrades only: a new alert row for the same event with a higher tier, created through `policy.decide`
   (the tier increase passes dedupe; the daily cap, critical flood guard and ceiling still apply). Nothing is
@@ -165,6 +165,46 @@ entity links only; semantic neighbours exist from stage 2 on.
   LLM call (`agent_ran=true` committed under a per-user advisory lock), so concurrent jobs cannot exceed the
   cap; a failed agent run keeps its slot (it was spent) and a retry of that job does not call the agent again.
 - `review.flush_background()` runs pending jobs synchronously (tests and the eval).
+
+### Fast-first alerts (`FAST_FIRST`, default true)
+
+The agent needs 20 to 35 s on the live model, too slow for a real-time warning. With `FAST_FIRST=true`
+(POST /v1/events only; `/v1/check` stays synchronous; requires `AGENT_MODE=hybrid`) the stages are:
+
+```
+ stage 1 (request, ~tens of ms)                      stage 2 (worker, background)
+  rules floor + local lookalike/shortener checks       re-score with semantic links + RDAP
+  template verdict (the degraded-path wording)          agent (floor rule, daily cap, slot reserved first)
+  assessment payload stage="rules"                      tier  > stage-1 tier: new upgrade alert
+  policy.decide, persist alert, hooks (once)            tier == stage-1 tier: REFINE IN PLACE
+  event_jobs row (payload.fast.assessment)              tier  <  stage-1 tier, agent failed, cap reached,
+                                                         queue refused: the rules alert stays
+```
+
+- Escalation (tier >= caution, triage >= 0.5, classifier hit) is decided by stage 1 as before, but the agent
+  and the RDAP lookups are skipped on the request path. The job exists even when stage 2 is otherwise off
+  (no semantic memory, `AGENT_REVIEW=escalated`), and the sweeper runs whenever fast-first is on.
+- Refinement (`review.refine_alert`) rewrites `headline`, `next_step`, `why`, `signals`, `used_tools`,
+  `raised_by` of the stage-1 assessment and marks `stage="agent"`. Same alert id, `created_at`, tier and
+  `user_label`. No new row, no `policy.decide`, no hooks, so refinement never re-notifies or spends a cap.
+  It locks the assessment and alert rows (`FOR UPDATE`), only runs while `stage == "rules"` (idempotent, a
+  duplicate or older run cannot overwrite) and does not touch the alert row's label column.
+- Stage 2 ALWAYS re-evaluates the rules with the network data stage 1 skipped (RDAP age, lookalike, with
+  the usual short timeouts and local fallback) and the richer history, whether or not the agent runs. The
+  agent cap, a missing key, an LLM outage or a refused slot only gate the LLM call, never this recomputation,
+  so an attacker cannot lower the floor by exhausting the agent budget. If the recomputed floor is higher
+  than the stage-1 tier it is raised through the upgrade path (`review_upgrade`, `policy.decide`, hooks
+  only if shown and interrupting); nothing is ever lowered. A job the in-memory queue refused stays
+  `queued` and gets the same recomputation when the sweeper submits it (the window is up to
+  `REVIEW_SWEEP_MINUTES`). Tests: `test_fast_first.py::test_rdap_floor_is_recomputed_when_agent_cannot_run`
+  (cap exhausted, LLM down, agent answering lower, queue full: final tier equals the synchronous floor).
+- An agent that lowered its tier below the floor, or whose wording was replaced because the floor raised
+  the tier, is not used for refinement (its text would understate the risk): the template text stays.
+- A higher agent tier (e.g. a tool-confirmed raise) takes the upgrade path above: a new alert, reason
+  `review_upgrade`, pushed only if it interrupts. A user can therefore get a `high` push first and a
+  `critical` push seconds later for the same event; that is the price of not waiting.
+- `stage` is internal (assessment payload), not part of the API. `FAST_FIRST=false` restores the synchronous
+  agent in the request.
 
 ## 5. Linked history for the agent
 
@@ -187,6 +227,7 @@ allowlisting is unchanged: history text never widens the allowed tool targets.
 | `SEMANTIC_THRESHOLD` | 0.25 | cosine needed for a `similar` link (tuned for the local model; re-tune for Qwen3) |
 | `SEMANTIC_K` / `SEMANTIC_WINDOW_DAYS` | 5 / 14 | neighbours per event / look-back |
 | `STORY_PROGRESSION` | true | story signal on/off |
+| `FAST_FIRST` | true | answer escalated `/v1/events` from the rules at once; the agent refines / upgrades in stage 2 |
 | `AGENT_REVIEW` | escalated | `escalated` or `all` |
 | `AGENT_REVIEW_DAILY_CAP` | 200 | stage-2 agent runs per user per 24 h |
 | `REVIEW_WORKERS` / `REVIEW_QUEUE_SIZE` / `REVIEW_SWEEP_MINUTES` | 2 / 256 / 5 | worker pool, in-memory bound, sweeper period and stale-`running` age |
