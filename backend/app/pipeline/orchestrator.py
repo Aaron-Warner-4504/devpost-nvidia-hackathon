@@ -355,13 +355,14 @@ class Evaluation:
 
 def evaluate(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity], event_id: str,
              skey: str | None, force_agent: bool, llm, deps: PipelineDeps, *, semantic: bool = False,
-             run_agent: bool | None = None, fast: bool = False) -> Evaluation:
+             run_agent: bool | None = None, fast: bool = False, network: bool = False) -> Evaluation:
     """signals -> rules floor -> [escalation: domain info, agent, link reports] -> final tier.
     `semantic` adds `similar`-edge neighbours to the linked history (stage 2). `run_agent` (stage 2)
     overrides the escalation decision for the agent: True forces it, False forbids it, None = the
     normal gate. The floor rule is the same in both stages. `fast` (fast-first stage 1): an escalated event
     is NOT investigated here: no network lookups, the template verdict at the rules floor; the caller
-    schedules the agent in the background."""
+    schedules the agent in the background. `network` (stage 2 of a fast-first job) does the RDAP lookups
+    even when the agent is not run, so the rules floor never depends on the agent budget."""
     ts = rev.ts
     overrides = load_overrides(db, user)
     origin = [e for e in extract_entities(None, rev.sender, rev.call) if e.type == "phone"]
@@ -395,7 +396,7 @@ def evaluate(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity
         ctx = replace(ctx, domain_info={d: _local_domain_info(d) for d in domains[:MAX_DOMAIN_LOOKUPS]})
         signals = detect_signals(rev, entities, ctx, overrides=overrides)
         floor = tier_for(signals, ctx)
-    elif escalate and domains:  # network lookups only on the escalated path (rules-only stays fast)
+    elif (escalate or network) and domains:  # network lookups only on the escalated path (rules-only stays fast)
         ctx = replace(ctx, domain_info=_domain_infos(deps, tctx, domains))
         signals = detect_signals(rev, entities, ctx, overrides=overrides)
         floor = tier_for(signals, ctx)

@@ -338,8 +338,9 @@ def _review(db: Session, user, event_id: str, payload: dict, llm, deps) -> _Revi
         agent_runs_today(db, user.id, datetime.now(timezone.utc)) < max(0, s.agent_review_daily_cap))
     # rules-only re-score first: with AGENT_REVIEW=escalated the agent runs only for an event that
     # stage 2 newly escalates (stage 1 did not investigate it)
+    # a fast-first stage 1 skipped the network lookups: always redo the rules with them, agent or not
     ev_ = orch.evaluate(db, user, rev, rev, entities, event_id, skey, False, llm, deps, semantic=True,
-                        run_agent=False)
+                        run_agent=False, network=fast is not None)
     want_agent = agent_ok and (fast is not None or mode == "all" or (not stage1_agent and _rank(ev_.tier) >= _rank("caution")
                                                  and _rank(ev_.tier) > _rank(best)))
     ran = False
