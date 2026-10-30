@@ -27,6 +27,12 @@ interface AlertsRepository {
     suspend fun get(id: String): Alert?
 
     /**
+     * The latest server version of an alert (the background agent may have refined its headline or tier since it
+     * was cached). Refreshes the list; if that fails, the cached copy (if any) is returned instead.
+     */
+    suspend fun getLatest(id: String): Alert?
+
+    /**
      * Keeps a result that is not in the history list (e.g. an `info` check) viewable by id. It also counts as already
      * seen: the user asked for this result, so it must never come back later as a heads-up notification.
      */
@@ -72,6 +78,11 @@ class NetworkAlertsRepository(
 
     override suspend fun get(id: String): Alert? {
         find(id)?.let { return it }
+        refresh()
+        return find(id)
+    }
+
+    override suspend fun getLatest(id: String): Alert? {
         refresh()
         return find(id)
     }

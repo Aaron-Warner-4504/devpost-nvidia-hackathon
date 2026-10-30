@@ -48,9 +48,11 @@ class AlertDispatcher(private val settings: AppSettings, private val notifier: A
     }
 }
 
-/** Late-upgrade follow-up plan: after a send, look again at +10 s, +30 s and +90 s. */
+/** Late-upgrade follow-up plan: after a send, look again at +15 s, +45 s and +120 s
+ * (the server answers with a rules alert at once and refines or upgrades it in ~20-40 s). A refined alert keeps its id,
+ * so the notified-id set makes sure it never notifies a second time. */
 object FollowUpPolicy {
-    val DELAYS_MS = listOf(10_000L, 30_000L, 90_000L)
+    val DELAYS_MS = listOf(15_000L, 45_000L, 120_000L)
 
     /** Follow up when a response had tier >= caution, or when anything was sent in the last minute. */
     fun shouldFollowUp(maxTier: Tier?, lastSentAt: Long?, now: Long): Boolean =

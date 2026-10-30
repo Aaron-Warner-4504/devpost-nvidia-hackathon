@@ -24,7 +24,7 @@ class EventSyncWorker(context: Context, params: WorkerParameters) : CoroutineWor
     }
 }
 
-/** One late-upgrade check (GET /v1/alerts) scheduled at +10 s / +30 s / +90 s after a send. */
+/** One late-upgrade check (GET /v1/alerts) scheduled at +15 s / +45 s / +120 s after a send. */
 class FollowUpWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result =
         if (applicationContext.capture.sender.checkAlerts()) Result.success() else Result.failure()
