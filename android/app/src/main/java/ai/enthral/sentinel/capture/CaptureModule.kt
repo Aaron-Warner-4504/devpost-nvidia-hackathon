@@ -21,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -173,6 +174,7 @@ class CaptureModule(
         // up to 15 minutes for the periodic worker. The cursor makes repeated runs free.
         scope.launch {
             settings.consentIntent(ai.enthral.sentinel.domain.ConsentSource.Calls)
+                .distinctUntilChanged()
                 .collect { on -> if (on) scheduler.scheduleCallLogSync(2_000L) }
         }
     }
