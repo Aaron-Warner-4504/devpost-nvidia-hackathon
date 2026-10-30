@@ -43,12 +43,23 @@ def enabled(settings) -> bool:
     return embeddings.semantic_enabled(settings) or (settings.agent_review or "").strip().lower() == "all"
 
 
-def enqueue(db: Session, user, event_id: str, rev: EventIn, *, force: bool, settings) -> str | None:
-    """Add the job row inside the caller's transaction (lands with the event). Returns the event id."""
-    if not enabled(settings):
+def sweeper_needed(settings) -> bool:
+    """Jobs can exist: stage 2 is enabled, or fast-first alerts schedule their agent refinement."""
+    return enabled(settings) or (bool(getattr(settings, "fast_first", False))
+                                 and (settings.agent_mode or "hybrid") == "hybrid")
+
+
+def enqueue(db: Session, user, event_id: str, rev: EventIn, *, force: bool, settings,
+            stage1_assessment: str | None = None) -> str | None:
+    """Add the job row inside the caller's transaction (lands with the event). Returns the event id.
+    `stage1_assessment` (fast-first): the rules-based assessment the agent will refine; it also makes the
+    job exist when stage 2 is otherwise disabled."""
+    if not enabled(settings) and stage1_assessment is None:
         return None
-    db.add(EventJob(user_id=user.id, event_id=event_id, state="queued",
-                    payload={"event": rev.model_dump(mode="json"), "force": bool(force)}))
+    payload = {"event": rev.model_dump(mode="json"), "force": bool(force)}
+    if stage1_assessment is not None:
+        payload["fast"] = {"assessment": stage1_assessment}
+    db.add(EventJob(user_id=user.id, event_id=event_id, state="queued", payload=payload))
     db.flush()
     return event_id
 
@@ -293,6 +304,7 @@ def _review(db: Session, user, event_id: str, payload: dict, llm, deps) -> _Revi
     best = max((t for t, _ in prior), key=_rank)
     stage1_agent = any(isinstance(p, dict) and p.get("mode") not in (None, "rules") for _, p in prior)
 
+    fast = payload.get("fast") if isinstance(payload.get("fast"), dict) else None
     mode = (s.agent_review or "escalated").strip().lower()
     # cheap pre-check only; the authoritative cap check is the atomic reservation below
     agent_ok = (s.agent_mode or "hybrid") != "rules" and llm is not None and (
@@ -301,7 +313,7 @@ def _review(db: Session, user, event_id: str, payload: dict, llm, deps) -> _Revi
     # stage 2 newly escalates (stage 1 did not investigate it)
     ev_ = orch.evaluate(db, user, rev, rev, entities, event_id, skey, False, llm, deps, semantic=True,
                         run_agent=False)
-    want_agent = agent_ok and (mode == "all" or (not stage1_agent and _rank(ev_.tier) >= _rank("caution")
+    want_agent = agent_ok and (fast is not None or mode == "all" or (not stage1_agent and _rank(ev_.tier) >= _rank("caution")
                                                  and _rank(ev_.tier) > _rank(best)))
     ran = False
     if want_agent and reserve_agent_slot(db, user.id, event_id, max(0, s.agent_review_daily_cap)):
@@ -314,7 +326,8 @@ def _review(db: Session, user, event_id: str, payload: dict, llm, deps) -> _Revi
     # upgrade: a new assessment + alert for the same event; tier increase passes dedupe, flood / ceiling /
     # daily-cap guards still apply
     asm = orch.persist_assessment(db, user, ev_, event_id, llm, deps, t0,
-                                  extra={"review": True, "upgraded_from": best})
+                                  extra={"review": True, "upgraded_from": best,
+                                       **({"stage": "agent"} if ran and not ev_.verdict.degraded else {})})
     key = policy.dedupe_key(entities, hashlib.sha256((rev.text or "").encode()).hexdigest())
     d = policy.decide(db, user, policy.AlertCandidate(event_id, ev_.tier, key, rev.ts))
     decision = policy.Decision(d.show, d.interrupt, REVIEW_UPGRADE if d.show else d.reason)

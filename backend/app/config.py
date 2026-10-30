@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     # Stage-2 background review: "escalated" (agent only for escalated events, as before) | "all"
     agent_review: str = "escalated"
     agent_review_daily_cap: int = 200  # stage-2 agent runs per user per rolling 24 h
+    # Fast-first alerts (POST /v1/events only): an escalated event is answered at once from the rules floor
+    # (template wording); the agent then refines / upgrades it in the background (stage 2). False = the
+    # agent runs synchronously inside the request. Only applies when AGENT_MODE=hybrid.
+    fast_first: bool = True
     review_workers: int = 2
     review_queue_size: int = 256
     review_sweep_minutes: int = 5  # sweeper period and stale-`running` age

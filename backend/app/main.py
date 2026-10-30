@@ -38,7 +38,7 @@ def _start_review() -> None:
     from app.pipeline import review
     review.configure(workers=settings.review_workers, queue_size=settings.review_queue_size,
                      max_per_user=settings.review_max_queued_per_user)
-    if not review.enabled(settings) or settings.environment == "test":
+    if not review.sweeper_needed(settings) or settings.environment == "test":
         return
     period = timedelta(minutes=max(1, settings.review_sweep_minutes))
     review.start_sweeper(SessionLocal, interval=period, older_than=period)

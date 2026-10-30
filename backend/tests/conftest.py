@@ -113,6 +113,23 @@ def client(test_engine):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(autouse=True)
+def _synchronous_agent():
+    """Fast-first alerts are the production default; the pre-existing suites assert the synchronous agent
+    behaviour (FAST_FIRST=false). tests/test_fast_first.py opts back in with the `fast_first` fixture."""
+    from app.config import settings
+    saved = settings.fast_first
+    settings.fast_first = False
+    yield
+    settings.fast_first = saved
+
+
+@pytest.fixture
+def fast_first(monkeypatch):
+    from app.config import settings
+    monkeypatch.setattr(settings, "fast_first", True)
+
+
 @pytest.fixture
 def register(client, db):
     """Callable: register() -> (device_id, auth_headers). Each call makes a new user."""

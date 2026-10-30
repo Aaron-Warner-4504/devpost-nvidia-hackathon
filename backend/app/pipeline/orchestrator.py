@@ -294,6 +294,13 @@ def _stored_alert(db: Session, user, event_id: str) -> AlertOut | None:
 class _Outcome:
     alert: AlertOut | None
     decision: policy.Decision
+    asm_id: str | None = None
+    fast_escalated: bool = False  # stage 1 answered an escalated event from the rules floor; agent pending
+
+
+def fast_first_active(settings: Settings, force_agent: bool) -> bool:
+    """Fast-first applies to POST /v1/events (never to a user's own /v1/check) when the agent would run."""
+    return bool(settings.fast_first) and not force_agent and (settings.agent_mode or "hybrid") == "hybrid"
 
 
 def process_event(db: Session, user, ev: EventIn, force_agent: bool = False, *, llm=None,
@@ -313,8 +320,10 @@ def process_event(db: Session, user, ev: EventIn, force_agent: bool = False, *, 
             db.rollback()  # nothing new to keep (entity/membership upserts were no-ops)
             return EventResult(event_id=stored.id, duplicate=True, alert=existing)
         memory.link(db, user, stored, entities)
-        out = _assess(db, user, rev, ev, entities, stored.id, skey, force_agent, llm, deps, t0)
-        job = review.enqueue(db, user, stored.id, rev, force=force_agent, settings=deps.settings)
+        fast = fast_first_active(deps.settings, force_agent)
+        out = _assess(db, user, rev, ev, entities, stored.id, skey, force_agent, llm, deps, t0, fast=fast)
+        job = review.enqueue(db, user, stored.id, rev, force=force_agent, settings=deps.settings,
+                             stage1_assessment=out.asm_id if out.fast_escalated else None)
         db.commit()  # the only commit: event, links, assessment, alert and review job land together
     except Exception:
         db.rollback()
@@ -346,11 +355,13 @@ class Evaluation:
 
 def evaluate(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity], event_id: str,
              skey: str | None, force_agent: bool, llm, deps: PipelineDeps, *, semantic: bool = False,
-             run_agent: bool | None = None) -> Evaluation:
+             run_agent: bool | None = None, fast: bool = False) -> Evaluation:
     """signals -> rules floor -> [escalation: domain info, agent, link reports] -> final tier.
     `semantic` adds `similar`-edge neighbours to the linked history (stage 2). `run_agent` (stage 2)
     overrides the escalation decision for the agent: True forces it, False forbids it, None = the
-    normal gate. The floor rule is the same in both stages."""
+    normal gate. The floor rule is the same in both stages. `fast` (fast-first stage 1): an escalated event
+    is NOT investigated here: no network lookups, the template verdict at the rules floor; the caller
+    schedules the agent in the background."""
     ts = rev.ts
     overrides = load_overrides(db, user)
     origin = [e for e in extract_entities(None, rev.sender, rev.call) if e.type == "phone"]
@@ -379,14 +390,19 @@ def evaluate(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity
                              http_client_factory=deps.http_client_factory)
 
     domains = sorted(e.canonical for e in entities if e.type == "domain")
-    if escalate and domains:  # network lookups only on the escalated path (rules-only stays fast)
+    fast_stage1 = fast and escalate and run_agent is None
+    if fast_stage1 and domains:  # no network on the request path; the local checks are free
+        ctx = replace(ctx, domain_info={d: _local_domain_info(d) for d in domains[:MAX_DOMAIN_LOOKUPS]})
+        signals = detect_signals(rev, entities, ctx, overrides=overrides)
+        floor = tier_for(signals, ctx)
+    elif escalate and domains:  # network lookups only on the escalated path (rules-only stays fast)
         ctx = replace(ctx, domain_info=_domain_infos(deps, tctx, domains))
         signals = detect_signals(rev, entities, ctx, overrides=overrides)
         floor = tier_for(signals, ctx)
 
     history = history_for_agent(ctx)
     related = related_for_agent(ctx)
-    mode = (deps.settings.agent_mode or "hybrid") if escalate else "rules"
+    mode = (deps.settings.agent_mode or "hybrid") if escalate and not fast_stage1 else "rules"
     if mode == "rules":
         verdict = agent.rules_verdict(floor, signals, history, rev)
     else:
@@ -444,9 +460,12 @@ def persist_assessment(db: Session, user, ev_: Evaluation, event_id: str, llm, d
 
 
 def _assess(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity], event_id: str,
-            skey: str | None, force_agent: bool, llm, deps: PipelineDeps, t0: float) -> _Outcome:
-    e = evaluate(db, user, rev, ev, entities, event_id, skey, force_agent, llm, deps)
-    asm = persist_assessment(db, user, e, event_id, llm, deps, t0)
+            skey: str | None, force_agent: bool, llm, deps: PipelineDeps, t0: float, *,
+            fast: bool = False) -> _Outcome:
+    e = evaluate(db, user, rev, ev, entities, event_id, skey, force_agent, llm, deps, fast=fast)
+    pending = fast and e.escalated
+    asm = persist_assessment(db, user, e, event_id, llm, deps, t0,
+                             extra={"stage": "rules"} if pending else None)
     text_hash = hashlib.sha256((rev.text or "").encode()).hexdigest()
     key = policy.dedupe_key(entities, text_hash)
     decision = policy.decide(db, user, policy.AlertCandidate(event_id, e.tier, key, rev.ts), always=force_agent)
@@ -457,7 +476,7 @@ def _assess(db: Session, user, rev: EventIn, ev: EventIn, entities: list[Entity]
     db.flush()
     out = AlertOut(id=alert.id, event_id=event_id, tier=e.tier, headline=e.headline, why=e.why,
                    next_step=e.next_step, signals=e.names, created_at=now)
-    return _Outcome(alert=out, decision=decision)
+    return _Outcome(alert=out, decision=decision, asm_id=asm.id, fast_escalated=pending)
 
 
 def _run_hooks(db: Session, user, alert: AlertOut, decision: policy.Decision, deps: PipelineDeps) -> None:

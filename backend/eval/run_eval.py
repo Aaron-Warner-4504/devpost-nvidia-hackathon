@@ -352,7 +352,7 @@ def run_scenarios(scenarios: list[dict], mode: str, llm, session_factory: Callab
     upd = {"agent_mode": mode, "tavily_api_key": "", "inspector_url": "", "inspector_secret": "",
            **(overrides or {})}
     if review_mode == "off":
-        upd.update(semantic_memory=False, agent_review="escalated")
+        upd.update(semantic_memory=False, agent_review="escalated", fast_first=False)  # single stage, agent inline
     run_settings = base.model_copy(update=upd)
     saved = default_settings.agent_mode
     default_settings.agent_mode = mode  # belt and braces: the pipeline reads deps.settings
